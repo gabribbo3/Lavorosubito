@@ -48,6 +48,7 @@ type ClientJob = {
   created_at?: string;
   category_name?: string | null;
   professional_name?: string | null;
+  reviewed: boolean;
 };
 
 type ChatMessage = {
@@ -119,22 +120,20 @@ export default function Home() {
     reviewProfessionalName,
     setReviewProfessionalName
   ] = useState('');
-
   const [rating, setRating] = useState(5);
   const [reviewComment, setReviewComment] =
     useState('');
   const [reviewSending, setReviewSending] =
     useState(false);
+  const [reviewMessage, setReviewMessage] =
+    useState('');
 
   const [
     professionalReviews,
     setProfessionalReviews
   ] = useState<ProfessionalReview[]>([]);
-
-  const [
-    reviewsLoading,
-    setReviewsLoading
-  ] = useState(false);
+  const [reviewsLoading, setReviewsLoading] =
+    useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -355,7 +354,6 @@ export default function Home() {
       setMessage(
         `Errore completamento intervento: ${error.message}`
       );
-
       setBusy(false);
       return;
     }
@@ -364,7 +362,6 @@ export default function Home() {
       setMessage(
         'Non è stato possibile completare questo intervento.'
       );
-
       setBusy(false);
       return;
     }
@@ -475,6 +472,7 @@ export default function Home() {
     );
     setRating(5);
     setReviewComment('');
+    setReviewMessage('');
   }
 
   function closeReview() {
@@ -482,6 +480,7 @@ export default function Home() {
     setReviewProfessionalName('');
     setRating(5);
     setReviewComment('');
+    setReviewMessage('');
   }
 
   async function submitReview(
@@ -492,7 +491,7 @@ export default function Home() {
     if (!reviewJobId) return;
 
     setReviewSending(true);
-    setMessage('');
+    setReviewMessage('');
 
     const { data, error } =
       await supabase.rpc(
@@ -511,11 +510,11 @@ export default function Home() {
           .toLowerCase()
           .includes('già recensito')
       ) {
-        setMessage(
+        setReviewMessage(
           'Hai già recensito questo intervento.'
         );
       } else {
-        setMessage(
+        setReviewMessage(
           `Errore recensione: ${error.message}`
         );
       }
@@ -525,10 +524,9 @@ export default function Home() {
     }
 
     if (data === false) {
-      setMessage(
+      setReviewMessage(
         'Non è possibile recensire questo intervento.'
       );
-
       setReviewSending(false);
       return;
     }
@@ -536,6 +534,8 @@ export default function Home() {
     setMessage(
       '⭐ Recensione inviata correttamente.'
     );
+
+    await loadClientJobs();
 
     closeReview();
     setReviewSending(false);
@@ -600,7 +600,6 @@ export default function Home() {
       setMessage(
         'Scegli una categoria e descrivi il problema.'
       );
-
       return;
     }
 
@@ -612,7 +611,6 @@ export default function Home() {
       setMessage(
         'Registrati o accedi per inviare la richiesta.'
       );
-
       return;
     }
 
@@ -635,7 +633,6 @@ export default function Home() {
       setMessage(
         'Categoria non trovata.'
       );
-
       setBusy(false);
       return;
     }
@@ -756,19 +753,16 @@ export default function Home() {
           >
             {chatLoading && (
               <p>
-                Caricamento
-                messaggi...
+                Caricamento messaggi...
               </p>
             )}
 
             {!chatLoading &&
-              chatMessages.length ===
-                0 && (
+              chatMessages.length === 0 && (
                 <div className="card">
                   <p>
                     Nessun messaggio.
-                    Inizia la
-                    conversazione.
+                    Inizia la conversazione.
                   </p>
                 </div>
               )}
@@ -776,8 +770,7 @@ export default function Home() {
             {chatMessages.map(
               m => {
                 const mine =
-                  m.sender_id ===
-                  user?.id;
+                  m.sender_id === user?.id;
 
                 return (
                   <div
@@ -788,13 +781,9 @@ export default function Home() {
                       border:
                         '1px solid #ddd',
                       marginLeft:
-                        mine
-                          ? 35
-                          : 0,
+                        mine ? 35 : 0,
                       marginRight:
-                        mine
-                          ? 0
-                          : 35
+                        mine ? 0 : 35
                     }}
                   >
                     <b>
@@ -805,8 +794,7 @@ export default function Home() {
 
                     <p
                       style={{
-                        margin:
-                          '5px 0'
+                        margin: '5px 0'
                       }}
                     >
                       {m.message}
@@ -923,9 +911,7 @@ export default function Home() {
                   key={star}
                   type="button"
                   onClick={() =>
-                    setRating(
-                      star
-                    )
+                    setRating(star)
                   }
                   style={{
                     border: 'none',
@@ -968,6 +954,17 @@ export default function Home() {
             }}
           />
 
+          {reviewMessage && (
+            <div
+              className="success"
+              style={{
+                marginBottom: 15
+              }}
+            >
+              {reviewMessage}
+            </div>
+          )}
+
           <button
             className="full"
             disabled={
@@ -984,8 +981,7 @@ export default function Home() {
 
   if (
     user &&
-    profileRole ===
-      'professionista'
+    profileRole === 'professionista'
   ) {
     return (
       <main>
@@ -1135,8 +1131,7 @@ export default function Home() {
 
           {jobsLoading && (
             <p>
-              Caricamento
-              richieste...
+              Caricamento richieste...
             </p>
           )}
 
@@ -1168,8 +1163,7 @@ export default function Home() {
                 className="card"
               >
                 <div className="live">
-                  ● RICHIESTA
-                  APERTA
+                  ● RICHIESTA APERTA
                 </div>
 
                 <h3>
@@ -1196,9 +1190,7 @@ export default function Home() {
                     !online
                   }
                   onClick={() =>
-                    acceptJob(
-                      job.id
-                    )
+                    acceptJob(job.id)
                   }
                 >
                   {online
@@ -1259,9 +1251,7 @@ export default function Home() {
                     </h3>
 
                     <p>
-                      {
-                        job.description
-                      }
+                      {job.description}
                     </p>
 
                     <p>
@@ -1269,15 +1259,6 @@ export default function Home() {
                         Urgenza:
                       </b>{' '}
                       {job.urgency.toUpperCase()}
-                    </p>
-
-                    <p>
-                      <b>
-                        Stato:
-                      </b>{' '}
-                      {completed
-                        ? 'Intervento completato'
-                        : 'Preso in carico'}
                     </p>
 
                     <button
@@ -1308,8 +1289,7 @@ export default function Home() {
                           )
                         }
                       >
-                        ✓ Intervento
-                        completato
+                        ✓ Intervento completato
                       </button>
                     )}
                   </article>
@@ -1328,8 +1308,7 @@ export default function Home() {
             </label>
 
             <h2>
-              Cosa dicono i
-              clienti
+              Cosa dicono i clienti
             </h2>
 
             <button
@@ -1370,37 +1349,6 @@ export default function Home() {
             </p>
           </div>
 
-          {reviewsLoading && (
-            <p>
-              Caricamento
-              recensioni...
-            </p>
-          )}
-
-          {!reviewsLoading &&
-            professionalReviews.length ===
-              0 && (
-              <div
-                className="card"
-                style={{
-                  marginTop: 18,
-                  maxWidth:
-                    '100%'
-                }}
-              >
-                <h3>
-                  Nessuna recensione
-                </h3>
-
-                <p>
-                  Le recensioni
-                  ricevute dopo gli
-                  interventi
-                  compariranno qui.
-                </p>
-              </div>
-            )}
-
           <div
             style={{
               display: 'grid',
@@ -1440,16 +1388,11 @@ export default function Home() {
 
                   {review.comment ? (
                     <p>
-                      “
-                      {
-                        review.comment
-                      }
-                      ”
+                      “{review.comment}”
                     </p>
                   ) : (
                     <p>
-                      Nessun commento
-                      scritto.
+                      Nessun commento scritto.
                     </p>
                   )}
 
@@ -1476,8 +1419,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito
-            · V9
+            © 2026 LavoroSubito · V10
           </small>
         </footer>
 
@@ -1515,16 +1457,11 @@ export default function Home() {
             <button
               className="outline"
               onClick={() => {
-                setAuthMode(
-                  'login'
-                );
-                setAuthOpen(
-                  true
-                );
+                setAuthMode('login');
+                setAuthOpen(true);
               }}
             >
-              Accedi /
-              Registrati
+              Accedi / Registrati
             </button>
           )}
         </nav>
@@ -1541,61 +1478,20 @@ export default function Home() {
             Un problema?
             <br />
             <span>
-              Risolviamolo
-              subito.
+              Risolviamolo subito.
             </span>
           </h1>
 
           <p>
             Trova professionisti
-            disponibili vicino a
-            te. Una richiesta, un
-            match, un intervento.
+            disponibili vicino a te.
           </p>
-
-          <div className="actions">
-            <button
-              className="primary"
-              onClick={() =>
-                document
-                  .getElementById(
-                    'richiesta'
-                  )
-                  ?.scrollIntoView()
-              }
-            >
-              🚨 Trova un
-              professionista
-            </button>
-
-            <button
-              className="outline"
-              onClick={() => {
-                setRole(
-                  'professionista'
-                );
-                setAuthMode(
-                  'signup'
-                );
-                setAuthOpen(
-                  true
-                );
-              }}
-            >
-              Registrati come
-              professionista →
-            </button>
-          </div>
         </div>
 
         <div
           id="richiesta"
           className="card"
         >
-          <div className="live">
-            ● LIVE REQUEST
-          </div>
-
           <h2>
             Di cosa hai bisogno?
           </h2>
@@ -1684,8 +1580,7 @@ export default function Home() {
             </label>
 
             <h2>
-              Stato dei tuoi
-              interventi
+              Stato dei tuoi interventi
             </h2>
 
             <button
@@ -1699,12 +1594,6 @@ export default function Home() {
             >
               ↻ Aggiorna
             </button>
-
-            {clientJobsLoading && (
-              <p>
-                Caricamento...
-              </p>
-            )}
 
             <div
               style={{
@@ -1744,9 +1633,7 @@ export default function Home() {
                       </h3>
 
                       <p>
-                        {
-                          job.description
-                        }
+                        {job.description}
                       </p>
 
                       <p>
@@ -1754,17 +1641,6 @@ export default function Home() {
                           Urgenza:
                         </b>{' '}
                         {job.urgency.toUpperCase()}
-                      </p>
-
-                      <p>
-                        <b>
-                          Stato:
-                        </b>{' '}
-                        {completed
-                          ? 'Intervento completato'
-                          : accepted
-                            ? 'Presa in carico'
-                            : 'In attesa di un professionista'}
                       </p>
 
                       {accepted &&
@@ -1782,10 +1658,6 @@ export default function Home() {
                               {
                                 job.professional_name
                               }
-
-                              {completed
-                                ? ' ha completato questo intervento.'
-                                : ' ha accettato la tua richiesta.'}
                             </div>
 
                             <button
@@ -1797,16 +1669,11 @@ export default function Home() {
                                 openChat(
                                   job.id,
                                   job.professional_name ??
-                                    job.category_name ??
                                     'Intervento'
                                 )
                               }
                             >
                               💬 Apri chat
-                              con{' '}
-                              {
-                                job.professional_name
-                              }
                             </button>
 
                             {!completed && (
@@ -1815,38 +1682,46 @@ export default function Home() {
                                 style={{
                                   marginTop: 12
                                 }}
-                                disabled={
-                                  busy
-                                }
                                 onClick={() =>
                                   completeJob(
                                     job.id
                                   )
                                 }
                               >
-                                ✓ Intervento
-                                completato
+                                ✓ Intervento completato
                               </button>
                             )}
 
-                            {completed && (
-                              <button
-                                className="outline"
-                                style={{
-                                  marginTop: 12
-                                }}
-                                onClick={() =>
-                                  openReview(
-                                    job.id,
-                                    job.professional_name ??
-                                      'Professionista'
-                                  )
-                                }
-                              >
-                                ⭐ Lascia
-                                recensione
-                              </button>
-                            )}
+                            {completed &&
+                              !job.reviewed && (
+                                <button
+                                  className="outline"
+                                  style={{
+                                    marginTop: 12
+                                  }}
+                                  onClick={() =>
+                                    openReview(
+                                      job.id,
+                                      job.professional_name ??
+                                        'Professionista'
+                                    )
+                                  }
+                                >
+                                  ⭐ Lascia recensione
+                                </button>
+                              )}
+
+                            {completed &&
+                              job.reviewed && (
+                                <div
+                                  className="success"
+                                  style={{
+                                    marginTop: 12
+                                  }}
+                                >
+                                  ⭐ Recensione inviata
+                                </div>
+                              )}
                           </>
                         )}
                     </article>
@@ -1857,32 +1732,6 @@ export default function Home() {
           </section>
         )}
 
-      <section className="stats">
-        <div>
-          <b>30 sec</b>
-          <small>
-            per creare una
-            richiesta
-          </small>
-        </div>
-
-        <div>
-          <b>🟢 LIVE</b>
-          <small>
-            disponibilità
-            professionisti
-          </small>
-        </div>
-
-        <div>
-          <b>V9</b>
-          <small>
-            chat + recensioni +
-            reputazione
-          </small>
-        </div>
-      </section>
-
       <section
         id="come"
         className="section"
@@ -1892,42 +1741,8 @@ export default function Home() {
         </label>
 
         <h2>
-          Dal problema alla
-          soluzione.
+          Dal problema alla soluzione.
         </h2>
-
-        <div className="steps">
-          <article>
-            <i>01</i>
-            <h3>Descrivi</h3>
-            <p>
-              Scegli il servizio
-              e racconta cosa è
-              successo.
-            </p>
-          </article>
-
-          <article>
-            <i>02</i>
-            <h3>Trova</h3>
-            <p>
-              Troviamo un
-              professionista
-              disponibile.
-            </p>
-          </article>
-
-          <article>
-            <i>03</i>
-            <h3>Risolvi</h3>
-            <p>
-              Completa
-              l'intervento e
-              lascia una
-              recensione.
-            </p>
-          </article>
-        </div>
       </section>
 
       <section
@@ -1936,8 +1751,7 @@ export default function Home() {
       >
         <div className="section">
           <label className="tag light">
-            PER I
-            PROFESSIONISTI
+            PER I PROFESSIONISTI
           </label>
 
           <h2>
@@ -1946,33 +1760,6 @@ export default function Home() {
               Fatti trovare.
             </span>
           </h2>
-
-          <p>
-            Imposta la
-            disponibilità e
-            ricevi richieste
-            urgenti.
-          </p>
-
-          {!user && (
-            <button
-              className="primary"
-              onClick={() => {
-                setRole(
-                  'professionista'
-                );
-                setAuthMode(
-                  'signup'
-                );
-                setAuthOpen(
-                  true
-                );
-              }}
-            >
-              Registrati come
-              professionista →
-            </button>
-          )}
         </div>
       </section>
 
@@ -1984,8 +1771,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito
-          · V9
+          © 2026 LavoroSubito · V10
         </small>
       </footer>
 
@@ -2001,20 +1787,11 @@ export default function Home() {
               type="button"
               className="x"
               onClick={() =>
-                setAuthOpen(
-                  false
-                )
+                setAuthOpen(false)
               }
             >
               ×
             </button>
-
-            <label className="tag">
-              {authMode ===
-              'signup'
-                ? 'REGISTRAZIONE'
-                : 'ACCESSO'}
-            </label>
 
             <h2>
               {authMode ===
@@ -2032,8 +1809,7 @@ export default function Home() {
                   value={name}
                   onChange={e =>
                     setName(
-                      e.target
-                        .value
+                      e.target.value
                     )
                   }
                 />
@@ -2094,30 +1870,6 @@ export default function Home() {
                   ? 'Crea account'
                   : 'Accedi'}
             </button>
-
-            <button
-              type="button"
-              className="outline"
-              onClick={() =>
-                setAuthMode(
-                  authMode ===
-                    'signup'
-                    ? 'login'
-                    : 'signup'
-                )
-              }
-            >
-              {authMode ===
-              'signup'
-                ? 'Hai già un account? Accedi'
-                : 'Non hai un account? Registrati'}
-            </button>
-
-            {message && (
-              <small>
-                {message}
-              </small>
-            )}
           </form>
         </div>
       )}
