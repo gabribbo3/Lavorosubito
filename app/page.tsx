@@ -28,9 +28,7 @@ type Job = {
   urgency: string;
   status: string;
   created_at?: string;
-  categories?: {
-    name?: string;
-  } | null;
+  categories?: { name?: string } | null;
 };
 
 type AcceptedJob = {
@@ -52,13 +50,18 @@ type ClientJob = {
   professional_name?: string | null;
 };
 
+type ChatMessage = {
+  id: string;
+  job_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
+};
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
-
   const [role, setRole] = useState<AppRole>('cliente');
-  const [profileRole, setProfileRole] =
-    useState<AppRole | null>(null);
-
+  const [profileRole, setProfileRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState('');
 
   const [cat, setCat] = useState('');
@@ -81,15 +84,18 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
 
-  const [acceptedJobs, setAcceptedJobs] =
-    useState<AcceptedJob[]>([]);
-  const [acceptedLoading, setAcceptedLoading] =
-    useState(false);
+  const [acceptedJobs, setAcceptedJobs] = useState<AcceptedJob[]>([]);
+  const [acceptedLoading, setAcceptedLoading] = useState(false);
 
-  const [clientJobs, setClientJobs] =
-    useState<ClientJob[]>([]);
-  const [clientJobsLoading, setClientJobsLoading] =
-    useState(false);
+  const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
+  const [clientJobsLoading, setClientJobsLoading] = useState(false);
+
+  const [chatJobId, setChatJobId] = useState<string | null>(null);
+  const [chatTitle, setChatTitle] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatText, setChatText] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -115,6 +121,8 @@ export default function Home() {
           setAcceptedJobs([]);
           setClientJobs([]);
           setOnline(false);
+          setChatJobId(null);
+          setChatMessages([]);
         }
       }
     );
@@ -173,9 +181,7 @@ export default function Home() {
         urgency,
         status,
         created_at,
-        categories (
-          name
-        )
+        categories (name)
       `)
       .eq('status', 'aperta')
       .order('created_at', { ascending: false });
@@ -197,9 +203,7 @@ export default function Home() {
       await supabase.rpc('my_accepted_jobs');
 
     if (error) {
-      setMessage(
-        `Errore caricamento lavori accettati: ${error.message}`
-      );
+      setMessage(`Errore lavori accettati: ${error.message}`);
       setAcceptedJobs([]);
     } else {
       setAcceptedJobs((data ?? []) as AcceptedJob[]);
@@ -215,9 +219,7 @@ export default function Home() {
       await supabase.rpc('my_client_jobs');
 
     if (error) {
-      setMessage(
-        `Errore caricamento richieste cliente: ${error.message}`
-      );
+      setMessage(`Errore richieste cliente: ${error.message}`);
       setClientJobs([]);
     } else {
       setClientJobs((data ?? []) as ClientJob[]);
@@ -227,41 +229,88 @@ export default function Home() {
   }
 
   async function acceptJob(jobId: string) {
-    if (!user) {
-      setMessage('Devi essere autenticato.');
-      return;
-    }
+    if (!user) return;
 
     setBusy(true);
     setMessage('');
 
-    const { data, error } =
-      await supabase.rpc('accept_job', {
-        p_job_id: jobId
-      });
+    const { data, error } = await supabase.rpc('accept_job', {
+      p_job_id: jobId
+    });
 
     if (error) {
       setMessage(`Errore accettazione: ${error.message}`);
-      setBusy(false);
-      return;
-    }
-
-    if (data === false) {
+    } else if (data === false) {
       setMessage(
         'Questo lavoro è già stato accettato da un altro professionista.'
       );
-
-      await loadJobs();
-      setBusy(false);
-      return;
+    } else {
+      setMessage('✓ Lavoro accettato correttamente.');
     }
-
-    setMessage('✓ Lavoro accettato correttamente.');
 
     await loadJobs();
     await loadAcceptedJobs();
-
     setBusy(false);
+  }
+
+  async function openChat(jobId: string, title: string) {
+    setChatJobId(jobId);
+    setChatTitle(title);
+    setChatText('');
+    setChatMessages([]);
+    await loadChat(jobId);
+  }
+
+  async function loadChat(jobId: string) {
+    setChatLoading(true);
+
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, job_id, sender_id, message, created_at')
+      .eq('job_id', jobId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      setMessage(`Errore chat: ${error.message}`);
+    } else {
+      setChatMessages((data ?? []) as ChatMessage[]);
+    }
+
+    setChatLoading(false);
+  }
+
+  async function sendChatMessage(e: FormEvent) {
+    e.preventDefault();
+
+    if (!user || !chatJobId || !chatText.trim()) return;
+
+    setChatSending(true);
+
+    const text = chatText.trim();
+
+    const { error } = await supabase
+      .from('messages')
+      .insert({
+        job_id: chatJobId,
+        sender_id: user.id,
+        message: text
+      });
+
+    if (error) {
+      setMessage(`Errore invio messaggio: ${error.message}`);
+    } else {
+      setChatText('');
+      await loadChat(chatJobId);
+    }
+
+    setChatSending(false);
+  }
+
+  function closeChat() {
+    setChatJobId(null);
+    setChatTitle('');
+    setChatMessages([]);
+    setChatText('');
   }
 
   async function authSubmit(e: FormEvent) {
@@ -299,7 +348,6 @@ export default function Home() {
       if (error) {
         setMessage(error.message);
       } else {
-        setMessage('Accesso effettuato.');
         setAuthOpen(false);
 
         if (data.user) {
@@ -313,9 +361,7 @@ export default function Home() {
 
   async function submitJob() {
     if (!cat || !description.trim()) {
-      setMessage(
-        'Scegli una categoria e descrivi il problema.'
-      );
+      setMessage('Scegli una categoria e descrivi il problema.');
       return;
     }
 
@@ -323,11 +369,7 @@ export default function Home() {
       setRole('cliente');
       setAuthMode('signup');
       setAuthOpen(true);
-
-      setMessage(
-        'Registrati o accedi per inviare la richiesta.'
-      );
-
+      setMessage('Registrati o accedi per inviare la richiesta.');
       return;
     }
 
@@ -359,10 +401,7 @@ export default function Home() {
     if (error) {
       setMessage(`Errore: ${error.message}`);
     } else {
-      setMessage(
-        '✓ Richiesta inviata e salvata nel database.'
-      );
-
+      setMessage('✓ Richiesta inviata.');
       setDescription('');
       await loadClientJobs();
     }
@@ -387,12 +426,9 @@ export default function Home() {
       });
 
     if (error) {
-      setMessage(
-        `Errore disponibilità: ${error.message}`
-      );
+      setMessage(`Errore disponibilità: ${error.message}`);
     } else {
       setOnline(next);
-
       setMessage(
         next
           ? '🟢 Ora risulti disponibile.'
@@ -403,15 +439,107 @@ export default function Home() {
     setBusy(false);
   }
 
-  async function refreshProfessional() {
-    await loadJobs();
-    await loadAcceptedJobs();
-  }
-
   async function logout() {
     await supabase.auth.signOut();
     setMessage('');
   }
+
+  const ChatModal = () =>
+    chatJobId ? (
+      <div className="modal">
+        <div className="modalBox">
+          <button
+            type="button"
+            className="x"
+            onClick={closeChat}
+          >
+            ×
+          </button>
+
+          <label className="tag">CHAT INTERVENTO</label>
+
+          <h2>{chatTitle || 'Intervento'}</h2>
+
+          <p>
+            Comunica direttamente con l'altra persona per organizzare
+            l'intervento.
+          </p>
+
+          <div
+            style={{
+              maxHeight: 330,
+              overflowY: 'auto',
+              marginTop: 20,
+              marginBottom: 20,
+              display: 'grid',
+              gap: 10
+            }}
+          >
+            {chatLoading && <p>Caricamento messaggi...</p>}
+
+            {!chatLoading && chatMessages.length === 0 && (
+              <div className="card">
+                <p>
+                  Nessun messaggio. Inizia la conversazione.
+                </p>
+              </div>
+            )}
+
+            {chatMessages.map(m => {
+              const mine = m.sender_id === user?.id;
+
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    padding: 12,
+                    borderRadius: 12,
+                    border: '1px solid #ddd',
+                    marginLeft: mine ? 35 : 0,
+                    marginRight: mine ? 0 : 35
+                  }}
+                >
+                  <b>{mine ? 'Tu' : 'Interlocutore'}</b>
+
+                  <p style={{ margin: '5px 0' }}>
+                    {m.message}
+                  </p>
+
+                  <small>
+                    {new Date(m.created_at).toLocaleString('it-IT')}
+                  </small>
+                </div>
+              );
+            })}
+          </div>
+
+          <form onSubmit={sendChatMessage}>
+            <input
+              value={chatText}
+              onChange={e => setChatText(e.target.value)}
+              placeholder="Scrivi un messaggio..."
+              maxLength={1000}
+            />
+
+            <button
+              className="full"
+              disabled={chatSending || !chatText.trim()}
+            >
+              {chatSending ? 'Invio...' : 'Invia messaggio →'}
+            </button>
+          </form>
+
+          <button
+            className="outline"
+            style={{ marginTop: 10 }}
+            onClick={() => loadChat(chatJobId)}
+            disabled={chatLoading}
+          >
+            ↻ Aggiorna chat
+          </button>
+        </div>
+      </div>
+    ) : null;
 
   if (user && profileRole === 'professionista') {
     return (
@@ -421,44 +549,23 @@ export default function Home() {
             <b>L</b> Lavoro<span>Subito</span>
           </div>
 
-          <button
-            className="outline"
-            onClick={logout}
-          >
+          <button className="outline" onClick={logout}>
             Esci
           </button>
         </header>
 
         <section
           className="section"
-          style={{
-            paddingTop: 70,
-            minHeight: '75vh'
-          }}
+          style={{ paddingTop: 70, minHeight: '75vh' }}
         >
-          <label className="tag">
-            AREA PROFESSIONISTA
-          </label>
+          <label className="tag">AREA PROFESSIONISTA</label>
 
-          <h2>
-            Ciao {fullName || 'Professionista'}.
-          </h2>
+          <h2>Ciao {fullName || 'Professionista'}.</h2>
 
-          <p>
-            Gestisci la tua disponibilità e visualizza le richieste urgenti.
-          </p>
-
-          <div
-            className="proPanel"
-            style={{ marginTop: 30 }}
-          >
+          <div className="proPanel" style={{ marginTop: 30 }}>
             <div>
               <div className="avatar">PRO</div>
-
-              <h3>
-                {fullName || user.email}
-              </h3>
-
+              <h3>{fullName || user.email}</h3>
               <p>{user.email}</p>
             </div>
 
@@ -466,11 +573,7 @@ export default function Home() {
               <span>Disponibilità</span>
 
               <button
-                className={
-                  online
-                    ? 'switch on'
-                    : 'switch'
-                }
+                className={online ? 'switch on' : 'switch'}
                 onClick={toggleAvailability}
                 disabled={busy}
               >
@@ -478,189 +581,99 @@ export default function Home() {
               </button>
 
               <b>
-                {online
-                  ? '🟢 Disponibile ora'
-                  : '⚫ Offline'}
+                {online ? '🟢 Disponibile ora' : '⚫ Offline'}
               </b>
             </div>
           </div>
 
           {message && (
-            <div
-              className="success"
-              style={{ marginTop: 20 }}
-            >
+            <div className="success" style={{ marginTop: 20 }}>
               {message}
             </div>
           )}
 
-          <div
-            style={{
-              marginTop: 50,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 15
-            }}
-          >
-            <div>
-              <label className="tag">
-                RICHIESTE LIVE
-              </label>
-
-              <h2>Lavori disponibili</h2>
-            </div>
+          <div style={{ marginTop: 50 }}>
+            <label className="tag">RICHIESTE LIVE</label>
+            <h2>Lavori disponibili</h2>
 
             <button
               className="outline"
-              onClick={refreshProfessional}
-              disabled={
-                jobsLoading ||
-                acceptedLoading
-              }
+              onClick={loadJobs}
+              disabled={jobsLoading}
             >
               ↻ Aggiorna
             </button>
           </div>
 
-          {jobsLoading && (
-            <p>Caricamento richieste...</p>
+          {jobsLoading && <p>Caricamento richieste...</p>}
+
+          {!jobsLoading && jobs.length === 0 && (
+            <div className="card" style={{ marginTop: 20 }}>
+              <h3>Nessuna richiesta disponibile</h3>
+            </div>
           )}
 
-          {!jobsLoading &&
-            jobs.length === 0 && (
-              <div
-                className="card"
-                style={{
-                  marginTop: 20,
-                  maxWidth: '100%'
-                }}
-              >
-                <h3>
-                  Nessuna richiesta disponibile
-                </h3>
-
-                <p>
-                  Quando arriveranno nuove richieste aperte compariranno qui.
-                </p>
-              </div>
-            )}
-
-          <div
-            style={{
-              display: 'grid',
-              gap: 18,
-              marginTop: 20
-            }}
-          >
+          <div style={{ display: 'grid', gap: 18, marginTop: 20 }}>
             {jobs.map(job => (
-              <article
-                key={job.id}
-                className="card"
-                style={{ maxWidth: '100%' }}
-              >
-                <div className="live">
-                  ● RICHIESTA APERTA
-                </div>
+              <article key={job.id} className="card">
+                <div className="live">● RICHIESTA APERTA</div>
 
-                <h3>
-                  {job.categories?.name ??
-                    'Intervento'}
-                </h3>
+                <h3>{job.categories?.name ?? 'Intervento'}</h3>
 
                 <p>{job.description}</p>
 
                 <p>
-                  <b>Urgenza:</b>{' '}
-                  {job.urgency.toUpperCase()}
+                  <b>Urgenza:</b> {job.urgency.toUpperCase()}
                 </p>
 
                 <button
                   className="full"
                   disabled={busy || !online}
-                  onClick={() =>
-                    acceptJob(job.id)
-                  }
+                  onClick={() => acceptJob(job.id)}
                 >
-                  {busy
-                    ? 'Attendi...'
-                    : online
-                      ? 'Accetta lavoro →'
-                      : 'Vai online per accettare'}
+                  {online
+                    ? 'Accetta lavoro →'
+                    : 'Vai online per accettare'}
                 </button>
               </article>
             ))}
           </div>
 
           <div style={{ marginTop: 70 }}>
-            <label className="tag">
-              I MIEI LAVORI
-            </label>
-
+            <label className="tag">I MIEI LAVORI</label>
             <h2>Lavori accettati</h2>
-
-            <p>
-              Qui trovi le richieste che hai già preso in carico.
-            </p>
           </div>
 
-          {acceptedLoading && (
-            <p>
-              Caricamento lavori accettati...
-            </p>
-          )}
+          {acceptedLoading && <p>Caricamento...</p>}
 
-          {!acceptedLoading &&
-            acceptedJobs.length === 0 && (
-              <div
-                className="card"
-                style={{
-                  marginTop: 20,
-                  maxWidth: '100%'
-                }}
-              >
-                <h3>
-                  Nessun lavoro accettato
-                </h3>
-
-                <p>
-                  I lavori che accetterai compariranno qui.
-                </p>
-              </div>
-            )}
-
-          <div
-            style={{
-              display: 'grid',
-              gap: 18,
-              marginTop: 20
-            }}
-          >
+          <div style={{ display: 'grid', gap: 18, marginTop: 20 }}>
             {acceptedJobs.map(job => (
-              <article
-                key={job.id}
-                className="card"
-                style={{ maxWidth: '100%' }}
-              >
-                <div className="live">
-                  🟢 ACCETTATO
-                </div>
+              <article key={job.id} className="card">
+                <div className="live">🟢 ACCETTATO</div>
 
-                <h3>
-                  {job.category_name ??
-                    'Intervento'}
-                </h3>
+                <h3>{job.category_name ?? 'Intervento'}</h3>
 
                 <p>{job.description}</p>
 
                 <p>
-                  <b>Urgenza:</b>{' '}
-                  {job.urgency.toUpperCase()}
+                  <b>Urgenza:</b> {job.urgency.toUpperCase()}
                 </p>
 
                 <p>
                   <b>Stato:</b> Preso in carico
                 </p>
+
+                <button
+                  className="full"
+                  onClick={() =>
+                    openChat(
+                      job.id,
+                      job.category_name ?? 'Intervento'
+                    )
+                  }
+                >
+                  💬 Apri chat
+                </button>
               </article>
             ))}
           </div>
@@ -670,11 +683,10 @@ export default function Home() {
           <div className="logo">
             <b>L</b> Lavoro<span>Subito</span>
           </div>
-
-          <small>
-            © 2026 LavoroSubito · V5
-          </small>
+          <small>© 2026 LavoroSubito · V6</small>
         </footer>
+
+        <ChatModal />
       </main>
     );
   }
@@ -687,19 +699,11 @@ export default function Home() {
         </div>
 
         <nav>
-          <a href="#come">
-            Come funziona
-          </a>
-
-          <a href="#professionisti">
-            Professionisti
-          </a>
+          <a href="#come">Come funziona</a>
+          <a href="#professionisti">Professionisti</a>
 
           {user ? (
-            <button
-              className="outline"
-              onClick={logout}
-            >
+            <button className="outline" onClick={logout}>
               Esci
             </button>
           ) : (
@@ -725,9 +729,7 @@ export default function Home() {
           <h1>
             Un problema?
             <br />
-            <span>
-              Risolviamolo subito.
-            </span>
+            <span>Risolviamolo subito.</span>
           </h1>
 
           <p>
@@ -758,72 +760,41 @@ export default function Home() {
               Registrati come professionista →
             </button>
           </div>
-
-          <div className="checks">
-            ✓ Disponibilità in tempo reale　✓ Profili verificati　✓ Recensioni
-          </div>
         </div>
 
-        <div
-          id="richiesta"
-          className="card"
-        >
-          <div className="live">
-            ● LIVE REQUEST
-          </div>
+        <div id="richiesta" className="card">
+          <div className="live">● LIVE REQUEST</div>
 
-          <h2>
-            Di cosa hai bisogno?
-          </h2>
-
-          <p>
-            Scegli il servizio e indica l'urgenza.
-          </p>
+          <h2>Di cosa hai bisogno?</h2>
 
           <div className="grid">
             {cats.map((c, i) => (
               <button
                 key={c}
-                className={
-                  cat === c
-                    ? 'cat selected'
-                    : 'cat'
-                }
+                className={cat === c ? 'cat selected' : 'cat'}
                 onClick={() => setCat(c)}
               >
-                <strong>
-                  {icons[i]}
-                </strong>
+                <strong>{icons[i]}</strong>
                 {c}
               </button>
             ))}
           </div>
 
           <div className="urg">
-            {['SUBITO', 'OGGI', '48H'].map(
-              u => (
-                <button
-                  key={u}
-                  className={
-                    urg === u
-                      ? 'selUrg'
-                      : ''
-                  }
-                  onClick={() =>
-                    setUrg(u)
-                  }
-                >
-                  {u}
-                </button>
-              )
-            )}
+            {['SUBITO', 'OGGI', '48H'].map(u => (
+              <button
+                key={u}
+                className={urg === u ? 'selUrg' : ''}
+                onClick={() => setUrg(u)}
+              >
+                {u}
+              </button>
+            ))}
           </div>
 
           <input
             value={description}
-            onChange={e =>
-              setDescription(e.target.value)
-            }
+            onChange={e => setDescription(e.target.value)}
             placeholder="Descrivi brevemente il problema..."
           />
 
@@ -832,114 +803,47 @@ export default function Home() {
             disabled={busy}
             onClick={submitJob}
           >
-            {busy
-              ? 'Invio...'
-              : 'Trova chi è disponibile →'}
+            {busy ? 'Invio...' : 'Trova chi è disponibile →'}
           </button>
 
-          {message && (
-            <div className="success">
-              {message}
-            </div>
-          )}
+          {message && <div className="success">{message}</div>}
         </div>
       </section>
 
       {user && profileRole === 'cliente' && (
-        <section
-          className="section"
-          style={{
-            paddingTop: 30,
-            paddingBottom: 70
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 15
-            }}
+        <section className="section">
+          <label className="tag">LE MIE RICHIESTE</label>
+
+          <h2>Stato dei tuoi interventi</h2>
+
+          <button
+            className="outline"
+            onClick={loadClientJobs}
+            disabled={clientJobsLoading}
           >
-            <div>
-              <label className="tag">
-                LE MIE RICHIESTE
-              </label>
+            ↻ Aggiorna
+          </button>
 
-              <h2>
-                Stato dei tuoi interventi
-              </h2>
-            </div>
+          {clientJobsLoading && <p>Caricamento...</p>}
 
-            <button
-              className="outline"
-              onClick={loadClientJobs}
-              disabled={clientJobsLoading}
-            >
-              ↻ Aggiorna
-            </button>
-          </div>
-
-          {clientJobsLoading && (
-            <p>
-              Caricamento richieste...
-            </p>
-          )}
-
-          {!clientJobsLoading &&
-            clientJobs.length === 0 && (
-              <div
-                className="card"
-                style={{
-                  marginTop: 20,
-                  maxWidth: '100%'
-                }}
-              >
-                <h3>
-                  Nessuna richiesta
-                </h3>
-
-                <p>
-                  Le richieste che creerai compariranno qui.
-                </p>
-              </div>
-            )}
-
-          <div
-            style={{
-              display: 'grid',
-              gap: 18,
-              marginTop: 20
-            }}
-          >
+          <div style={{ display: 'grid', gap: 18, marginTop: 20 }}>
             {clientJobs.map(job => {
-              const accepted =
-                job.status === 'accettata';
+              const accepted = job.status === 'accettata';
 
               return (
-                <article
-                  key={job.id}
-                  className="card"
-                  style={{ maxWidth: '100%' }}
-                >
+                <article key={job.id} className="card">
                   <div className="live">
                     {accepted
                       ? '🟢 PROFESSIONISTA TROVATO'
                       : '🔴 RICERCA IN CORSO'}
                   </div>
 
-                  <h3>
-                    {job.category_name ??
-                      'Intervento'}
-                  </h3>
+                  <h3>{job.category_name ?? 'Intervento'}</h3>
+
+                  <p>{job.description}</p>
 
                   <p>
-                    {job.description}
-                  </p>
-
-                  <p>
-                    <b>Urgenza:</b>{' '}
-                    {job.urgency.toUpperCase()}
+                    <b>Urgenza:</b> {job.urgency.toUpperCase()}
                   </p>
 
                   <p>
@@ -949,24 +853,31 @@ export default function Home() {
                       : 'In attesa di un professionista'}
                   </p>
 
-                  {accepted &&
-                    job.professional_name && (
-                      <div
-                        className="success"
-                        style={{ marginTop: 15 }}
-                      >
-                        <b>
-                          🟢 Professionista trovato!
-                        </b>
-
+                  {accepted && job.professional_name && (
+                    <>
+                      <div className="success">
+                        <b>🟢 Professionista trovato!</b>
                         <br />
-
-                        {
-                          job.professional_name
-                        }{' '}
-                        ha accettato la tua richiesta.
+                        {job.professional_name} ha accettato la tua
+                        richiesta.
                       </div>
-                    )}
+
+                      <button
+                        className="full"
+                        style={{ marginTop: 15 }}
+                        onClick={() =>
+                          openChat(
+                            job.id,
+                            job.professional_name ??
+                              job.category_name ??
+                              'Intervento'
+                          )
+                        }
+                      >
+                        💬 Apri chat con {job.professional_name}
+                      </button>
+                    </>
+                  )}
                 </article>
               );
             })}
@@ -977,84 +888,56 @@ export default function Home() {
       <section className="stats">
         <div>
           <b>30 sec</b>
-          <small>
-            per creare una richiesta
-          </small>
+          <small>per creare una richiesta</small>
         </div>
 
         <div>
           <b>🟢 LIVE</b>
-          <small>
-            disponibilità professionisti
-          </small>
+          <small>disponibilità professionisti</small>
         </div>
 
         <div>
-          <b>V5</b>
-          <small>
-            cliente + professionista
-          </small>
+          <b>V6</b>
+          <small>matching + chat</small>
         </div>
       </section>
 
-      <section
-        id="come"
-        className="section"
-      >
-        <label className="tag">
-          COME FUNZIONA
-        </label>
+      <section id="come" className="section">
+        <label className="tag">COME FUNZIONA</label>
 
-        <h2>
-          Dal problema alla soluzione.
-        </h2>
+        <h2>Dal problema alla soluzione.</h2>
 
         <div className="steps">
           <article>
             <i>01</i>
             <h3>Descrivi</h3>
-
-            <p>
-              Scegli il servizio e racconta cosa è successo.
-            </p>
+            <p>Scegli il servizio e racconta cosa è successo.</p>
           </article>
 
           <article>
             <i>02</i>
             <h3>Trova</h3>
-
-            <p>
-              Il sistema cerca professionisti compatibili e disponibili.
-            </p>
+            <p>Troviamo un professionista disponibile.</p>
           </article>
 
           <article>
             <i>03</i>
             <h3>Risolvi</h3>
-
-            <p>
-              Il professionista accetta e interviene.
-            </p>
+            <p>Contattalo tramite chat e organizza l'intervento.</p>
           </article>
         </div>
       </section>
 
-      <section
-        id="professionisti"
-        className="proSection"
-      >
+      <section id="professionisti" className="proSection">
         <div className="section">
-          <label className="tag light">
-            PER I PROFESSIONISTI
-          </label>
+          <label className="tag light">PER I PROFESSIONISTI</label>
 
           <h2>
-            Sei disponibile?{' '}
-            <span>Fatti trovare.</span>
+            Sei disponibile? <span>Fatti trovare.</span>
           </h2>
 
           <p>
-            Crea un profilo professionista, imposta la disponibilità e ricevi richieste urgenti.
+            Imposta la disponibilità e ricevi richieste urgenti.
           </p>
 
           {!user && (
@@ -1076,32 +959,22 @@ export default function Home() {
         <div className="logo">
           <b>L</b> Lavoro<span>Subito</span>
         </div>
-
-        <small>
-          © 2026 LavoroSubito · V5
-        </small>
+        <small>© 2026 LavoroSubito · V6</small>
       </footer>
 
       {authOpen && (
         <div className="modal">
-          <form
-            className="modalBox"
-            onSubmit={authSubmit}
-          >
+          <form className="modalBox" onSubmit={authSubmit}>
             <button
               type="button"
               className="x"
-              onClick={() =>
-                setAuthOpen(false)
-              }
+              onClick={() => setAuthOpen(false)}
             >
               ×
             </button>
 
             <label className="tag">
-              {authMode === 'signup'
-                ? 'REGISTRAZIONE'
-                : 'ACCESSO'}
+              {authMode === 'signup' ? 'REGISTRAZIONE' : 'ACCESSO'}
             </label>
 
             <h2>
@@ -1116,23 +989,16 @@ export default function Home() {
                   required
                   placeholder="Nome e cognome"
                   value={name}
-                  onChange={e =>
-                    setName(e.target.value)
-                  }
+                  onChange={e => setName(e.target.value)}
                 />
 
                 <select
                   value={role}
                   onChange={e =>
-                    setRole(
-                      e.target.value as AppRole
-                    )
+                    setRole(e.target.value as AppRole)
                   }
                 >
-                  <option value="cliente">
-                    Cliente
-                  </option>
-
+                  <option value="cliente">Cliente</option>
                   <option value="professionista">
                     Professionista
                   </option>
@@ -1145,9 +1011,7 @@ export default function Home() {
               type="email"
               placeholder="Email"
               value={email}
-              onChange={e =>
-                setEmail(e.target.value)
-              }
+              onChange={e => setEmail(e.target.value)}
             />
 
             <input
@@ -1156,15 +1020,10 @@ export default function Home() {
               type="password"
               placeholder="Password"
               value={password}
-              onChange={e =>
-                setPassword(e.target.value)
-              }
+              onChange={e => setPassword(e.target.value)}
             />
 
-            <button
-              className="full"
-              disabled={busy}
-            >
+            <button className="full" disabled={busy}>
               {busy
                 ? 'Attendi...'
                 : authMode === 'signup'
@@ -1177,9 +1036,7 @@ export default function Home() {
               className="outline"
               onClick={() =>
                 setAuthMode(
-                  authMode === 'signup'
-                    ? 'login'
-                    : 'signup'
+                  authMode === 'signup' ? 'login' : 'signup'
                 )
               }
             >
@@ -1188,14 +1045,12 @@ export default function Home() {
                 : 'Non hai un account? Registrati'}
             </button>
 
-            {message && (
-              <small>
-                {message}
-              </small>
-            )}
+            {message && <small>{message}</small>}
           </form>
         </div>
       )}
+
+      <ChatModal />
     </main>
   );
 }
