@@ -67,6 +67,15 @@ type ProfessionalReview = {
   client_name?: string | null;
 };
 
+type MatchResult = {
+  professional_id: string;
+  professional_name: string;
+  availability_status: string;
+  average_rating: number;
+  review_count: number;
+  match_score: number;
+};
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole>('cliente');
@@ -131,6 +140,11 @@ export default function Home() {
   ] = useState<ProfessionalReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
+  const [bestMatch, setBestMatch] =
+    useState<MatchResult | null>(null);
+  const [matchingLoading, setMatchingLoading] =
+    useState(false);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
@@ -155,6 +169,7 @@ export default function Home() {
           setAcceptedJobs([]);
           setClientJobs([]);
           setProfessionalReviews([]);
+          setBestMatch(null);
           setOnline(false);
           setChatJobId(null);
           setChatMessages([]);
@@ -298,6 +313,38 @@ export default function Home() {
     }
 
     setReviewsLoading(false);
+  }
+
+  async function findBestMatch(jobId: string) {
+    setMatchingLoading(true);
+    setBestMatch(null);
+
+    const { data, error } =
+      await supabase.rpc(
+        'find_professionals_for_job',
+        {
+          p_job_id: jobId
+        }
+      );
+
+    if (error) {
+      setMessage(
+        `Richiesta creata, ma errore matching: ${error.message}`
+      );
+      setMatchingLoading(false);
+      return;
+    }
+
+    const results =
+      (data ?? []) as MatchResult[];
+
+    if (results.length > 0) {
+      setBestMatch(results[0]);
+    } else {
+      setBestMatch(null);
+    }
+
+    setMatchingLoading(false);
   }
 
   async function acceptJob(jobId: string) {
@@ -615,6 +662,7 @@ export default function Home() {
 
     setBusy(true);
     setMessage('');
+    setBestMatch(null);
 
     const {
       data: category,
@@ -636,31 +684,40 @@ export default function Home() {
       return;
     }
 
-    const { error } =
-      await supabase
-        .from('jobs')
-        .insert({
-          client_id: user.id,
-          category_id:
-            category.id,
-          urgency:
-            urg.toLowerCase(),
-          description:
-            description.trim()
-        });
+    const {
+      data: newJob,
+      error
+    } = await supabase
+      .from('jobs')
+      .insert({
+        client_id: user.id,
+        category_id:
+          category.id,
+        urgency:
+          urg.toLowerCase(),
+        description:
+          description.trim()
+      })
+      .select('id')
+      .single();
 
-    if (error) {
+    if (error || !newJob) {
       setMessage(
-        `Errore: ${error.message}`
-      );
-    } else {
-      setMessage(
-        '✓ Richiesta inviata.'
+        `Errore: ${error?.message ?? 'Impossibile creare la richiesta'}`
       );
 
-      setDescription('');
-      await loadClientJobs();
+      setBusy(false);
+      return;
     }
+
+    setMessage(
+      '✓ Richiesta inviata. Cerco il professionista migliore...'
+    );
+
+    setDescription('');
+
+    await loadClientJobs();
+    await findBestMatch(newJob.id);
 
     setBusy(false);
   }
@@ -707,6 +764,25 @@ export default function Home() {
   async function logout() {
     await supabase.auth.signOut();
     setMessage('');
+    setBestMatch(null);
+  }
+
+  function availabilityLabel(
+    status: string
+  ) {
+    if (status === 'ora') {
+      return '🟢 Disponibile ora';
+    }
+
+    if (status === '1-2h') {
+      return '🟡 Disponibile entro 1–2 ore';
+    }
+
+    if (status === 'oggi') {
+      return '🟠 Disponibile oggi';
+    }
+
+    return '⚫ Offline';
   }
 
   const averageRating =
@@ -1223,12 +1299,6 @@ export default function Home() {
             </h2>
           </div>
 
-          {acceptedLoading && (
-            <p>
-              Caricamento...
-            </p>
-          )}
-
           <div
             style={{
               display: 'grid',
@@ -1262,13 +1332,6 @@ export default function Home() {
                       {job.description}
                     </p>
 
-                    <p>
-                      <b>
-                        Urgenza:
-                      </b>{' '}
-                      {job.urgency.toUpperCase()}
-                    </p>
-
                     <button
                       className="full"
                       onClick={() =>
@@ -1288,7 +1351,6 @@ export default function Home() {
                         style={{
                           marginTop: 12
                         }}
-                        disabled={busy}
                         onClick={() =>
                           completeJob(
                             job.id
@@ -1316,25 +1378,12 @@ export default function Home() {
             <h2>
               Cosa dicono i clienti
             </h2>
-
-            <button
-              className="outline"
-              onClick={
-                loadProfessionalReviews
-              }
-              disabled={
-                reviewsLoading
-              }
-            >
-              ↻ Aggiorna
-            </button>
           </div>
 
           <div
             className="card"
             style={{
-              marginTop: 20,
-              maxWidth: '100%'
+              marginTop: 20
             }}
           >
             <h3>
@@ -1355,66 +1404,41 @@ export default function Home() {
             </p>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gap: 18,
-              marginTop: 20
-            }}
-          >
-            {professionalReviews.map(
-              review => (
-                <article
-                  key={
-                    review.review_id
-                  }
-                  className="card"
+          {professionalReviews.map(
+            review => (
+              <article
+                key={
+                  review.review_id
+                }
+                className="card"
+                style={{
+                  marginTop: 18
+                }}
+              >
+                <div
                   style={{
-                    maxWidth:
-                      '100%'
+                    fontSize: 20
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: 20,
-                      marginBottom: 10
-                    }}
-                  >
-                    {'⭐'.repeat(
-                      Number(
-                        review.rating
-                      )
-                    )}
-                  </div>
-
-                  <h3>
-                    {review.client_name ||
-                      'Cliente LavoroSubito'}
-                  </h3>
-
-                  {review.comment ? (
-                    <p>
-                      “{review.comment}”
-                    </p>
-                  ) : (
-                    <p>
-                      Nessun commento scritto.
-                    </p>
+                  {'⭐'.repeat(
+                    Number(
+                      review.rating
+                    )
                   )}
+                </div>
 
-                  {review.created_at && (
-                    <small>
-                      {new Date(
-                        review.created_at
-                      ).toLocaleDateString(
-                        'it-IT'
-                      )}
-                    </small>
-                  )}
-                </article>
-              )
-            )}
-          </div>
+                <h3>
+                  {review.client_name ||
+                    'Cliente LavoroSubito'}
+                </h3>
+
+                <p>
+                  {review.comment ||
+                    'Nessun commento scritto.'}
+                </p>
+              </article>
+            )
+          )}
         </section>
 
         <footer>
@@ -1425,7 +1449,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V11
+            © 2026 LavoroSubito · V12
           </small>
         </footer>
 
@@ -1444,14 +1468,6 @@ export default function Home() {
         </div>
 
         <nav>
-          <a href="#come">
-            Come funziona
-          </a>
-
-          <a href="#professionisti">
-            Professionisti
-          </a>
-
           {user ? (
             <button
               className="outline"
@@ -1477,7 +1493,6 @@ export default function Home() {
         <div>
           <label className="tag">
             ● INTERVENTI URGENTI
-            NELLA TUA ZONA
           </label>
 
           <h1>
@@ -1489,8 +1504,9 @@ export default function Home() {
           </h1>
 
           <p>
-            Trova professionisti
-            disponibili vicino a te.
+            Trova il professionista
+            più adatto disponibile
+            nella tua zona.
           </p>
         </div>
 
@@ -1565,7 +1581,7 @@ export default function Home() {
             }
           >
             {busy
-              ? 'Invio...'
+              ? 'Ricerca in corso...'
               : 'Trova chi è disponibile →'}
           </button>
 
@@ -1574,12 +1590,123 @@ export default function Home() {
               {message}
             </div>
           )}
+
+          {matchingLoading && (
+            <div
+              className="card"
+              style={{
+                marginTop: 20
+              }}
+            >
+              <h3>
+                🔎 Matching in corso...
+              </h3>
+
+              <p>
+                Stiamo cercando il
+                professionista migliore.
+              </p>
+            </div>
+          )}
+
+          {!matchingLoading &&
+            bestMatch && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 20,
+                  border:
+                    '2px solid #48b779'
+                }}
+              >
+                <label className="tag">
+                  MIGLIOR MATCH
+                </label>
+
+                <h2
+                  style={{
+                    marginTop: 12
+                  }}
+                >
+                  {bestMatch.professional_name}
+                </h2>
+
+                <div
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 800,
+                    margin:
+                      '15px 0'
+                  }}
+                >
+                  🎯 {bestMatch.match_score}/100
+                </div>
+
+                <p>
+                  <b>
+                    Disponibilità:
+                  </b>
+                  <br />
+                  {availabilityLabel(
+                    bestMatch.availability_status
+                  )}
+                </p>
+
+                <p>
+                  <b>
+                    Valutazione:
+                  </b>{' '}
+                  {Number(
+                    bestMatch.average_rating
+                  ) > 0
+                    ? `⭐ ${Number(
+                        bestMatch.average_rating
+                      ).toFixed(1)}`
+                    : 'Nuovo professionista'}
+                </p>
+
+                <p>
+                  <b>
+                    Recensioni:
+                  </b>{' '}
+                  {bestMatch.review_count}
+                </p>
+
+                <div className="success">
+                  ✓ Professionista compatibile
+                  trovato
+                </div>
+              </div>
+            )}
+
+          {!matchingLoading &&
+            !bestMatch &&
+            message.includes(
+              'Richiesta inviata'
+            ) && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 20
+                }}
+              >
+                <h3>
+                  Nessun professionista
+                  disponibile al momento
+                </h3>
+
+                <p>
+                  La richiesta resta aperta.
+                  Un professionista compatibile
+                  potrà comunque accettarla.
+                </p>
+              </div>
+            )}
         </div>
       </section>
 
       {user &&
-        profileRole ===
-          'cliente' && (
+        profileRole === 'cliente' && (
           <section className="section">
             <label className="tag">
               LE MIE RICHIESTE
@@ -1593,9 +1720,6 @@ export default function Home() {
               className="outline"
               onClick={
                 loadClientJobs
-              }
-              disabled={
-                clientJobsLoading
               }
             >
               ↻ Aggiorna
@@ -1654,16 +1778,8 @@ export default function Home() {
                           <>
                             <div className="success">
                               <b>
-                                {completed
-                                  ? '✅ Intervento completato'
-                                  : '🟢 Professionista trovato!'}
+                                {job.professional_name}
                               </b>
-
-                              <br />
-
-                              {
-                                job.professional_name
-                              }
                             </div>
 
                             <button
@@ -1738,35 +1854,20 @@ export default function Home() {
           </section>
         )}
 
-      <section
-        id="come"
-        className="section"
-      >
+      <section className="section">
         <label className="tag">
-          COME FUNZIONA
+          MATCHING INTELLIGENTE
         </label>
 
         <h2>
-          Dal problema alla soluzione.
+          Il professionista giusto,
+          più velocemente.
         </h2>
-      </section>
 
-      <section
-        id="professionisti"
-        className="proSection"
-      >
-        <div className="section">
-          <label className="tag light">
-            PER I PROFESSIONISTI
-          </label>
-
-          <h2>
-            Sei disponibile?{' '}
-            <span>
-              Fatti trovare.
-            </span>
-          </h2>
-        </div>
+        <p>
+          Il sistema considera categoria,
+          disponibilità e reputazione.
+        </p>
       </section>
 
       <footer>
@@ -1777,7 +1878,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V11
+          © 2026 LavoroSubito · V12
         </small>
       </footer>
 
