@@ -97,6 +97,12 @@ export default function Home() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatSending, setChatSending] = useState(false);
 
+  const [reviewJobId, setReviewJobId] = useState<string | null>(null);
+  const [reviewProfessionalName, setReviewProfessionalName] = useState('');
+  const [rating, setRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSending, setReviewSending] = useState(false);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
@@ -123,6 +129,7 @@ export default function Home() {
           setOnline(false);
           setChatJobId(null);
           setChatMessages([]);
+          setReviewJobId(null);
         }
       }
     );
@@ -302,7 +309,6 @@ export default function Home() {
     setChatTitle(title);
     setChatText('');
     setChatMessages([]);
-
     await loadChat(jobId);
   }
 
@@ -331,14 +337,12 @@ export default function Home() {
 
     setChatSending(true);
 
-    const text = chatText.trim();
-
     const { error } = await supabase
       .from('messages')
       .insert({
         job_id: chatJobId,
         sender_id: user.id,
-        message: text
+        message: chatText.trim()
       });
 
     if (error) {
@@ -356,6 +360,63 @@ export default function Home() {
     setChatTitle('');
     setChatMessages([]);
     setChatText('');
+  }
+
+  function openReview(jobId: string, professionalName: string) {
+    setReviewJobId(jobId);
+    setReviewProfessionalName(professionalName);
+    setRating(5);
+    setReviewComment('');
+  }
+
+  function closeReview() {
+    setReviewJobId(null);
+    setReviewProfessionalName('');
+    setRating(5);
+    setReviewComment('');
+  }
+
+  async function submitReview(e: FormEvent) {
+    e.preventDefault();
+
+    if (!reviewJobId) return;
+
+    setReviewSending(true);
+    setMessage('');
+
+    const { data, error } =
+      await supabase.rpc('create_review', {
+        p_job_id: reviewJobId,
+        p_rating: rating,
+        p_comment: reviewComment.trim() || null
+      });
+
+    if (error) {
+      if (
+        error.message
+          .toLowerCase()
+          .includes('già recensito')
+      ) {
+        setMessage('Hai già recensito questo intervento.');
+      } else {
+        setMessage(`Errore recensione: ${error.message}`);
+      }
+
+      setReviewSending(false);
+      return;
+    }
+
+    if (data === false) {
+      setMessage(
+        'Non è possibile recensire questo intervento.'
+      );
+      setReviewSending(false);
+      return;
+    }
+
+    setMessage('⭐ Recensione inviata correttamente.');
+    closeReview();
+    setReviewSending(false);
   }
 
   async function authSubmit(e: FormEvent) {
@@ -506,11 +567,6 @@ export default function Home() {
 
           <h2>{chatTitle || 'Intervento'}</h2>
 
-          <p>
-            Comunica direttamente con l'altra persona per organizzare
-            l'intervento.
-          </p>
-
           <div
             style={{
               maxHeight: 330,
@@ -525,9 +581,7 @@ export default function Home() {
 
             {!chatLoading && chatMessages.length === 0 && (
               <div className="card">
-                <p>
-                  Nessun messaggio. Inizia la conversazione.
-                </p>
+                <p>Nessun messaggio. Inizia la conversazione.</p>
               </div>
             )}
 
@@ -547,9 +601,7 @@ export default function Home() {
                 >
                   <b>{mine ? 'Tu' : 'Interlocutore'}</b>
 
-                  <p style={{ margin: '5px 0' }}>
-                    {m.message}
-                  </p>
+                  <p style={{ margin: '5px 0' }}>{m.message}</p>
 
                   <small>
                     {new Date(m.created_at).toLocaleString('it-IT')}
@@ -584,6 +636,83 @@ export default function Home() {
             ↻ Aggiorna chat
           </button>
         </div>
+      </div>
+    ) : null;
+
+  const ReviewModal = () =>
+    reviewJobId ? (
+      <div className="modal">
+        <form className="modalBox" onSubmit={submitReview}>
+          <button
+            type="button"
+            className="x"
+            onClick={closeReview}
+          >
+            ×
+          </button>
+
+          <label className="tag">RECENSIONE</label>
+
+          <h2>Come è andato l'intervento?</h2>
+
+          <p>
+            Valuta il lavoro di{' '}
+            <b>{reviewProfessionalName || 'professionista'}</b>.
+          </p>
+
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              fontSize: 34,
+              margin: '20px 0'
+            }}
+          >
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => setRating(star)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  padding: 0,
+                  fontSize: 34,
+                  cursor: 'pointer'
+                }}
+                aria-label={`${star} stelle`}
+              >
+                {star <= rating ? '⭐' : '☆'}
+              </button>
+            ))}
+          </div>
+
+          <p>
+            <b>{rating} / 5</b>
+          </p>
+
+          <textarea
+            value={reviewComment}
+            onChange={e => setReviewComment(e.target.value)}
+            placeholder="Scrivi un commento sull'intervento..."
+            maxLength={1000}
+            rows={5}
+            style={{
+              width: '100%',
+              marginTop: 10,
+              marginBottom: 15
+            }}
+          />
+
+          <button
+            className="full"
+            disabled={reviewSending}
+          >
+            {reviewSending
+              ? 'Invio recensione...'
+              : '⭐ Invia recensione'}
+          </button>
+        </form>
       </div>
     ) : null;
 
@@ -752,7 +881,7 @@ export default function Home() {
             <b>L</b> Lavoro<span>Subito</span>
           </div>
 
-          <small>© 2026 LavoroSubito · V7</small>
+          <small>© 2026 LavoroSubito · V8</small>
         </footer>
 
         <ChatModal />
@@ -973,6 +1102,21 @@ export default function Home() {
                           ✓ Intervento completato
                         </button>
                       )}
+
+                      {completed && (
+                        <button
+                          className="outline"
+                          style={{ marginTop: 12 }}
+                          onClick={() =>
+                            openReview(
+                              job.id,
+                              job.professional_name ?? 'Professionista'
+                            )
+                          }
+                        >
+                          ⭐ Lascia recensione
+                        </button>
+                      )}
                     </>
                   )}
                 </article>
@@ -994,8 +1138,8 @@ export default function Home() {
         </div>
 
         <div>
-          <b>V7</b>
-          <small>matching + chat + completamento</small>
+          <b>V8</b>
+          <small>chat + completamento + recensioni</small>
         </div>
       </section>
 
@@ -1008,24 +1152,20 @@ export default function Home() {
           <article>
             <i>01</i>
             <h3>Descrivi</h3>
-            <p>
-              Scegli il servizio e racconta cosa è successo.
-            </p>
+            <p>Scegli il servizio e racconta cosa è successo.</p>
           </article>
 
           <article>
             <i>02</i>
             <h3>Trova</h3>
-            <p>
-              Troviamo un professionista disponibile.
-            </p>
+            <p>Troviamo un professionista disponibile.</p>
           </article>
 
           <article>
             <i>03</i>
             <h3>Risolvi</h3>
             <p>
-              Contattalo tramite chat e completa l'intervento.
+              Completa l'intervento e lascia una recensione.
             </p>
           </article>
         </div>
@@ -1065,7 +1205,7 @@ export default function Home() {
           <b>L</b> Lavoro<span>Subito</span>
         </div>
 
-        <small>© 2026 LavoroSubito · V7</small>
+        <small>© 2026 LavoroSubito · V8</small>
       </footer>
 
       {authOpen && (
@@ -1131,10 +1271,7 @@ export default function Home() {
               onChange={e => setPassword(e.target.value)}
             />
 
-            <button
-              className="full"
-              disabled={busy}
-            >
+            <button className="full" disabled={busy}>
               {busy
                 ? 'Attendi...'
                 : authMode === 'signup'
@@ -1164,6 +1301,7 @@ export default function Home() {
       )}
 
       <ChatModal />
+      <ReviewModal />
     </main>
   );
 }
