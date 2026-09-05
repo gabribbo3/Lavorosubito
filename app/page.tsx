@@ -253,11 +253,56 @@ export default function Home() {
     setBusy(false);
   }
 
+  async function completeJob(jobId: string) {
+    if (!user) return;
+
+    const confirmComplete = window.confirm(
+      'Confermi che l’intervento è stato completato?'
+    );
+
+    if (!confirmComplete) return;
+
+    setBusy(true);
+    setMessage('');
+
+    const { data, error } =
+      await supabase.rpc('complete_job', {
+        p_job_id: jobId
+      });
+
+    if (error) {
+      setMessage(
+        `Errore completamento intervento: ${error.message}`
+      );
+      setBusy(false);
+      return;
+    }
+
+    if (data === false) {
+      setMessage(
+        'Non è stato possibile completare questo intervento.'
+      );
+      setBusy(false);
+      return;
+    }
+
+    setMessage('✓ Intervento completato.');
+
+    if (profileRole === 'professionista') {
+      await loadAcceptedJobs();
+    } else {
+      await loadClientJobs();
+    }
+
+    setBusy(false);
+  }
+
   async function openChat(jobId: string, title: string) {
     setChatJobId(jobId);
     setChatTitle(title);
     setChatText('');
     setChatMessages([]);
+
     await loadChat(jobId);
   }
 
@@ -429,6 +474,7 @@ export default function Home() {
       setMessage(`Errore disponibilità: ${error.message}`);
     } else {
       setOnline(next);
+
       setMessage(
         next
           ? '🟢 Ora risulti disponibile.'
@@ -647,35 +693,57 @@ export default function Home() {
           {acceptedLoading && <p>Caricamento...</p>}
 
           <div style={{ display: 'grid', gap: 18, marginTop: 20 }}>
-            {acceptedJobs.map(job => (
-              <article key={job.id} className="card">
-                <div className="live">🟢 ACCETTATO</div>
+            {acceptedJobs.map(job => {
+              const completed = job.status === 'completata';
 
-                <h3>{job.category_name ?? 'Intervento'}</h3>
+              return (
+                <article key={job.id} className="card">
+                  <div className="live">
+                    {completed
+                      ? '✅ COMPLETATO'
+                      : '🟢 ACCETTATO'}
+                  </div>
 
-                <p>{job.description}</p>
+                  <h3>{job.category_name ?? 'Intervento'}</h3>
 
-                <p>
-                  <b>Urgenza:</b> {job.urgency.toUpperCase()}
-                </p>
+                  <p>{job.description}</p>
 
-                <p>
-                  <b>Stato:</b> Preso in carico
-                </p>
+                  <p>
+                    <b>Urgenza:</b> {job.urgency.toUpperCase()}
+                  </p>
 
-                <button
-                  className="full"
-                  onClick={() =>
-                    openChat(
-                      job.id,
-                      job.category_name ?? 'Intervento'
-                    )
-                  }
-                >
-                  💬 Apri chat
-                </button>
-              </article>
-            ))}
+                  <p>
+                    <b>Stato:</b>{' '}
+                    {completed
+                      ? 'Intervento completato'
+                      : 'Preso in carico'}
+                  </p>
+
+                  <button
+                    className="full"
+                    onClick={() =>
+                      openChat(
+                        job.id,
+                        job.category_name ?? 'Intervento'
+                      )
+                    }
+                  >
+                    💬 Apri chat
+                  </button>
+
+                  {!completed && (
+                    <button
+                      className="outline"
+                      style={{ marginTop: 12 }}
+                      disabled={busy}
+                      onClick={() => completeJob(job.id)}
+                    >
+                      ✓ Intervento completato
+                    </button>
+                  )}
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -683,7 +751,8 @@ export default function Home() {
           <div className="logo">
             <b>L</b> Lavoro<span>Subito</span>
           </div>
-          <small>© 2026 LavoroSubito · V6</small>
+
+          <small>© 2026 LavoroSubito · V7</small>
         </footer>
 
         <ChatModal />
@@ -828,14 +897,21 @@ export default function Home() {
 
           <div style={{ display: 'grid', gap: 18, marginTop: 20 }}>
             {clientJobs.map(job => {
-              const accepted = job.status === 'accettata';
+              const accepted =
+                job.status === 'accettata' ||
+                job.status === 'completata';
+
+              const completed =
+                job.status === 'completata';
 
               return (
                 <article key={job.id} className="card">
                   <div className="live">
-                    {accepted
-                      ? '🟢 PROFESSIONISTA TROVATO'
-                      : '🔴 RICERCA IN CORSO'}
+                    {completed
+                      ? '✅ INTERVENTO COMPLETATO'
+                      : accepted
+                        ? '🟢 PROFESSIONISTA TROVATO'
+                        : '🔴 RICERCA IN CORSO'}
                   </div>
 
                   <h3>{job.category_name ?? 'Intervento'}</h3>
@@ -848,18 +924,28 @@ export default function Home() {
 
                   <p>
                     <b>Stato:</b>{' '}
-                    {accepted
-                      ? 'Presa in carico'
-                      : 'In attesa di un professionista'}
+                    {completed
+                      ? 'Intervento completato'
+                      : accepted
+                        ? 'Presa in carico'
+                        : 'In attesa di un professionista'}
                   </p>
 
                   {accepted && job.professional_name && (
                     <>
                       <div className="success">
-                        <b>🟢 Professionista trovato!</b>
+                        <b>
+                          {completed
+                            ? '✅ Intervento completato'
+                            : '🟢 Professionista trovato!'}
+                        </b>
+
                         <br />
-                        {job.professional_name} ha accettato la tua
-                        richiesta.
+
+                        {job.professional_name}
+                        {completed
+                          ? ' ha completato questo intervento.'
+                          : ' ha accettato la tua richiesta.'}
                       </div>
 
                       <button
@@ -876,6 +962,17 @@ export default function Home() {
                       >
                         💬 Apri chat con {job.professional_name}
                       </button>
+
+                      {!completed && (
+                        <button
+                          className="outline"
+                          style={{ marginTop: 12 }}
+                          disabled={busy}
+                          onClick={() => completeJob(job.id)}
+                        >
+                          ✓ Intervento completato
+                        </button>
+                      )}
                     </>
                   )}
                 </article>
@@ -897,8 +994,8 @@ export default function Home() {
         </div>
 
         <div>
-          <b>V6</b>
-          <small>matching + chat</small>
+          <b>V7</b>
+          <small>matching + chat + completamento</small>
         </div>
       </section>
 
@@ -911,26 +1008,34 @@ export default function Home() {
           <article>
             <i>01</i>
             <h3>Descrivi</h3>
-            <p>Scegli il servizio e racconta cosa è successo.</p>
+            <p>
+              Scegli il servizio e racconta cosa è successo.
+            </p>
           </article>
 
           <article>
             <i>02</i>
             <h3>Trova</h3>
-            <p>Troviamo un professionista disponibile.</p>
+            <p>
+              Troviamo un professionista disponibile.
+            </p>
           </article>
 
           <article>
             <i>03</i>
             <h3>Risolvi</h3>
-            <p>Contattalo tramite chat e organizza l'intervento.</p>
+            <p>
+              Contattalo tramite chat e completa l'intervento.
+            </p>
           </article>
         </div>
       </section>
 
       <section id="professionisti" className="proSection">
         <div className="section">
-          <label className="tag light">PER I PROFESSIONISTI</label>
+          <label className="tag light">
+            PER I PROFESSIONISTI
+          </label>
 
           <h2>
             Sei disponibile? <span>Fatti trovare.</span>
@@ -959,7 +1064,8 @@ export default function Home() {
         <div className="logo">
           <b>L</b> Lavoro<span>Subito</span>
         </div>
-        <small>© 2026 LavoroSubito · V6</small>
+
+        <small>© 2026 LavoroSubito · V7</small>
       </footer>
 
       {authOpen && (
@@ -974,7 +1080,9 @@ export default function Home() {
             </button>
 
             <label className="tag">
-              {authMode === 'signup' ? 'REGISTRAZIONE' : 'ACCESSO'}
+              {authMode === 'signup'
+                ? 'REGISTRAZIONE'
+                : 'ACCESSO'}
             </label>
 
             <h2>
@@ -1023,7 +1131,10 @@ export default function Home() {
               onChange={e => setPassword(e.target.value)}
             />
 
-            <button className="full" disabled={busy}>
+            <button
+              className="full"
+              disabled={busy}
+            >
               {busy
                 ? 'Attendi...'
                 : authMode === 'signup'
@@ -1036,7 +1147,9 @@ export default function Home() {
               className="outline"
               onClick={() =>
                 setAuthMode(
-                  authMode === 'signup' ? 'login' : 'signup'
+                  authMode === 'signup'
+                    ? 'login'
+                    : 'signup'
                 )
               }
             >
