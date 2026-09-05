@@ -97,7 +97,7 @@ export default function Home() {
       return;
     }
 
-    const detectedRole =
+    const detectedRole: AppRole =
       data.role === 'professionista'
         ? 'professionista'
         : 'cliente';
@@ -149,6 +149,42 @@ export default function Home() {
     setJobsLoading(false);
   }
 
+  async function acceptJob(jobId: string) {
+    if (!user) {
+      setMessage('Devi essere autenticato.');
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+
+    const { data, error } = await supabase.rpc('accept_job', {
+      p_job_id: jobId
+    });
+
+    if (error) {
+      setMessage(`Errore accettazione: ${error.message}`);
+      setBusy(false);
+      return;
+    }
+
+    if (data === false) {
+      setMessage(
+        'Questo lavoro è già stato accettato da un altro professionista.'
+      );
+
+      await loadJobs();
+      setBusy(false);
+      return;
+    }
+
+    setMessage('✓ Lavoro accettato correttamente.');
+
+    await loadJobs();
+
+    setBusy(false);
+  }
+
   async function authSubmit(e: FormEvent) {
     e.preventDefault();
 
@@ -198,9 +234,7 @@ export default function Home() {
 
   async function submitJob() {
     if (!cat || !description.trim()) {
-      setMessage(
-        'Scegli una categoria e descrivi il problema.'
-      );
+      setMessage('Scegli una categoria e descrivi il problema.');
       return;
     }
 
@@ -208,9 +242,7 @@ export default function Home() {
       setRole('cliente');
       setAuthMode('signup');
       setAuthOpen(true);
-      setMessage(
-        'Registrati o accedi per inviare la richiesta.'
-      );
+      setMessage('Registrati o accedi per inviare la richiesta.');
       return;
     }
 
@@ -242,9 +274,7 @@ export default function Home() {
     if (error) {
       setMessage(`Errore: ${error.message}`);
     } else {
-      setMessage(
-        '✓ Richiesta inviata e salvata nel database.'
-      );
+      setMessage('✓ Richiesta inviata e salvata nel database.');
       setDescription('');
     }
 
@@ -268,9 +298,7 @@ export default function Home() {
       });
 
     if (error) {
-      setMessage(
-        `Errore disponibilità: ${error.message}`
-      );
+      setMessage(`Errore disponibilità: ${error.message}`);
     } else {
       setOnline(next);
 
@@ -297,10 +325,7 @@ export default function Home() {
             <b>L</b> Lavoro<span>Subito</span>
           </div>
 
-          <button
-            className="outline"
-            onClick={logout}
-          >
+          <button className="outline" onClick={logout}>
             Esci
           </button>
         </header>
@@ -312,17 +337,12 @@ export default function Home() {
             minHeight: '75vh'
           }}
         >
-          <label className="tag">
-            AREA PROFESSIONISTA
-          </label>
+          <label className="tag">AREA PROFESSIONISTA</label>
 
-          <h2>
-            Ciao {fullName || 'Professionista'}.
-          </h2>
+          <h2>Ciao {fullName || 'Professionista'}.</h2>
 
           <p>
-            Gestisci la tua disponibilità e visualizza
-            le richieste urgenti.
+            Gestisci la tua disponibilità e visualizza le richieste urgenti.
           </p>
 
           <div
@@ -330,28 +350,18 @@ export default function Home() {
             style={{ marginTop: 30 }}
           >
             <div>
-              <div className="avatar">
-                PRO
-              </div>
+              <div className="avatar">PRO</div>
 
-              <h3>
-                {fullName || user.email}
-              </h3>
+              <h3>{fullName || user.email}</h3>
 
-              <p>
-                {user.email}
-              </p>
+              <p>{user.email}</p>
             </div>
 
             <div className="switchLine">
               <span>Disponibilità</span>
 
               <button
-                className={
-                  online
-                    ? 'switch on'
-                    : 'switch'
-                }
+                className={online ? 'switch on' : 'switch'}
                 onClick={toggleAvailability}
                 disabled={busy}
               >
@@ -385,48 +395,39 @@ export default function Home() {
             }}
           >
             <div>
-              <label className="tag">
-                RICHIESTE LIVE
-              </label>
+              <label className="tag">RICHIESTE LIVE</label>
 
-              <h2>
-                Lavori disponibili
-              </h2>
+              <h2>Lavori disponibili</h2>
             </div>
 
             <button
               className="outline"
               onClick={loadJobs}
+              disabled={jobsLoading}
             >
               ↻ Aggiorna
             </button>
           </div>
 
           {jobsLoading && (
-            <p>
-              Caricamento richieste...
-            </p>
+            <p>Caricamento richieste...</p>
           )}
 
-          {!jobsLoading &&
-            jobs.length === 0 && (
-              <div
-                className="card"
-                style={{
-                  marginTop: 20,
-                  maxWidth: '100%'
-                }}
-              >
-                <h3>
-                  Nessuna richiesta disponibile
-                </h3>
+          {!jobsLoading && jobs.length === 0 && (
+            <div
+              className="card"
+              style={{
+                marginTop: 20,
+                maxWidth: '100%'
+              }}
+            >
+              <h3>Nessuna richiesta disponibile</h3>
 
-                <p>
-                  Quando arriveranno nuove richieste
-                  aperte compariranno qui.
-                </p>
-              </div>
-            )}
+              <p>
+                Quando arriveranno nuove richieste aperte compariranno qui.
+              </p>
+            </div>
+          )}
 
           <div
             style={{
@@ -448,13 +449,10 @@ export default function Home() {
                 </div>
 
                 <h3>
-                  {job.categories?.name ??
-                    'Intervento'}
+                  {job.categories?.name ?? 'Intervento'}
                 </h3>
 
-                <p>
-                  {job.description}
-                </p>
+                <p>{job.description}</p>
 
                 <p>
                   <b>Urgenza:</b>{' '}
@@ -463,13 +461,14 @@ export default function Home() {
 
                 <button
                   className="full"
-                  onClick={() =>
-                    setMessage(
-                      'Richiesta selezionata. Il pulsante di accettazione reale verrà attivato nel prossimo passaggio.'
-                    )
-                  }
+                  disabled={busy || !online}
+                  onClick={() => acceptJob(job.id)}
                 >
-                  Accetta lavoro →
+                  {busy
+                    ? 'Attendi...'
+                    : online
+                      ? 'Accetta lavoro →'
+                      : 'Vai online per accettare'}
                 </button>
               </article>
             ))}
@@ -497,13 +496,9 @@ export default function Home() {
         </div>
 
         <nav>
-          <a href="#come">
-            Come funziona
-          </a>
+          <a href="#come">Come funziona</a>
 
-          <a href="#professionisti">
-            Professionisti
-          </a>
+          <a href="#professionisti">Professionisti</a>
 
           {user ? (
             <button
@@ -535,9 +530,7 @@ export default function Home() {
           <h1>
             Un problema?
             <br />
-            <span>
-              Risolviamolo subito.
-            </span>
+            <span>Risolviamolo subito.</span>
           </h1>
 
           <p>
@@ -570,8 +563,7 @@ export default function Home() {
           </div>
 
           <div className="checks">
-            ✓ Disponibilità in tempo reale　✓ Profili
-            verificati　✓ Recensioni
+            ✓ Disponibilità in tempo reale　✓ Profili verificati　✓ Recensioni
           </div>
         </div>
 
@@ -583,9 +575,7 @@ export default function Home() {
             ● LIVE REQUEST
           </div>
 
-          <h2>
-            Di cosa hai bisogno?
-          </h2>
+          <h2>Di cosa hai bisogno?</h2>
 
           <p>
             Scegli il servizio e indica l'urgenza.
@@ -602,10 +592,7 @@ export default function Home() {
                 }
                 onClick={() => setCat(c)}
               >
-                <strong>
-                  {icons[i]}
-                </strong>
-
+                <strong>{icons[i]}</strong>
                 {c}
               </button>
             ))}
@@ -656,23 +643,17 @@ export default function Home() {
       <section className="stats">
         <div>
           <b>30 sec</b>
-          <small>
-            per creare una richiesta
-          </small>
+          <small>per creare una richiesta</small>
         </div>
 
         <div>
           <b>🟢 LIVE</b>
-          <small>
-            disponibilità professionisti
-          </small>
+          <small>disponibilità professionisti</small>
         </div>
 
         <div>
           <b>V3</b>
-          <small>
-            cliente + professionista
-          </small>
+          <small>cliente + professionista</small>
         </div>
       </section>
 
@@ -701,8 +682,7 @@ export default function Home() {
             <i>02</i>
             <h3>Trova</h3>
             <p>
-              Il sistema cerca professionisti compatibili
-              e disponibili.
+              Il sistema cerca professionisti compatibili e disponibili.
             </p>
           </article>
 
@@ -727,14 +707,11 @@ export default function Home() {
 
           <h2>
             Sei disponibile?{' '}
-            <span>
-              Fatti trovare.
-            </span>
+            <span>Fatti trovare.</span>
           </h2>
 
           <p>
-            Crea un profilo professionista, imposta la
-            disponibilità e ricevi richieste urgenti.
+            Crea un profilo professionista, imposta la disponibilità e ricevi richieste urgenti.
           </p>
 
           {!user && (
@@ -869,9 +846,7 @@ export default function Home() {
             </button>
 
             {message && (
-              <small>
-                {message}
-              </small>
+              <small>{message}</small>
             )}
           </form>
         </div>
