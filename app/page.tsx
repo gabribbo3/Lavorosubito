@@ -33,11 +33,22 @@ type Job = {
   } | null;
 };
 
+type AcceptedJob = {
+  id: string;
+  description: string;
+  urgency: string;
+  status: string;
+  created_at?: string;
+  category_name?: string | null;
+};
+
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
 
   const [role, setRole] = useState<AppRole>('cliente');
-  const [profileRole, setProfileRole] = useState<AppRole | null>(null);
+  const [profileRole, setProfileRole] =
+    useState<AppRole | null>(null);
+
   const [fullName, setFullName] = useState('');
 
   const [cat, setCat] = useState('');
@@ -48,15 +59,23 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
 
   const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [authMode, setAuthMode] =
+    useState<'login' | 'signup'>('signup');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [online, setOnline] = useState(false);
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
+
+  const [acceptedJobs, setAcceptedJobs] =
+    useState<AcceptedJob[]>([]);
+
+  const [acceptedLoading, setAcceptedLoading] =
+    useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -67,22 +86,28 @@ export default function Home() {
       }
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentUser = session?.user ?? null;
+    const { data } =
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          const currentUser =
+            session?.user ?? null;
 
-      setUser(currentUser);
+          setUser(currentUser);
 
-      if (currentUser) {
-        loadProfile(currentUser.id);
-      } else {
-        setProfileRole(null);
-        setFullName('');
-        setJobs([]);
-        setOnline(false);
-      }
-    });
+          if (currentUser) {
+            loadProfile(currentUser.id);
+          } else {
+            setProfileRole(null);
+            setFullName('');
+            setJobs([]);
+            setAcceptedJobs([]);
+            setOnline(false);
+          }
+        }
+      );
 
-    return () => data.subscription.unsubscribe();
+    return () =>
+      data.subscription.unsubscribe();
   }, []);
 
   async function loadProfile(userId: string) {
@@ -108,10 +133,13 @@ export default function Home() {
     if (detectedRole === 'professionista') {
       await loadAvailability(userId);
       await loadJobs();
+      await loadAcceptedJobs();
     }
   }
 
-  async function loadAvailability(userId: string) {
+  async function loadAvailability(
+    userId: string
+  ) {
     const { data } = await supabase
       .from('availability')
       .select('status')
@@ -137,33 +165,72 @@ export default function Home() {
         )
       `)
       .eq('status', 'aperta')
-      .order('created_at', { ascending: false });
+      .order('created_at', {
+        ascending: false
+      });
 
     if (error) {
-      setMessage(`Errore caricamento richieste: ${error.message}`);
+      setMessage(
+        `Errore caricamento richieste: ${error.message}`
+      );
+
       setJobs([]);
     } else {
-      setJobs((data ?? []) as unknown as Job[]);
+      setJobs(
+        (data ?? []) as unknown as Job[]
+      );
     }
 
     setJobsLoading(false);
   }
 
+  async function loadAcceptedJobs() {
+    setAcceptedLoading(true);
+
+    const { data, error } =
+      await supabase.rpc(
+        'my_accepted_jobs'
+      );
+
+    if (error) {
+      setMessage(
+        `Errore caricamento lavori accettati: ${error.message}`
+      );
+
+      setAcceptedJobs([]);
+    } else {
+      setAcceptedJobs(
+        (data ?? []) as AcceptedJob[]
+      );
+    }
+
+    setAcceptedLoading(false);
+  }
+
   async function acceptJob(jobId: string) {
     if (!user) {
-      setMessage('Devi essere autenticato.');
+      setMessage(
+        'Devi essere autenticato.'
+      );
       return;
     }
 
     setBusy(true);
     setMessage('');
 
-    const { data, error } = await supabase.rpc('accept_job', {
-      p_job_id: jobId
-    });
+    const { data, error } =
+      await supabase.rpc(
+        'accept_job',
+        {
+          p_job_id: jobId
+        }
+      );
 
     if (error) {
-      setMessage(`Errore accettazione: ${error.message}`);
+      setMessage(
+        `Errore accettazione: ${error.message}`
+      );
+
       setBusy(false);
       return;
     }
@@ -174,34 +241,41 @@ export default function Home() {
       );
 
       await loadJobs();
+
       setBusy(false);
       return;
     }
 
-    setMessage('✓ Lavoro accettato correttamente.');
+    setMessage(
+      '✓ Lavoro accettato correttamente.'
+    );
 
     await loadJobs();
+    await loadAcceptedJobs();
 
     setBusy(false);
   }
 
-  async function authSubmit(e: FormEvent) {
+  async function authSubmit(
+    e: FormEvent
+  ) {
     e.preventDefault();
 
     setBusy(true);
     setMessage('');
 
     if (authMode === 'signup') {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            role
+      const { error } =
+        await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+              role
+            }
           }
-        }
-      });
+        });
 
       if (error) {
         setMessage(error.message);
@@ -212,19 +286,25 @@ export default function Home() {
       }
     } else {
       const { data, error } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
+        await supabase.auth
+          .signInWithPassword({
+            email,
+            password
+          });
 
       if (error) {
         setMessage(error.message);
       } else {
-        setMessage('Accesso effettuato.');
+        setMessage(
+          'Accesso effettuato.'
+        );
+
         setAuthOpen(false);
 
         if (data.user) {
-          await loadProfile(data.user.id);
+          await loadProfile(
+            data.user.id
+          );
         }
       }
     }
@@ -233,8 +313,13 @@ export default function Home() {
   }
 
   async function submitJob() {
-    if (!cat || !description.trim()) {
-      setMessage('Scegli una categoria e descrivi il problema.');
+    if (
+      !cat ||
+      !description.trim()
+    ) {
+      setMessage(
+        'Scegli una categoria e descrivi il problema.'
+      );
       return;
     }
 
@@ -242,39 +327,60 @@ export default function Home() {
       setRole('cliente');
       setAuthMode('signup');
       setAuthOpen(true);
-      setMessage('Registrati o accedi per inviare la richiesta.');
+
+      setMessage(
+        'Registrati o accedi per inviare la richiesta.'
+      );
+
       return;
     }
 
     setBusy(true);
     setMessage('');
 
-    const { data: category, error: categoryError } =
-      await supabase
-        .from('categories')
-        .select('id')
-        .eq('slug', slug(cat))
-        .single();
+    const {
+      data: category,
+      error: categoryError
+    } = await supabase
+      .from('categories')
+      .select('id')
+      .eq('slug', slug(cat))
+      .single();
 
-    if (categoryError || !category) {
-      setMessage('Categoria non trovata.');
+    if (
+      categoryError ||
+      !category
+    ) {
+      setMessage(
+        'Categoria non trovata.'
+      );
+
       setBusy(false);
       return;
     }
 
-    const { error } = await supabase
-      .from('jobs')
-      .insert({
-        client_id: user.id,
-        category_id: category.id,
-        urgency: urg.toLowerCase(),
-        description: description.trim()
-      });
+    const { error } =
+      await supabase
+        .from('jobs')
+        .insert({
+          client_id: user.id,
+          category_id:
+            category.id,
+          urgency:
+            urg.toLowerCase(),
+          description:
+            description.trim()
+        });
 
     if (error) {
-      setMessage(`Errore: ${error.message}`);
+      setMessage(
+        `Errore: ${error.message}`
+      );
     } else {
-      setMessage('✓ Richiesta inviata e salvata nel database.');
+      setMessage(
+        '✓ Richiesta inviata e salvata nel database.'
+      );
+
       setDescription('');
     }
 
@@ -289,16 +395,23 @@ export default function Home() {
     setBusy(true);
     setMessage('');
 
-    const { error } = await supabase
-      .from('availability')
-      .upsert({
-        professional_id: user.id,
-        status: next ? 'ora' : 'offline',
-        updated_at: new Date().toISOString()
-      });
+    const { error } =
+      await supabase
+        .from('availability')
+        .upsert({
+          professional_id:
+            user.id,
+          status: next
+            ? 'ora'
+            : 'offline',
+          updated_at:
+            new Date().toISOString()
+        });
 
     if (error) {
-      setMessage(`Errore disponibilità: ${error.message}`);
+      setMessage(
+        `Errore disponibilità: ${error.message}`
+      );
     } else {
       setOnline(next);
 
@@ -312,20 +425,33 @@ export default function Home() {
     setBusy(false);
   }
 
+  async function refreshProfessional() {
+    await loadJobs();
+    await loadAcceptedJobs();
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     setMessage('');
   }
 
-  if (user && profileRole === 'professionista') {
+  if (
+    user &&
+    profileRole ===
+      'professionista'
+  ) {
     return (
       <main>
         <header>
           <div className="logo">
-            <b>L</b> Lavoro<span>Subito</span>
+            <b>L</b>{' '}
+            Lavoro<span>Subito</span>
           </div>
 
-          <button className="outline" onClick={logout}>
+          <button
+            className="outline"
+            onClick={logout}
+          >
             Esci
           </button>
         </header>
@@ -337,32 +463,56 @@ export default function Home() {
             minHeight: '75vh'
           }}
         >
-          <label className="tag">AREA PROFESSIONISTA</label>
+          <label className="tag">
+            AREA PROFESSIONISTA
+          </label>
 
-          <h2>Ciao {fullName || 'Professionista'}.</h2>
+          <h2>
+            Ciao{' '}
+            {fullName ||
+              'Professionista'}.
+          </h2>
 
           <p>
-            Gestisci la tua disponibilità e visualizza le richieste urgenti.
+            Gestisci la tua
+            disponibilità e
+            visualizza le richieste
+            urgenti.
           </p>
 
           <div
             className="proPanel"
-            style={{ marginTop: 30 }}
+            style={{
+              marginTop: 30
+            }}
           >
             <div>
-              <div className="avatar">PRO</div>
+              <div className="avatar">
+                PRO
+              </div>
 
-              <h3>{fullName || user.email}</h3>
+              <h3>
+                {fullName ||
+                  user.email}
+              </h3>
 
               <p>{user.email}</p>
             </div>
 
             <div className="switchLine">
-              <span>Disponibilità</span>
+              <span>
+                Disponibilità
+              </span>
 
               <button
-                className={online ? 'switch on' : 'switch'}
-                onClick={toggleAvailability}
+                className={
+                  online
+                    ? 'switch on'
+                    : 'switch'
+                }
+                onClick={
+                  toggleAvailability
+                }
                 disabled={busy}
               >
                 <span />
@@ -379,7 +529,9 @@ export default function Home() {
           {message && (
             <div
               className="success"
-              style={{ marginTop: 20 }}
+              style={{
+                marginTop: 20
+              }}
             >
               {message}
             </div>
@@ -389,45 +541,65 @@ export default function Home() {
             style={{
               marginTop: 50,
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent:
+                'space-between',
               alignItems: 'center',
               gap: 15
             }}
           >
             <div>
-              <label className="tag">RICHIESTE LIVE</label>
+              <label className="tag">
+                RICHIESTE LIVE
+              </label>
 
-              <h2>Lavori disponibili</h2>
+              <h2>
+                Lavori disponibili
+              </h2>
             </div>
 
             <button
               className="outline"
-              onClick={loadJobs}
-              disabled={jobsLoading}
+              onClick={
+                refreshProfessional
+              }
+              disabled={
+                jobsLoading ||
+                acceptedLoading
+              }
             >
               ↻ Aggiorna
             </button>
           </div>
 
           {jobsLoading && (
-            <p>Caricamento richieste...</p>
+            <p>
+              Caricamento
+              richieste...
+            </p>
           )}
 
-          {!jobsLoading && jobs.length === 0 && (
-            <div
-              className="card"
-              style={{
-                marginTop: 20,
-                maxWidth: '100%'
-              }}
-            >
-              <h3>Nessuna richiesta disponibile</h3>
+          {!jobsLoading &&
+            jobs.length === 0 && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 20,
+                  maxWidth: '100%'
+                }}
+              >
+                <h3>
+                  Nessuna richiesta
+                  disponibile
+                </h3>
 
-              <p>
-                Quando arriveranno nuove richieste aperte compariranno qui.
-              </p>
-            </div>
-          )}
+                <p>
+                  Quando arriveranno
+                  nuove richieste
+                  aperte compariranno
+                  qui.
+                </p>
+              </div>
+            )}
 
           <div
             style={{
@@ -449,20 +621,29 @@ export default function Home() {
                 </div>
 
                 <h3>
-                  {job.categories?.name ?? 'Intervento'}
+                  {job.categories
+                    ?.name ??
+                    'Intervento'}
                 </h3>
 
-                <p>{job.description}</p>
+                <p>
+                  {job.description}
+                </p>
 
                 <p>
                   <b>Urgenza:</b>{' '}
-                  {job.urgency.toUpperCase()}
+                  {job.urgency
+                    .toUpperCase()}
                 </p>
 
                 <button
                   className="full"
-                  disabled={busy || !online}
-                  onClick={() => acceptJob(job.id)}
+                  disabled={
+                    busy || !online
+                  }
+                  onClick={() =>
+                    acceptJob(job.id)
+                  }
                 >
                   {busy
                     ? 'Attendi...'
@@ -473,15 +654,112 @@ export default function Home() {
               </article>
             ))}
           </div>
+
+          <div
+            style={{
+              marginTop: 70
+            }}
+          >
+            <label className="tag">
+              I MIEI LAVORI
+            </label>
+
+            <h2>
+              Lavori accettati
+            </h2>
+
+            <p>
+              Qui trovi le richieste
+              che hai già preso in
+              carico.
+            </p>
+          </div>
+
+          {acceptedLoading && (
+            <p>
+              Caricamento lavori
+              accettati...
+            </p>
+          )}
+
+          {!acceptedLoading &&
+            acceptedJobs.length ===
+              0 && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 20,
+                  maxWidth: '100%'
+                }}
+              >
+                <h3>
+                  Nessun lavoro
+                  accettato
+                </h3>
+
+                <p>
+                  I lavori che
+                  accetterai
+                  compariranno qui.
+                </p>
+              </div>
+            )}
+
+          <div
+            style={{
+              display: 'grid',
+              gap: 18,
+              marginTop: 20
+            }}
+          >
+            {acceptedJobs.map(
+              job => (
+                <article
+                  key={job.id}
+                  className="card"
+                  style={{
+                    maxWidth:
+                      '100%'
+                  }}
+                >
+                  <div className="live">
+                    🟢 ACCETTATO
+                  </div>
+
+                  <h3>
+                    {job.category_name ??
+                      'Intervento'}
+                  </h3>
+
+                  <p>
+                    {job.description}
+                  </p>
+
+                  <p>
+                    <b>Urgenza:</b>{' '}
+                    {job.urgency
+                      .toUpperCase()}
+                  </p>
+
+                  <p>
+                    <b>Stato:</b>{' '}
+                    Preso in carico
+                  </p>
+                </article>
+              )
+            )}
+          </div>
         </section>
 
         <footer>
           <div className="logo">
-            <b>L</b> Lavoro<span>Subito</span>
+            <b>L</b>{' '}
+            Lavoro<span>Subito</span>
           </div>
 
           <small>
-            © 2026 LavoroSubito · V3
+            © 2026 LavoroSubito ·
+            V4
           </small>
         </footer>
       </main>
@@ -492,13 +770,18 @@ export default function Home() {
     <main>
       <header>
         <div className="logo">
-          <b>L</b> Lavoro<span>Subito</span>
+          <b>L</b>{' '}
+          Lavoro<span>Subito</span>
         </div>
 
         <nav>
-          <a href="#come">Come funziona</a>
+          <a href="#come">
+            Come funziona
+          </a>
 
-          <a href="#professionisti">Professionisti</a>
+          <a href="#professionisti">
+            Professionisti
+          </a>
 
           {user ? (
             <button
@@ -511,7 +794,9 @@ export default function Home() {
             <button
               className="outline"
               onClick={() => {
-                setAuthMode('login');
+                setAuthMode(
+                  'login'
+                );
                 setAuthOpen(true);
               }}
             >
@@ -524,18 +809,23 @@ export default function Home() {
       <section className="hero">
         <div>
           <label className="tag">
-            ● INTERVENTI URGENTI NELLA TUA ZONA
+            ● INTERVENTI URGENTI
+            NELLA TUA ZONA
           </label>
 
           <h1>
             Un problema?
             <br />
-            <span>Risolviamolo subito.</span>
+            <span>
+              Risolviamolo subito.
+            </span>
           </h1>
 
           <p>
-            Trova professionisti disponibili vicino a te.
-            Una richiesta, un match, un intervento.
+            Trova professionisti
+            disponibili vicino a te.
+            Una richiesta, un match,
+            un intervento.
           </p>
 
           <div className="actions">
@@ -543,27 +833,37 @@ export default function Home() {
               className="primary"
               onClick={() =>
                 document
-                  .getElementById('richiesta')
+                  .getElementById(
+                    'richiesta'
+                  )
                   ?.scrollIntoView()
               }
             >
-              🚨 Trova un professionista
+              🚨 Trova un
+              professionista
             </button>
 
             <button
               className="outline"
               onClick={() => {
-                setRole('professionista');
-                setAuthMode('signup');
+                setRole(
+                  'professionista'
+                );
+                setAuthMode(
+                  'signup'
+                );
                 setAuthOpen(true);
               }}
             >
-              Registrati come professionista →
+              Registrati come
+              professionista →
             </button>
           </div>
 
           <div className="checks">
-            ✓ Disponibilità in tempo reale　✓ Profili verificati　✓ Recensioni
+            ✓ Disponibilità in tempo
+            reale　✓ Profili
+            verificati　✓ Recensioni
           </div>
         </div>
 
@@ -575,10 +875,13 @@ export default function Home() {
             ● LIVE REQUEST
           </div>
 
-          <h2>Di cosa hai bisogno?</h2>
+          <h2>
+            Di cosa hai bisogno?
+          </h2>
 
           <p>
-            Scegli il servizio e indica l'urgenza.
+            Scegli il servizio e
+            indica l'urgenza.
           </p>
 
           <div className="grid">
@@ -590,16 +893,24 @@ export default function Home() {
                     ? 'cat selected'
                     : 'cat'
                 }
-                onClick={() => setCat(c)}
+                onClick={() =>
+                  setCat(c)
+                }
               >
-                <strong>{icons[i]}</strong>
+                <strong>
+                  {icons[i]}
+                </strong>
                 {c}
               </button>
             ))}
           </div>
 
           <div className="urg">
-            {['SUBITO', 'OGGI', '48H'].map(u => (
+            {[
+              'SUBITO',
+              'OGGI',
+              '48H'
+            ].map(u => (
               <button
                 key={u}
                 className={
@@ -607,7 +918,9 @@ export default function Home() {
                     ? 'selUrg'
                     : ''
                 }
-                onClick={() => setUrg(u)}
+                onClick={() =>
+                  setUrg(u)
+                }
               >
                 {u}
               </button>
@@ -617,7 +930,9 @@ export default function Home() {
           <input
             value={description}
             onChange={e =>
-              setDescription(e.target.value)
+              setDescription(
+                e.target.value
+              )
             }
             placeholder="Descrivi brevemente il problema..."
           />
@@ -643,17 +958,24 @@ export default function Home() {
       <section className="stats">
         <div>
           <b>30 sec</b>
-          <small>per creare una richiesta</small>
+          <small>
+            per creare una richiesta
+          </small>
         </div>
 
         <div>
           <b>🟢 LIVE</b>
-          <small>disponibilità professionisti</small>
+          <small>
+            disponibilità
+            professionisti
+          </small>
         </div>
 
         <div>
-          <b>V3</b>
-          <small>cliente + professionista</small>
+          <b>V4</b>
+          <small>
+            marketplace operativo
+          </small>
         </div>
       </section>
 
@@ -666,31 +988,41 @@ export default function Home() {
         </label>
 
         <h2>
-          Dal problema alla soluzione.
+          Dal problema alla
+          soluzione.
         </h2>
 
         <div className="steps">
           <article>
             <i>01</i>
             <h3>Descrivi</h3>
+
             <p>
-              Scegli il servizio e racconta cosa è successo.
+              Scegli il servizio e
+              racconta cosa è
+              successo.
             </p>
           </article>
 
           <article>
             <i>02</i>
             <h3>Trova</h3>
+
             <p>
-              Il sistema cerca professionisti compatibili e disponibili.
+              Il sistema cerca
+              professionisti
+              compatibili e
+              disponibili.
             </p>
           </article>
 
           <article>
             <i>03</i>
             <h3>Risolvi</h3>
+
             <p>
-              Il professionista accetta e interviene.
+              Il professionista
+              accetta e interviene.
             </p>
           </article>
         </div>
@@ -707,23 +1039,34 @@ export default function Home() {
 
           <h2>
             Sei disponibile?{' '}
-            <span>Fatti trovare.</span>
+            <span>
+              Fatti trovare.
+            </span>
           </h2>
 
           <p>
-            Crea un profilo professionista, imposta la disponibilità e ricevi richieste urgenti.
+            Crea un profilo
+            professionista, imposta
+            la disponibilità e
+            ricevi richieste
+            urgenti.
           </p>
 
           {!user && (
             <button
               className="primary"
               onClick={() => {
-                setRole('professionista');
-                setAuthMode('signup');
+                setRole(
+                  'professionista'
+                );
+                setAuthMode(
+                  'signup'
+                );
                 setAuthOpen(true);
               }}
             >
-              Registrati come professionista →
+              Registrati come
+              professionista →
             </button>
           )}
         </div>
@@ -731,11 +1074,12 @@ export default function Home() {
 
       <footer>
         <div className="logo">
-          <b>L</b> Lavoro<span>Subito</span>
+          <b>L</b>{' '}
+          Lavoro<span>Subito</span>
         </div>
 
         <small>
-          © 2026 LavoroSubito · V3
+          © 2026 LavoroSubito · V4
         </small>
       </footer>
 
@@ -756,25 +1100,30 @@ export default function Home() {
             </button>
 
             <label className="tag">
-              {authMode === 'signup'
+              {authMode ===
+              'signup'
                 ? 'REGISTRAZIONE'
                 : 'ACCESSO'}
             </label>
 
             <h2>
-              {authMode === 'signup'
+              {authMode ===
+              'signup'
                 ? 'Entra in LavoroSubito'
                 : 'Bentornato'}
             </h2>
 
-            {authMode === 'signup' && (
+            {authMode ===
+              'signup' && (
               <>
                 <input
                   required
                   placeholder="Nome e cognome"
                   value={name}
                   onChange={e =>
-                    setName(e.target.value)
+                    setName(
+                      e.target.value
+                    )
                   }
                 />
 
@@ -782,7 +1131,8 @@ export default function Home() {
                   value={role}
                   onChange={e =>
                     setRole(
-                      e.target.value as AppRole
+                      e.target
+                        .value as AppRole
                     )
                   }
                 >
@@ -803,7 +1153,9 @@ export default function Home() {
               placeholder="Email"
               value={email}
               onChange={e =>
-                setEmail(e.target.value)
+                setEmail(
+                  e.target.value
+                )
               }
             />
 
@@ -814,7 +1166,9 @@ export default function Home() {
               placeholder="Password"
               value={password}
               onChange={e =>
-                setPassword(e.target.value)
+                setPassword(
+                  e.target.value
+                )
               }
             />
 
@@ -824,7 +1178,8 @@ export default function Home() {
             >
               {busy
                 ? 'Attendi...'
-                : authMode === 'signup'
+                : authMode ===
+                    'signup'
                   ? 'Crea account'
                   : 'Accedi'}
             </button>
@@ -834,19 +1189,23 @@ export default function Home() {
               className="outline"
               onClick={() =>
                 setAuthMode(
-                  authMode === 'signup'
+                  authMode ===
+                    'signup'
                     ? 'login'
                     : 'signup'
                 )
               }
             >
-              {authMode === 'signup'
+              {authMode ===
+              'signup'
                 ? 'Hai già un account? Accedi'
                 : 'Non hai un account? Registrati'}
             </button>
 
             {message && (
-              <small>{message}</small>
+              <small>
+                {message}
+              </small>
             )}
           </form>
         </div>
