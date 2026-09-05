@@ -121,19 +121,15 @@ export default function Home() {
     setReviewProfessionalName
   ] = useState('');
   const [rating, setRating] = useState(5);
-  const [reviewComment, setReviewComment] =
-    useState('');
-  const [reviewSending, setReviewSending] =
-    useState(false);
-  const [reviewMessage, setReviewMessage] =
-    useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSending, setReviewSending] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
 
   const [
     professionalReviews,
     setProfessionalReviews
   ] = useState<ProfessionalReview[]>([]);
-  const [reviewsLoading, setReviewsLoading] =
-    useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -214,18 +210,8 @@ export default function Home() {
   async function loadJobs() {
     setJobsLoading(true);
 
-    const { data, error } = await supabase
-      .from('jobs')
-      .select(`
-        id,
-        description,
-        urgency,
-        status,
-        created_at,
-        categories (name)
-      `)
-      .eq('status', 'aperta')
-      .order('created_at', { ascending: false });
+    const { data, error } =
+      await supabase.rpc('my_matching_jobs');
 
     if (error) {
       setMessage(
@@ -233,7 +219,20 @@ export default function Home() {
       );
       setJobs([]);
     } else {
-      setJobs((data ?? []) as unknown as Job[]);
+      const matchingJobs = (data ?? []).map(
+        (job: any) => ({
+          id: job.id,
+          description: job.description,
+          urgency: job.urgency,
+          status: job.status,
+          created_at: job.created_at,
+          categories: {
+            name: job.category_name
+          }
+        })
+      );
+
+      setJobs(matchingJobs);
     }
 
     setJobsLoading(false);
@@ -1014,8 +1013,7 @@ export default function Home() {
           <h2>
             Ciao{' '}
             {fullName ||
-              'Professionista'}
-            .
+              'Professionista'}.
           </h2>
 
           <div
@@ -1111,12 +1109,17 @@ export default function Home() {
             }}
           >
             <label className="tag">
-              RICHIESTE LIVE
+              MATCHING LIVE
             </label>
 
             <h2>
-              Lavori disponibili
+              Lavori compatibili
             </h2>
+
+            <p>
+              Visualizzi solo le richieste
+              compatibili con le tue categorie.
+            </p>
 
             <button
               className="outline"
@@ -1144,9 +1147,14 @@ export default function Home() {
                 }}
               >
                 <h3>
-                  Nessuna richiesta
-                  disponibile
+                  Nessun lavoro compatibile
                 </h3>
+
+                <p>
+                  Al momento non ci sono
+                  richieste aperte per le tue
+                  categorie.
+                </p>
               </div>
             )}
 
@@ -1163,7 +1171,7 @@ export default function Home() {
                 className="card"
               >
                 <div className="live">
-                  ● RICHIESTA APERTA
+                  ● MATCH COMPATIBILE
                 </div>
 
                 <h3>
@@ -1280,9 +1288,7 @@ export default function Home() {
                         style={{
                           marginTop: 12
                         }}
-                        disabled={
-                          busy
-                        }
+                        disabled={busy}
                         onClick={() =>
                           completeJob(
                             job.id
@@ -1419,7 +1425,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V10
+            © 2026 LavoroSubito · V11
           </small>
         </footer>
 
@@ -1771,7 +1777,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V10
+          © 2026 LavoroSubito · V11
         </small>
       </footer>
 
