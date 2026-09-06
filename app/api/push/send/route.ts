@@ -35,50 +35,110 @@ export async function POST(
   request: NextRequest
 ) {
   try {
-    const body = await request.json();
+    const authHeader =
+      request.headers.get('authorization');
+
+    const token =
+      authHeader?.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : null;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Non autorizzato' },
+        { status: 401 }
+      );
+    }
 
     const {
-      userIds,
-      title,
-      message,
-      url = '/'
-    } = body;
+      data: userData,
+      error: userError
+    } =
+      await supabaseAdmin.auth.getUser(
+        token
+      );
 
     if (
-      !Array.isArray(userIds) ||
-      userIds.length === 0
+      userError ||
+      !userData.user
     ) {
       return NextResponse.json(
-        {
-          error:
-            'Nessun destinatario'
-        },
-        {
-          status: 400
-        }
+        { error: 'Sessione non valida' },
+        { status: 401 }
+      );
+    }
+
+    const { jobId } =
+      await request.json();
+
+    if (!jobId) {
+      return NextResponse.json(
+        { error: 'jobId mancante' },
+        { status: 400 }
       );
     }
 
     const {
-      data: subscriptions,
-      error
-    } = await supabaseAdmin
-      .from('push_subscriptions')
-      .select(
-        'id, user_id, endpoint, p256dh, auth'
-      )
-      .in(
-        'user_id',
-        userIds
-      );
+      data: job,
+      error: jobError
+    } =
+      await supabaseAdmin
+        .from('jobs')
+        .select(
+          'id, client_id, description, urgency'
+        )
+        .eq('id', jobId)
+        .single();
 
-    if (error) {
-      throw error;
+    if (
+      jobError ||
+      !job
+    ) {
+      return NextResponse.json(
+        { error: 'Lavoro non trovato' },
+        { status: 404 }
+      );
     }
 
     if (
-      !subscriptions ||
-      subscriptions.length === 0
+      job.client_id !==
+      userData.user.id
+    ) {
+      return NextResponse.json(
+        { error: 'Non autorizzato' },
+        { status: 403 }
+      );
+    }
+
+    const {
+      data: matches,
+      error: matchError
+    } =
+      await supabaseAdmin.rpc(
+        'find_professionals_for_job',
+        {
+          p_job_id: jobId
+        }
+      );
+
+    if (matchError) {
+      throw matchError;
+    }
+
+    const professionalIds =
+      (matches ?? [])
+        .filter(
+          (match: any) =>
+            match.availability_status !==
+            'offline'
+        )
+        .map(
+          (match: any) =>
+            match.professional_id
+        );
+
+    if (
+      professionalIds.length === 0
     ) {
       return NextResponse.json({
         success: true,
@@ -86,11 +146,29 @@ export async function POST(
       });
     }
 
+    const {
+      data: subscriptions,
+      error: subscriptionError
+    } =
+      await supabaseAdmin
+        .from('push_subscriptions')
+        .select(
+          'id, user_id, endpoint, p256dh, auth'
+        )
+        .in(
+          'user_id',
+          professionalIds
+        );
+
+    if (subscriptionError) {
+      throw subscriptionError;
+    }
+
     let sent = 0;
 
     for (
       const subscription
-      of subscriptions
+      of subscriptions ?? []
     ) {
       try {
         await webpush.sendNotification(
@@ -108,24 +186,22 @@ export async function POST(
           },
           JSON.stringify({
             title:
-              title ||
-              'LavoroSubito',
+              job.urgency === 'subito'
+                ? '🚨 Nuovo lavoro urgente'
+                : '🔔 Nuova richiesta LavoroSubito',
 
             body:
-              message ||
-              'Hai una nuova richiesta di intervento.',
+              job.description,
 
-            url
+            url: '/'
           })
         );
 
         sent++;
-      } catch (pushError: any) {
+      } catch (error: any) {
         if (
-          pushError?.statusCode ===
-            404 ||
-          pushError?.statusCode ===
-            410
+          error?.statusCode === 404 ||
+          error?.statusCode === 410
         ) {
           await supabaseAdmin
             .from(
@@ -154,11 +230,9 @@ export async function POST(
       {
         error:
           error?.message ||
-          'Errore invio notifiche'
+          'Errore notifiche'
       },
-      {
-        status: 500
-      }
+      { status: 500 }
     );
   }
 }
