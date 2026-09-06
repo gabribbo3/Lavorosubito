@@ -31,13 +31,7 @@ const icons = [
   '🏠'
 ];
 
-const distances = [
-  10,
-  20,
-  30,
-  50,
-  100
-];
+const distances = [10, 20, 30, 50, 100];
 
 const slug = (value: string) =>
   value
@@ -148,14 +142,18 @@ export default function Home() {
   const [online, setOnline] =
     useState(false);
 
-  const [realtimeConnected, setRealtimeConnected] =
-    useState(false);
+  const [
+    realtimeConnected,
+    setRealtimeConnected
+  ] = useState(false);
 
   const [setupStatus, setSetupStatus] =
     useState<SetupStatus | null>(null);
 
-  const [allCategories, setAllCategories] =
-    useState<Category[]>([]);
+  const [
+    allCategories,
+    setAllCategories
+  ] = useState<Category[]>([]);
 
   const [
     selectedCategoryIds,
@@ -254,7 +252,7 @@ export default function Home() {
     setAuthMode
   ] =
     useState<'login' | 'signup'>(
-      'signup'
+      'login'
     );
 
   const [name, setName] =
@@ -416,13 +414,8 @@ export default function Home() {
         });
 
     return () => {
-      setRealtimeConnected(
-        false
-      );
-
-      supabase.removeChannel(
-        channel
-      );
+      setRealtimeConnected(false);
+      supabase.removeChannel(channel);
     };
   }, [
     user?.id,
@@ -498,12 +491,8 @@ export default function Home() {
       'professionista'
     ) {
       await Promise.all([
-        loadAvailability(
-          userId
-        ),
-        loadProfessionalSettings(
-          userId
-        ),
+        loadAvailability(userId),
+        loadProfessionalSettings(userId),
         loadProfessionalCategories(),
         loadSetupStatus(),
         loadJobs(),
@@ -599,7 +588,6 @@ export default function Home() {
       setMessage(
         `Errore categorie: ${error.message}`
       );
-
       return;
     }
 
@@ -639,7 +627,6 @@ export default function Home() {
       setMessage(
         'Seleziona almeno una categoria.'
       );
-
       return;
     }
 
@@ -777,8 +764,7 @@ export default function Home() {
       setAcceptedJobs([]);
     } else {
       setAcceptedJobs(
-        (data ??
-          []) as AcceptedJob[]
+        (data ?? []) as AcceptedJob[]
       );
     }
   }
@@ -797,8 +783,7 @@ export default function Home() {
       setProfessionalReviews([]);
     } else {
       setProfessionalReviews(
-        (data ??
-          []) as ProfessionalReview[]
+        (data ?? []) as ProfessionalReview[]
       );
     }
   }
@@ -821,8 +806,7 @@ export default function Home() {
       setClientJobs([]);
     } else {
       setClientJobs(
-        (data ??
-          []) as ClientJob[]
+        (data ?? []) as ClientJob[]
       );
     }
 
@@ -886,9 +870,7 @@ export default function Home() {
       return;
     }
 
-    setCoordinates(
-      position
-    );
+    setCoordinates(position);
 
     setMessage(
       '📍 Posizione rilevata correttamente.'
@@ -1157,8 +1139,7 @@ export default function Home() {
     }
 
     const results =
-      (data ??
-        []) as MatchResult[];
+      (data ?? []) as MatchResult[];
 
     if (
       results.length > 0
@@ -1347,8 +1328,7 @@ export default function Home() {
       );
     } else {
       setChatMessages(
-        (data ??
-          []) as ChatMessage[]
+        (data ?? []) as ChatMessage[]
       );
     }
 
@@ -1514,7 +1494,11 @@ export default function Home() {
         );
       } else {
         setMessage(
-          'Registrazione completata. Controlla la tua email.'
+          '✅ Registrazione completata. Controlla la tua email per confermare l’account.'
+        );
+
+        setAuthMode(
+          'login'
         );
       }
     } else {
@@ -1785,13 +1769,7 @@ export default function Home() {
                 '20px 0'
             }}
           >
-            {[
-              1,
-              2,
-              3,
-              4,
-              5
-            ].map(
+            {[1, 2, 3, 4, 5].map(
               star => (
                 <button
                   key={
@@ -2282,23 +2260,22 @@ export default function Home() {
           )}
 
           {!jobsLoading &&
-            jobs.length ===
-              0 && (
-                <div
-                  className="card"
-                  style={{
-                    marginTop: 20
-                  }}
-                >
-                  <h3>
-                    Nessun lavoro compatibile
-                  </h3>
+            jobs.length === 0 && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 20
+                }}
+              >
+                <h3>
+                  Nessun lavoro compatibile
+                </h3>
 
-                  <p>
-                    Controlla categorie, posizione, disponibilità e raggio.
-                  </p>
-                </div>
-              )}
+                <p>
+                  Controlla categorie, posizione, disponibilità e raggio.
+                </p>
+              </div>
+            )}
 
           {jobs.map(
             job => (
@@ -2331,28 +2308,24 @@ export default function Home() {
                   {job.urgency.toUpperCase()}
                 </p>
 
-                {job.distance_km !=
-                  null && (
-                    <h3>
-                      📍{' '}
-                      {Number(
-                        job.distance_km
-                      ).toFixed(
-                        1
-                      )}{' '}
-                      km
-                    </h3>
-                  )}
+                {job.distance_km != null && (
+                  <h3>
+                    📍{' '}
+                    {Number(
+                      job.distance_km
+                    ).toFixed(1)}{' '}
+                    km
+                  </h3>
+                )}
 
-                {job.eta_minutes !=
-                  null && (
-                    <h3>
-                      ⏱{' '}
-                      {etaLabel(
-                        job.eta_minutes
-                      )}
-                    </h3>
-                  )}
+                {job.eta_minutes != null && (
+                  <h3>
+                    ⏱{' '}
+                    {etaLabel(
+                      job.eta_minutes
+                    )}
+                  </h3>
+                )}
 
                 <button
                   className="full"
@@ -2505,7 +2478,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V21
+            © 2026 LavoroSubito · V21.1
           </small>
         </footer>
 
@@ -2732,30 +2705,24 @@ export default function Home() {
                 /100
               </h3>
 
-              {bestMatch.distance_km !=
-                null && (
-                  <p>
-                    📍{' '}
-                    {Number(
-                      bestMatch
-                        .distance_km
-                    ).toFixed(
-                      1
-                    )}{' '}
-                    km
-                  </p>
-                )}
+              {bestMatch.distance_km != null && (
+                <p>
+                  📍{' '}
+                  {Number(
+                    bestMatch.distance_km
+                  ).toFixed(1)}{' '}
+                  km
+                </p>
+              )}
 
-              {bestMatch.eta_minutes !=
-                null && (
-                  <p>
-                    ⏱{' '}
-                    {etaLabel(
-                      bestMatch
-                        .eta_minutes
-                    )}
-                  </p>
-                )}
+              {bestMatch.eta_minutes != null && (
+                <p>
+                  ⏱{' '}
+                  {etaLabel(
+                    bestMatch.eta_minutes
+                  )}
+                </p>
+              )}
 
               <p>
                 {availabilityLabel(
@@ -2769,9 +2736,7 @@ export default function Home() {
                 {Number(
                   bestMatch
                     .average_rating
-                ).toFixed(
-                  1
-                )}{' '}
+                ).toFixed(1)}{' '}
                 ·{' '}
                 {
                   bestMatch
@@ -2965,7 +2930,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V21
+          © 2026 LavoroSubito · V21.1
         </small>
       </footer>
 
@@ -2992,9 +2957,53 @@ export default function Home() {
             <h2>
               {authMode ===
               'signup'
-                ? 'Entra in LavoroSubito'
+                ? 'Crea il tuo account'
                 : 'Bentornato'}
             </h2>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  '1fr 1fr',
+                gap: 10,
+                marginBottom: 20
+              }}
+            >
+              <button
+                type="button"
+                className={
+                  authMode ===
+                  'login'
+                    ? 'full'
+                    : 'outline'
+                }
+                onClick={() =>
+                  setAuthMode(
+                    'login'
+                  )
+                }
+              >
+                Accedi
+              </button>
+
+              <button
+                type="button"
+                className={
+                  authMode ===
+                  'signup'
+                    ? 'full'
+                    : 'outline'
+                }
+                onClick={() =>
+                  setAuthMode(
+                    'signup'
+                  )
+                }
+              >
+                Registrati
+              </button>
+            </div>
 
             {authMode ===
               'signup' && (
@@ -3024,11 +3033,11 @@ export default function Home() {
                     }
                   >
                     <option value="cliente">
-                      Cliente
+                      👤 Cliente
                     </option>
 
                     <option value="professionista">
-                      Professionista
+                      🛠 Professionista
                     </option>
                   </select>
                 </>
@@ -3069,11 +3078,24 @@ export default function Home() {
                 busy
               }
             >
-              {authMode ===
-              'signup'
-                ? 'Crea account'
-                : 'Accedi'}
+              {busy
+                ? 'Attendi...'
+                : authMode ===
+                  'signup'
+                  ? 'Crea account'
+                  : 'Accedi'}
             </button>
+
+            {message && (
+              <div
+                className="success"
+                style={{
+                  marginTop: 15
+                }}
+              >
+                {message}
+              </div>
+            )}
           </form>
         </div>
       )}
