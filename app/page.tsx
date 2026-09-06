@@ -1,6 +1,11 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useState
+} from 'react';
+
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -26,14 +31,28 @@ const icons = [
   '🏠'
 ];
 
-const distances = [10, 20, 30, 50, 100];
+const distances = [
+  10,
+  20,
+  30,
+  50,
+  100
+];
 
-const slug = (v: string) =>
-  v.toLowerCase().replaceAll(' ', '-');
+const slug = (value: string) =>
+  value
+    .toLowerCase()
+    .replaceAll(' ', '-');
 
 type AppRole =
   | 'cliente'
   | 'professionista';
+
+type Category = {
+  id: string;
+  name: string;
+  slug?: string | null;
+};
 
 type Job = {
   id: string;
@@ -43,9 +62,7 @@ type Job = {
   created_at?: string;
   distance_km?: number | null;
   eta_minutes?: number | null;
-  categories?: {
-    name?: string;
-  } | null;
+  category_name?: string | null;
 };
 
 type AcceptedJob = {
@@ -104,25 +121,14 @@ export default function Home() {
   const [user, setUser] =
     useState<User | null>(null);
 
-  const [role, setRole] =
-    useState<AppRole>('cliente');
-
   const [profileRole, setProfileRole] =
     useState<AppRole | null>(null);
 
+  const [role, setRole] =
+    useState<AppRole>('cliente');
+
   const [fullName, setFullName] =
     useState('');
-
-  const [cat, setCat] =
-    useState('');
-
-  const [urg, setUrg] =
-    useState('SUBITO');
-
-  const [
-    description,
-    setDescription
-  ] = useState('');
 
   const [message, setMessage] =
     useState('');
@@ -130,25 +136,42 @@ export default function Home() {
   const [busy, setBusy] =
     useState(false);
 
-  const [authOpen, setAuthOpen] =
-    useState(false);
-
-  const [authMode, setAuthMode] =
-    useState<'login' | 'signup'>(
-      'signup'
-    );
-
-  const [name, setName] =
-    useState('');
-
-  const [email, setEmail] =
-    useState('');
-
-  const [password, setPassword] =
-    useState('');
-
   const [online, setOnline] =
     useState(false);
+
+  const [realtimeConnected, setRealtimeConnected] =
+    useState(false);
+
+  const [allCategories, setAllCategories] =
+    useState<Category[]>([]);
+
+  const [
+    selectedCategoryIds,
+    setSelectedCategoryIds
+  ] = useState<string[]>([]);
+
+  const [
+    categorySaving,
+    setCategorySaving
+  ] = useState(false);
+
+  const [maxDistance, setMaxDistance] =
+    useState(30);
+
+  const [
+    professionalLocationSet,
+    setProfessionalLocationSet
+  ] = useState(false);
+
+  const [
+    professionalLocationLoading,
+    setProfessionalLocationLoading
+  ] = useState(false);
+
+  const [
+    distanceSaving,
+    setDistanceSaving
+  ] = useState(false);
 
   const [jobs, setJobs] =
     useState<Job[]>([]);
@@ -164,6 +187,11 @@ export default function Home() {
   ] = useState<AcceptedJob[]>([]);
 
   const [
+    professionalReviews,
+    setProfessionalReviews
+  ] = useState<ProfessionalReview[]>([]);
+
+  const [
     clientJobs,
     setClientJobs
   ] = useState<ClientJob[]>([]);
@@ -172,6 +200,59 @@ export default function Home() {
     clientJobsLoading,
     setClientJobsLoading
   ] = useState(false);
+
+  const [cat, setCat] =
+    useState('');
+
+  const [urg, setUrg] =
+    useState('SUBITO');
+
+  const [
+    description,
+    setDescription
+  ] = useState('');
+
+  const [
+    coordinates,
+    setCoordinates
+  ] = useState<Coordinates | null>(null);
+
+  const [
+    locationLoading,
+    setLocationLoading
+  ] = useState(false);
+
+  const [
+    bestMatch,
+    setBestMatch
+  ] = useState<MatchResult | null>(null);
+
+  const [
+    matchingLoading,
+    setMatchingLoading
+  ] = useState(false);
+
+  const [
+    authOpen,
+    setAuthOpen
+  ] = useState(false);
+
+  const [
+    authMode,
+    setAuthMode
+  ] =
+    useState<'login' | 'signup'>(
+      'signup'
+    );
+
+  const [name, setName] =
+    useState('');
+
+  const [email, setEmail] =
+    useState('');
+
+  const [password, setPassword] =
+    useState('');
 
   const [
     chatJobId,
@@ -229,64 +310,6 @@ export default function Home() {
     setReviewMessage
   ] = useState('');
 
-  const [
-    professionalReviews,
-    setProfessionalReviews
-  ] = useState<
-    ProfessionalReview[]
-  >([]);
-
-  const [
-    bestMatch,
-    setBestMatch
-  ] =
-    useState<MatchResult | null>(
-      null
-    );
-
-  const [
-    matchingLoading,
-    setMatchingLoading
-  ] = useState(false);
-
-  const [
-    locationLoading,
-    setLocationLoading
-  ] = useState(false);
-
-  const [
-    coordinates,
-    setCoordinates
-  ] =
-    useState<Coordinates | null>(
-      null
-    );
-
-  const [
-    professionalLocationLoading,
-    setProfessionalLocationLoading
-  ] = useState(false);
-
-  const [
-    professionalLocationSet,
-    setProfessionalLocationSet
-  ] = useState(false);
-
-  const [
-    maxDistance,
-    setMaxDistance
-  ] = useState(30);
-
-  const [
-    distanceSaving,
-    setDistanceSaving
-  ] = useState(false);
-
-  const [
-    realtimeConnected,
-    setRealtimeConnected
-  ] = useState(false);
-
   useEffect(() => {
     supabase.auth
       .getUser()
@@ -316,33 +339,15 @@ export default function Home() {
                 currentUser.id
               );
             } else {
-              setProfileRole(null);
-              setFullName('');
-              setJobs([]);
-              setAcceptedJobs([]);
-              setClientJobs([]);
-              setProfessionalReviews(
-                []
-              );
-              setBestMatch(null);
-              setOnline(false);
-              setChatJobId(null);
-              setChatMessages([]);
-              setReviewJobId(null);
-              setCoordinates(null);
-              setProfessionalLocationSet(
-                false
-              );
-              setMaxDistance(30);
-              setRealtimeConnected(
-                false
-              );
+              resetSession();
             }
           }
         );
 
-    return () =>
-      data.subscription.unsubscribe();
+    return () => {
+      data.subscription
+        .unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -356,7 +361,7 @@ export default function Home() {
     const channel =
       supabase
         .channel(
-          `lavorosubito-jobs-${user.id}`
+          `lavorosubito-v20-${user.id}`
         )
         .on(
           'postgres_changes',
@@ -378,7 +383,7 @@ export default function Home() {
                 'INSERT'
               ) {
                 setMessage(
-                  '🔔 Nuova richiesta ricevuta. Elenco aggiornato automaticamente.'
+                  '🔔 Nuova richiesta ricevuta.'
                 );
               }
             }
@@ -412,6 +417,25 @@ export default function Home() {
     profileRole
   ]);
 
+  function resetSession() {
+    setProfileRole(null);
+    setFullName('');
+    setOnline(false);
+    setJobs([]);
+    setAcceptedJobs([]);
+    setClientJobs([]);
+    setProfessionalReviews([]);
+    setSelectedCategoryIds([]);
+    setBestMatch(null);
+    setChatJobId(null);
+    setChatMessages([]);
+    setReviewJobId(null);
+    setCoordinates(null);
+    setProfessionalLocationSet(false);
+    setMaxDistance(30);
+    setRealtimeConnected(false);
+  }
+
   async function loadProfile(
     userId: string
   ) {
@@ -421,10 +445,16 @@ export default function Home() {
         .select(
           'role, full_name'
         )
-        .eq('id', userId)
+        .eq(
+          'id',
+          userId
+        )
         .single();
 
-    if (error || !data) {
+    if (
+      error ||
+      !data
+    ) {
       setProfileRole(
         'cliente'
       );
@@ -448,52 +478,135 @@ export default function Home() {
       data.full_name ?? ''
     );
 
+    await loadAllCategories();
+
     if (
       detectedRole ===
       'professionista'
     ) {
-      await loadAvailability(
-        userId
-      );
-
-      await loadProfessionalSettings(
-        userId
-      );
-
-      await loadJobs();
-
-      await loadAcceptedJobs();
-
-      await loadProfessionalReviews();
+      await Promise.all([
+        loadAvailability(
+          userId
+        ),
+        loadProfessionalSettings(
+          userId
+        ),
+        loadProfessionalCategories(),
+        loadJobs(),
+        loadAcceptedJobs(),
+        loadProfessionalReviews()
+      ]);
     } else {
       await loadClientJobs();
     }
   }
 
-  async function loadProfessionalSettings(
-    userId: string
-  ) {
-    const { data } =
+  async function loadAllCategories() {
+    const { data, error } =
       await supabase
-        .from('professionals')
+        .from('categories')
         .select(
-          'latitude, longitude, max_distance_km'
+          'id, name, slug'
         )
-        .eq(
-          'id',
-          userId
+        .order(
+          'name',
+          {
+            ascending: true
+          }
+        );
+
+    if (!error) {
+      setAllCategories(
+        (data ?? []) as Category[]
+      );
+    }
+  }
+
+  async function loadProfessionalCategories() {
+    const { data, error } =
+      await supabase.rpc(
+        'my_professional_categories'
+      );
+
+    if (error) {
+      setMessage(
+        `Errore categorie: ${error.message}`
+      );
+
+      return;
+    }
+
+    setSelectedCategoryIds(
+      (data ?? []).map(
+        (row: any) =>
+          row.category_id
+      )
+    );
+  }
+
+  function toggleProfessionalCategory(
+    categoryId: string
+  ) {
+    setSelectedCategoryIds(
+      current =>
+        current.includes(
+          categoryId
         )
-        .maybeSingle();
-
-    setProfessionalLocationSet(
-      data?.latitude != null &&
-        data?.longitude != null
+          ? current.filter(
+              id =>
+                id !==
+                categoryId
+            )
+          : [
+              ...current,
+              categoryId
+            ]
     );
+  }
 
-    setMaxDistance(
-      data?.max_distance_km ??
-        30
-    );
+  async function saveProfessionalCategories() {
+    if (
+      selectedCategoryIds
+        .length === 0
+    ) {
+      setMessage(
+        'Seleziona almeno una categoria.'
+      );
+
+      return;
+    }
+
+    setCategorySaving(true);
+    setMessage('');
+
+    const { data, error } =
+      await supabase.rpc(
+        'update_my_categories',
+        {
+          p_category_ids:
+            selectedCategoryIds
+        }
+      );
+
+    if (error) {
+      setMessage(
+        `Errore salvataggio categorie: ${error.message}`
+      );
+    } else if (
+      data === false
+    ) {
+      setMessage(
+        'Non è stato possibile salvare le categorie.'
+      );
+    } else {
+      setMessage(
+        '✅ Categorie professionali aggiornate.'
+      );
+
+      await loadJobs();
+    }
+
+    setCategorySaving(false);
   }
 
   async function loadAvailability(
@@ -515,6 +628,32 @@ export default function Home() {
     );
   }
 
+  async function loadProfessionalSettings(
+    userId: string
+  ) {
+    const { data } =
+      await supabase
+        .from('professionals')
+        .select(
+          'latitude, longitude, max_distance_km'
+        )
+        .eq(
+          'id',
+          userId
+        )
+        .maybeSingle();
+
+    setProfessionalLocationSet(
+      data?.latitude != null &&
+      data?.longitude != null
+    );
+
+    setMaxDistance(
+      data?.max_distance_km ??
+      30
+    );
+  }
+
   async function loadJobs() {
     setJobsLoading(true);
 
@@ -530,7 +669,7 @@ export default function Home() {
 
       setJobs([]);
     } else {
-      const matchingJobs =
+      setJobs(
         (data ?? []).map(
           (job: any) => ({
             id: job.id,
@@ -542,19 +681,14 @@ export default function Home() {
               job.status,
             created_at:
               job.created_at,
+            category_name:
+              job.category_name,
             distance_km:
               job.distance_km,
             eta_minutes:
-              job.eta_minutes,
-            categories: {
-              name:
-                job.category_name
-            }
+              job.eta_minutes
           })
-        );
-
-      setJobs(
-        matchingJobs
+        )
       );
     }
 
@@ -577,6 +711,26 @@ export default function Home() {
       setAcceptedJobs(
         (data ??
           []) as AcceptedJob[]
+      );
+    }
+  }
+
+  async function loadProfessionalReviews() {
+    const { data, error } =
+      await supabase.rpc(
+        'my_professional_reviews'
+      );
+
+    if (error) {
+      setMessage(
+        `Errore recensioni: ${error.message}`
+      );
+
+      setProfessionalReviews([]);
+    } else {
+      setProfessionalReviews(
+        (data ??
+          []) as ProfessionalReview[]
       );
     }
   }
@@ -609,28 +763,6 @@ export default function Home() {
     );
   }
 
-  async function loadProfessionalReviews() {
-    const { data, error } =
-      await supabase.rpc(
-        'my_professional_reviews'
-      );
-
-    if (error) {
-      setMessage(
-        `Errore recensioni: ${error.message}`
-      );
-
-      setProfessionalReviews(
-        []
-      );
-    } else {
-      setProfessionalReviews(
-        (data ??
-          []) as ProfessionalReview[]
-      );
-    }
-  }
-
   function getCurrentPosition():
     Promise<Coordinates | null> {
     return new Promise(
@@ -647,27 +779,25 @@ export default function Home() {
             position => {
               resolve({
                 latitude:
-                  position.coords
+                  position
+                    .coords
                     .latitude,
 
                 longitude:
-                  position.coords
+                  position
+                    .coords
                     .longitude
               });
             },
 
-            () => {
-              resolve(null);
-            },
+            () =>
+              resolve(null),
 
             {
               enableHighAccuracy:
                 true,
-
               timeout: 12000,
-
-              maximumAge:
-                60000
+              maximumAge: 60000
             }
           );
       }
@@ -675,39 +805,33 @@ export default function Home() {
   }
 
   async function detectLocation() {
-    setLocationLoading(
-      true
-    );
-
+    setLocationLoading(true);
     setMessage('');
 
     const position =
       await getCurrentPosition();
 
     if (!position) {
-      setCoordinates(null);
-
       setMessage(
-        'Non è stato possibile ottenere la posizione. Controlla i permessi GPS.'
-      );
-    } else {
-      setCoordinates(
-        position
+        'Non è stato possibile ottenere la posizione.'
       );
 
-      setMessage(
-        '📍 Posizione rilevata correttamente.'
-      );
+      setLocationLoading(false);
+      return;
     }
 
-    setLocationLoading(
-      false
+    setCoordinates(
+      position
     );
+
+    setMessage(
+      '📍 Posizione rilevata correttamente.'
+    );
+
+    setLocationLoading(false);
   }
 
   async function updateProfessionalLocation() {
-    if (!user) return;
-
     setProfessionalLocationLoading(
       true
     );
@@ -745,37 +869,23 @@ export default function Home() {
       setMessage(
         `Errore posizione: ${error.message}`
       );
-
-      setProfessionalLocationLoading(
-        false
-      );
-
-      return;
-    }
-
-    if (
+    } else if (
       data === false
     ) {
       setMessage(
-        'Non è stato possibile aggiornare la posizione.'
+        'Posizione non aggiornata.'
+      );
+    } else {
+      setProfessionalLocationSet(
+        true
       );
 
-      setProfessionalLocationLoading(
-        false
+      setMessage(
+        '📍 Posizione professionale aggiornata.'
       );
 
-      return;
+      await loadJobs();
     }
-
-    setProfessionalLocationSet(
-      true
-    );
-
-    setMessage(
-      '📍 Posizione professionale aggiornata correttamente.'
-    );
-
-    await loadJobs();
 
     setProfessionalLocationLoading(
       false
@@ -785,10 +895,7 @@ export default function Home() {
   async function saveMaxDistance(
     distance: number
   ) {
-    setDistanceSaving(
-      true
-    );
-
+    setDistanceSaving(true);
     setMessage('');
 
     const { data, error } =
@@ -802,52 +909,163 @@ export default function Home() {
 
     if (error) {
       setMessage(
-        `Errore raggio di lavoro: ${error.message}`
+        `Errore raggio: ${error.message}`
       );
-
-      setDistanceSaving(
-        false
-      );
-
-      return;
-    }
-
-    if (
+    } else if (
       data === false
     ) {
       setMessage(
-        'Non è stato possibile salvare il raggio di lavoro.'
+        'Raggio non aggiornato.'
+      );
+    } else {
+      setMaxDistance(
+        distance
       );
 
-      setDistanceSaving(
-        false
+      setMessage(
+        `📍 Raggio impostato a ${distance} km.`
       );
 
+      await loadJobs();
+    }
+
+    setDistanceSaving(false);
+  }
+
+  async function toggleAvailability() {
+    if (!user) return;
+
+    const next =
+      !online;
+
+    setBusy(true);
+
+    const { error } =
+      await supabase
+        .from('availability')
+        .upsert({
+          professional_id:
+            user.id,
+
+          status:
+            next
+              ? 'ora'
+              : 'offline',
+
+          updated_at:
+            new Date()
+              .toISOString()
+        });
+
+    if (error) {
+      setMessage(
+        `Errore disponibilità: ${error.message}`
+      );
+    } else {
+      setOnline(next);
+
+      setMessage(
+        next
+          ? '🟢 Ora sei disponibile.'
+          : '⚫ Ora sei offline.'
+      );
+    }
+
+    setBusy(false);
+  }
+
+  async function acceptJob(
+    jobId: string
+  ) {
+    setBusy(true);
+    setMessage('');
+
+    const { data, error } =
+      await supabase.rpc(
+        'accept_job',
+        {
+          p_job_id:
+            jobId
+        }
+      );
+
+    if (error) {
+      setMessage(
+        `Errore accettazione: ${error.message}`
+      );
+    } else if (
+      data === false
+    ) {
+      setMessage(
+        'Questo lavoro è già stato accettato.'
+      );
+    } else {
+      setMessage(
+        '✅ Lavoro accettato.'
+      );
+    }
+
+    await loadJobs();
+    await loadAcceptedJobs();
+
+    setBusy(false);
+  }
+
+  async function completeJob(
+    jobId: string
+  ) {
+    const confirmation =
+      window.confirm(
+        'Confermi che l’intervento è stato completato?'
+      );
+
+    if (!confirmation) {
       return;
     }
 
-    setMaxDistance(
-      distance
-    );
+    setBusy(true);
 
-    setMessage(
-      `📍 Raggio massimo impostato a ${distance} km.`
-    );
+    const { data, error } =
+      await supabase.rpc(
+        'complete_job',
+        {
+          p_job_id:
+            jobId
+        }
+      );
 
-    await loadJobs();
+    if (error) {
+      setMessage(
+        `Errore: ${error.message}`
+      );
+    } else if (
+      data === false
+    ) {
+      setMessage(
+        'Non è stato possibile completare il lavoro.'
+      );
+    } else {
+      setMessage(
+        '✅ Intervento completato.'
+      );
 
-    setDistanceSaving(
-      false
-    );
+      if (
+        profileRole ===
+        'professionista'
+      ) {
+        await loadAcceptedJobs();
+      } else {
+        await loadClientJobs();
+      }
+    }
+
+    setBusy(false);
   }
 
   async function findBestMatch(
     jobId: string
   ) {
-    setMatchingLoading(
-      true
-    );
-
+    setMatchingLoading(true);
     setBestMatch(null);
 
     const { data, error } =
@@ -864,9 +1082,7 @@ export default function Home() {
         `Richiesta creata, ma errore matching: ${error.message}`
       );
 
-      setMatchingLoading(
-        false
-      );
+      setMatchingLoading(false);
 
       return;
     }
@@ -883,21 +1099,15 @@ export default function Home() {
       );
 
       setMessage(
-        '✓ Richiesta inviata. Professionista compatibile trovato.'
+        '✅ Professionista compatibile trovato.'
       );
     } else {
-      setBestMatch(
-        null
-      );
-
       setMessage(
-        '✓ Richiesta inviata. Nessun professionista compatibile con distanza e urgenza al momento.'
+        '✅ Richiesta creata. Nessun professionista compatibile disponibile al momento.'
       );
     }
 
-    setMatchingLoading(
-      false
-    );
+    setMatchingLoading(false);
   }
 
   async function submitJob() {
@@ -913,17 +1123,9 @@ export default function Home() {
     }
 
     if (!user) {
-      setRole(
-        'cliente'
-      );
-
-      setAuthMode(
-        'signup'
-      );
-
-      setAuthOpen(
-        true
-      );
+      setRole('cliente');
+      setAuthMode('signup');
+      setAuthOpen(true);
 
       setMessage(
         'Registrati o accedi per inviare la richiesta.'
@@ -939,9 +1141,7 @@ export default function Home() {
     let currentCoordinates =
       coordinates;
 
-    if (
-      !currentCoordinates
-    ) {
+    if (!currentCoordinates) {
       currentCoordinates =
         await getCurrentPosition();
 
@@ -960,9 +1160,7 @@ export default function Home() {
         categoryError
     } =
       await supabase
-        .from(
-          'categories'
-        )
+        .from('categories')
         .select('id')
         .eq(
           'slug',
@@ -1026,118 +1224,15 @@ export default function Home() {
       );
 
       setBusy(false);
-
       return;
     }
 
     setDescription('');
 
     await loadClientJobs();
-
     await findBestMatch(
       newJob.id
     );
-
-    setBusy(false);
-  }
-
-  async function acceptJob(
-    jobId: string
-  ) {
-    if (!user) return;
-
-    setBusy(true);
-    setMessage('');
-
-    const { data, error } =
-      await supabase.rpc(
-        'accept_job',
-        {
-          p_job_id:
-            jobId
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore accettazione: ${error.message}`
-      );
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Questo lavoro è già stato accettato.'
-      );
-    } else {
-      setMessage(
-        '✓ Lavoro accettato correttamente.'
-      );
-    }
-
-    await loadJobs();
-
-    await loadAcceptedJobs();
-
-    setBusy(false);
-  }
-
-  async function completeJob(
-    jobId: string
-  ) {
-    if (!user) return;
-
-    const confirmation =
-      window.confirm(
-        'Confermi che l’intervento è stato completato?'
-      );
-
-    if (!confirmation)
-      return;
-
-    setBusy(true);
-    setMessage('');
-
-    const { data, error } =
-      await supabase.rpc(
-        'complete_job',
-        {
-          p_job_id:
-            jobId
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore completamento: ${error.message}`
-      );
-
-      setBusy(false);
-      return;
-    }
-
-    if (
-      data === false
-    ) {
-      setMessage(
-        'Non è stato possibile completare questo intervento.'
-      );
-
-      setBusy(false);
-      return;
-    }
-
-    setMessage(
-      '✓ Intervento completato.'
-    );
-
-    if (
-      profileRole ===
-      'professionista'
-    ) {
-      await loadAcceptedJobs();
-    } else {
-      await loadClientJobs();
-    }
 
     setBusy(false);
   }
@@ -1146,19 +1241,9 @@ export default function Home() {
     jobId: string,
     title: string
   ) {
-    setChatJobId(
-      jobId
-    );
-
-    setChatTitle(
-      title
-    );
-
+    setChatJobId(jobId);
+    setChatTitle(title);
     setChatText('');
-
-    setChatMessages(
-      []
-    );
 
     await loadChat(
       jobId
@@ -1168,9 +1253,7 @@ export default function Home() {
   async function loadChat(
     jobId: string
   ) {
-    setChatLoading(
-      true
-    );
+    setChatLoading(true);
 
     const { data, error } =
       await supabase
@@ -1185,8 +1268,7 @@ export default function Home() {
         .order(
           'created_at',
           {
-            ascending:
-              true
+            ascending: true
           }
         );
 
@@ -1201,15 +1283,13 @@ export default function Home() {
       );
     }
 
-    setChatLoading(
-      false
-    );
+    setChatLoading(false);
   }
 
   async function sendChatMessage(
-    e: FormEvent
+    event: FormEvent
   ) {
-    e.preventDefault();
+    event.preventDefault();
 
     if (
       !user ||
@@ -1219,9 +1299,7 @@ export default function Home() {
       return;
     }
 
-    setChatSending(
-      true
-    );
+    setChatSending(true);
 
     const { error } =
       await supabase
@@ -1239,7 +1317,7 @@ export default function Home() {
 
     if (error) {
       setMessage(
-        `Errore invio messaggio: ${error.message}`
+        `Errore messaggio: ${error.message}`
       );
     } else {
       setChatText('');
@@ -1249,9 +1327,7 @@ export default function Home() {
       );
     }
 
-    setChatSending(
-      false
-    );
+    setChatSending(false);
   }
 
   function closeChat() {
@@ -1263,8 +1339,7 @@ export default function Home() {
 
   function openReview(
     jobId: string,
-    professionalName:
-      string
+    professionalName: string
   ) {
     setReviewJobId(
       jobId
@@ -1281,34 +1356,22 @@ export default function Home() {
 
   function closeReview() {
     setReviewJobId(null);
-
-    setReviewProfessionalName(
-      ''
-    );
-
+    setReviewProfessionalName('');
     setRating(5);
     setReviewComment('');
     setReviewMessage('');
   }
 
   async function submitReview(
-    e: FormEvent
+    event: FormEvent
   ) {
-    e.preventDefault();
+    event.preventDefault();
 
-    if (
-      !reviewJobId
-    ) {
+    if (!reviewJobId) {
       return;
     }
 
-    setReviewSending(
-      true
-    );
-
-    setReviewMessage(
-      ''
-    );
+    setReviewSending(true);
 
     const { data, error } =
       await supabase.rpc(
@@ -1329,52 +1392,29 @@ export default function Home() {
     if (error) {
       setReviewMessage(
         error.message
-          .toLowerCase()
-          .includes(
-            'già recensito'
-          )
-          ? 'Hai già recensito questo intervento.'
-          : `Errore recensione: ${error.message}`
       );
-
-      setReviewSending(
-        false
-      );
-
-      return;
-    }
-
-    if (
+    } else if (
       data === false
     ) {
       setReviewMessage(
-        'Non è possibile recensire questo intervento.'
+        'Recensione non inviata.'
+      );
+    } else {
+      setMessage(
+        '⭐ Recensione inviata.'
       );
 
-      setReviewSending(
-        false
-      );
-
-      return;
+      await loadClientJobs();
+      closeReview();
     }
 
-    setMessage(
-      '⭐ Recensione inviata correttamente.'
-    );
-
-    await loadClientJobs();
-
-    closeReview();
-
-    setReviewSending(
-      false
-    );
+    setReviewSending(false);
   }
 
   async function authSubmit(
-    e: FormEvent
+    event: FormEvent
   ) {
-    e.preventDefault();
+    event.preventDefault();
 
     setBusy(true);
     setMessage('');
@@ -1384,8 +1424,8 @@ export default function Home() {
       'signup'
     ) {
       const { error } =
-        await supabase.auth.signUp(
-          {
+        await supabase.auth
+          .signUp({
             email,
             password,
 
@@ -1397,8 +1437,7 @@ export default function Home() {
                 role
               }
             }
-          }
-        );
+          });
 
       if (error) {
         setMessage(
@@ -1415,21 +1454,17 @@ export default function Home() {
         error
       } =
         await supabase.auth
-          .signInWithPassword(
-            {
-              email,
-              password
-            }
-          );
+          .signInWithPassword({
+            email,
+            password
+          });
 
       if (error) {
         setMessage(
           error.message
         );
       } else {
-        setAuthOpen(
-          false
-        );
+        setAuthOpen(false);
 
         if (
           data.user
@@ -1444,60 +1479,47 @@ export default function Home() {
     setBusy(false);
   }
 
-  async function toggleAvailability() {
-    if (!user) return;
-
-    const next =
-      !online;
-
-    setBusy(true);
-    setMessage('');
-
-    const { error } =
-      await supabase
-        .from(
-          'availability'
-        )
-        .upsert({
-          professional_id:
-            user.id,
-
-          status:
-            next
-              ? 'ora'
-              : 'offline',
-
-          updated_at:
-            new Date()
-              .toISOString()
-        });
-
-    if (error) {
-      setMessage(
-        `Errore disponibilità: ${error.message}`
-      );
-    } else {
-      setOnline(
-        next
-      );
-
-      setMessage(
-        next
-          ? '🟢 Ora risulti disponibile.'
-          : '⚫ Ora risulti offline.'
-      );
-    }
-
-    setBusy(false);
-  }
-
   async function logout() {
     await supabase.auth
       .signOut();
 
+    resetSession();
     setMessage('');
-    setBestMatch(null);
-    setCoordinates(null);
+  }
+
+  function etaLabel(
+    eta:
+      number |
+      null |
+      undefined
+  ) {
+    if (
+      eta == null
+    ) {
+      return 'Tempo non disponibile';
+    }
+
+    if (
+      eta < 60
+    ) {
+      return `Circa ${eta} min`;
+    }
+
+    const hours =
+      Math.floor(
+        eta / 60
+      );
+
+    const minutes =
+      eta % 60;
+
+    if (
+      minutes === 0
+    ) {
+      return `Circa ${hours} h`;
+    }
+
+    return `Circa ${hours} h ${minutes} min`;
   }
 
   function availabilityLabel(
@@ -1524,46 +1546,14 @@ export default function Home() {
     return '⚫ Offline';
   }
 
-  function etaLabel(
-    eta:
-      number | null | undefined
-  ) {
-    if (
-      eta == null
-    ) {
-      return 'Tempo non disponibile';
-    }
-
-    if (eta < 60) {
-      return `Circa ${eta} min`;
-    }
-
-    const hours =
-      Math.floor(
-        eta / 60
-      );
-
-    const minutes =
-      eta % 60;
-
-    if (
-      minutes === 0
-    ) {
-      return `Circa ${hours} h`;
-    }
-
-    return `Circa ${hours} h ${minutes} min`;
-  }
-
   const averageRating =
-    professionalReviews.length >
-    0
+    professionalReviews.length
       ? professionalReviews.reduce(
           (
-            sum,
+            total,
             review
           ) =>
-            sum +
+            total +
             Number(
               review.rating
             ),
@@ -1591,8 +1581,7 @@ export default function Home() {
           </label>
 
           <h2>
-            {chatTitle ||
-              'Intervento'}
+            {chatTitle}
           </h2>
 
           <div
@@ -1607,20 +1596,20 @@ export default function Home() {
           >
             {chatLoading && (
               <p>
-                Caricamento messaggi...
+                Caricamento...
               </p>
             )}
 
             {chatMessages.map(
-              m => {
+              item => {
                 const mine =
-                  m.sender_id ===
+                  item.sender_id ===
                   user?.id;
 
                 return (
                   <div
                     key={
-                      m.id
+                      item.id
                     }
                     style={{
                       padding: 12,
@@ -1644,7 +1633,7 @@ export default function Home() {
                     </b>
 
                     <p>
-                      {m.message}
+                      {item.message}
                     </p>
                   </div>
                 );
@@ -1719,12 +1708,18 @@ export default function Home() {
           <div
             style={{
               display: 'flex',
-              gap: 6,
-              fontSize: 34,
-              margin: '20px 0'
+              gap: 5,
+              margin:
+                '20px 0'
             }}
           >
-            {[1, 2, 3, 4, 5].map(
+            {[
+              1,
+              2,
+              3,
+              4,
+              5
+            ].map(
               star => (
                 <button
                   key={
@@ -1740,7 +1735,7 @@ export default function Home() {
                     border: 'none',
                     background:
                       'transparent',
-                    fontSize: 34
+                    fontSize: 32
                   }}
                 >
                   {star <=
@@ -1761,7 +1756,7 @@ export default function Home() {
                 e.target.value
               )
             }
-            placeholder="Scrivi un commento..."
+            placeholder="Commento..."
             rows={5}
           />
 
@@ -1827,22 +1822,20 @@ export default function Home() {
 
           <div
             style={{
-              marginTop: 15,
               display:
                 'inline-block',
+              marginTop: 15,
               padding:
                 '8px 14px',
-              borderRadius:
-                999,
               border:
                 '1px solid #ddd',
-              fontWeight:
-                700
+              borderRadius: 999,
+              fontWeight: 700
             }}
           >
             {realtimeConnected
               ? '🟢 Aggiornamento LIVE attivo'
-              : '🟡 Connessione LIVE in corso...'}
+              : '🟡 Connessione LIVE...'}
           </div>
 
           <div
@@ -1872,8 +1865,7 @@ export default function Home() {
                 }}
               >
                 ⭐{' '}
-                {professionalReviews.length >
-                0
+                {professionalReviews.length
                   ? averageRating.toFixed(
                       1
                     )
@@ -1921,6 +1913,100 @@ export default function Home() {
             }}
           >
             <label className="tag">
+              V20 · SPECIALIZZAZIONI
+            </label>
+
+            <h2>
+              🛠 Le mie categorie
+            </h2>
+
+            <p>
+              Seleziona tutti i tipi
+              di intervento che sei
+              in grado di svolgere.
+            </p>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  'repeat(2, minmax(0, 1fr))',
+                gap: 10,
+                marginTop: 20
+              }}
+            >
+              {allCategories.map(
+                category => {
+                  const selected =
+                    selectedCategoryIds
+                      .includes(
+                        category.id
+                      );
+
+                  return (
+                    <button
+                      key={
+                        category.id
+                      }
+                      type="button"
+                      className={
+                        selected
+                          ? 'full'
+                          : 'outline'
+                      }
+                      onClick={() =>
+                        toggleProfessionalCategory(
+                          category.id
+                        )
+                      }
+                    >
+                      {selected
+                        ? '✓ '
+                        : ''}
+                      {category.name}
+                    </button>
+                  );
+                }
+              )}
+            </div>
+
+            <button
+              className="full"
+              style={{
+                marginTop: 20
+              }}
+              disabled={
+                categorySaving
+              }
+              onClick={
+                saveProfessionalCategories
+              }
+            >
+              {categorySaving
+                ? 'Salvataggio...'
+                : '💾 Salva categorie'}
+            </button>
+
+            <small
+              style={{
+                display: 'block',
+                marginTop: 12
+              }}
+            >
+              I nuovi lavori saranno
+              filtrati automaticamente
+              in base alle categorie
+              selezionate.
+            </small>
+          </div>
+
+          <div
+            className="card"
+            style={{
+              marginTop: 20
+            }}
+          >
+            <label className="tag">
               ZONA DI LAVORO
             </label>
 
@@ -1936,11 +2022,11 @@ export default function Home() {
 
             <button
               className="full"
-              onClick={
-                updateProfessionalLocation
-              }
               disabled={
                 professionalLocationLoading
+              }
+              onClick={
+                updateProfessionalLocation
               }
             >
               📍 Aggiorna la mia posizione
@@ -1970,7 +2056,6 @@ export default function Home() {
                     key={
                       distance
                     }
-                    type="button"
                     className={
                       maxDistance ===
                       distance
@@ -2017,18 +2102,13 @@ export default function Home() {
               Lavori compatibili
             </h2>
 
-            <p>
-              Le nuove richieste
-              compaiono automaticamente.
-            </p>
-
             <button
               className="outline"
               onClick={
                 loadJobs
               }
             >
-              ↻ Aggiorna manualmente
+              ↻ Aggiorna
             </button>
           </div>
 
@@ -2052,10 +2132,10 @@ export default function Home() {
                   </h3>
 
                   <p>
-                    Nessuna richiesta
-                    compatibile con
-                    categoria, raggio e
-                    urgenza.
+                    Controlla categorie,
+                    posizione,
+                    disponibilità e
+                    raggio.
                   </p>
                 </div>
               )}
@@ -2063,10 +2143,10 @@ export default function Home() {
           {jobs.map(
             job => (
               <article
+                className="card"
                 key={
                   job.id
                 }
-                className="card"
                 style={{
                   marginTop: 18
                 }}
@@ -2076,8 +2156,7 @@ export default function Home() {
                 </div>
 
                 <h3>
-                  {job.categories
-                    ?.name ??
+                  {job.category_name ||
                     'Intervento'}
                 </h3>
 
@@ -2094,39 +2173,26 @@ export default function Home() {
 
                 {job.distance_km !=
                   null && (
-                  <div
-                    style={{
-                      fontSize: 21,
-                      fontWeight: 800,
-                      marginTop: 15
-                    }}
-                  >
-                    📍{' '}
-                    {Number(
-                      job.distance_km
-                    ).toFixed(
-                      1
-                    )}{' '}
-                    km da te
-                  </div>
-                )}
+                    <h3>
+                      📍{' '}
+                      {Number(
+                        job.distance_km
+                      ).toFixed(
+                        1
+                      )}{' '}
+                      km
+                    </h3>
+                  )}
 
                 {job.eta_minutes !=
                   null && (
-                  <div
-                    style={{
-                      fontSize: 21,
-                      fontWeight: 800,
-                      margin:
-                        '8px 0 18px'
-                    }}
-                  >
-                    ⏱{' '}
-                    {etaLabel(
-                      job.eta_minutes
-                    )}
-                  </div>
-                )}
+                    <h3>
+                      ⏱{' '}
+                      {etaLabel(
+                        job.eta_minutes
+                      )}
+                    </h3>
+                  )}
 
                 <button
                   className="full"
@@ -2150,7 +2216,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop: 70
+              marginTop: 60
             }}
           >
             <label className="tag">
@@ -2163,50 +2229,47 @@ export default function Home() {
           </div>
 
           {acceptedJobs.map(
-            job => {
-              const completed =
-                job.status ===
-                'completata';
+            job => (
+              <article
+                key={
+                  job.id
+                }
+                className="card"
+                style={{
+                  marginTop: 18
+                }}
+              >
+                <div className="live">
+                  {job.status ===
+                  'completata'
+                    ? '✅ COMPLETATO'
+                    : '🟢 ACCETTATO'}
+                </div>
 
-              return (
-                <article
-                  key={
-                    job.id
+                <h3>
+                  {job.category_name ||
+                    'Intervento'}
+                </h3>
+
+                <p>
+                  {job.description}
+                </p>
+
+                <button
+                  className="full"
+                  onClick={() =>
+                    openChat(
+                      job.id,
+                      job.category_name ||
+                        'Intervento'
+                    )
                   }
-                  className="card"
-                  style={{
-                    marginTop: 18
-                  }}
                 >
-                  <div className="live">
-                    {completed
-                      ? '✅ COMPLETATO'
-                      : '🟢 ACCETTATO'}
-                  </div>
+                  💬 Apri chat
+                </button>
 
-                  <h3>
-                    {job.category_name ??
-                      'Intervento'}
-                  </h3>
-
-                  <p>
-                    {job.description}
-                  </p>
-
-                  <button
-                    className="full"
-                    onClick={() =>
-                      openChat(
-                        job.id,
-                        job.category_name ??
-                          'Intervento'
-                      )
-                    }
-                  >
-                    💬 Apri chat
-                  </button>
-
-                  {!completed && (
+                {job.status !==
+                  'completata' && (
                     <button
                       className="outline"
                       style={{
@@ -2221,14 +2284,13 @@ export default function Home() {
                       ✓ Intervento completato
                     </button>
                   )}
-                </article>
-              );
-            }
+              </article>
+            )
           )}
 
           <div
             style={{
-              marginTop: 70
+              marginTop: 60
             }}
           >
             <label className="tag">
@@ -2266,7 +2328,7 @@ export default function Home() {
 
                 <p>
                   {review.comment ||
-                    'Nessun commento scritto.'}
+                    'Nessun commento.'}
                 </p>
               </article>
             )
@@ -2283,7 +2345,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V18
+            © 2026 LavoroSubito · V20
           </small>
         </footer>
 
@@ -2346,10 +2408,10 @@ export default function Home() {
           </h1>
 
           <p>
-            Trova il professionista
-            più adatto, più vicino e
-            compatibile con la tua
-            urgenza.
+            Trova rapidamente il
+            professionista più adatto
+            e disponibile nella tua
+            zona.
           </p>
         </div>
 
@@ -2361,33 +2423,34 @@ export default function Home() {
           <div className="grid">
             {cats.map(
               (
-                c,
-                i
+                category,
+                index
               ) => (
                 <button
                   key={
-                    c
+                    category
                   }
                   className={
-                    cat === c
+                    cat ===
+                    category
                       ? 'cat selected'
                       : 'cat'
                   }
                   onClick={() =>
                     setCat(
-                      c
+                      category
                     )
                   }
                 >
                   <strong>
                     {
                       icons[
-                        i
+                        index
                       ]
                     }
                   </strong>
 
-                  {c}
+                  {category}
                 </button>
               )
             )}
@@ -2399,23 +2462,24 @@ export default function Home() {
               'OGGI',
               '48H'
             ].map(
-              u => (
+              urgency => (
                 <button
                   key={
-                    u
+                    urgency
                   }
                   className={
-                    urg === u
+                    urg ===
+                    urgency
                       ? 'selUrg'
                       : ''
                   }
                   onClick={() =>
                     setUrg(
-                      u
+                      urgency
                     )
                   }
                 >
-                  {u}
+                  {urgency}
                 </button>
               )
             )}
@@ -2430,7 +2494,7 @@ export default function Home() {
                 e.target.value
               )
             }
-            placeholder="Descrivi brevemente il problema..."
+            placeholder="Descrivi il problema..."
           />
 
           <button
@@ -2447,7 +2511,7 @@ export default function Home() {
             {locationLoading
               ? '📍 Rilevamento...'
               : coordinates
-                ? '✓ Posizione rilevata'
+                ? '✅ Posizione rilevata'
                 : '📍 Usa la mia posizione'}
           </button>
 
@@ -2461,7 +2525,7 @@ export default function Home() {
             }
           >
             {busy
-              ? 'Ricerca in corso...'
+              ? 'Ricerca...'
               : 'Trova chi è disponibile →'}
           </button>
 
@@ -2497,71 +2561,67 @@ export default function Home() {
 
               <h2>
                 {
-                  bestMatch.professional_name
+                  bestMatch
+                    .professional_name
                 }
               </h2>
 
-              <div
-                style={{
-                  fontSize: 30,
-                  fontWeight: 800,
-                  marginBottom: 15
-                }}
-              >
+              <h3>
                 🎯{' '}
                 {
-                  bestMatch.match_score
+                  bestMatch
+                    .match_score
                 }
                 /100
-              </div>
+              </h3>
 
               {bestMatch.distance_km !=
                 null && (
-                <h3>
-                  📍{' '}
-                  {Number(
-                    bestMatch.distance_km
-                  ).toFixed(
-                    1
-                  )}{' '}
-                  km da te
-                </h3>
-              )}
+                  <p>
+                    📍{' '}
+                    {Number(
+                      bestMatch
+                        .distance_km
+                    ).toFixed(
+                      1
+                    )}{' '}
+                    km
+                  </p>
+                )}
 
               {bestMatch.eta_minutes !=
                 null && (
-                <h3>
-                  ⏱{' '}
-                  {etaLabel(
-                    bestMatch.eta_minutes
-                  )}
-                </h3>
-              )}
+                  <p>
+                    ⏱{' '}
+                    {etaLabel(
+                      bestMatch
+                        .eta_minutes
+                    )}
+                  </p>
+                )}
 
               <p>
                 {availabilityLabel(
-                  bestMatch.availability_status
+                  bestMatch
+                    .availability_status
                 )}
               </p>
 
               <p>
                 ⭐{' '}
                 {Number(
-                  bestMatch.average_rating
+                  bestMatch
+                    .average_rating
                 ).toFixed(
                   1
                 )}{' '}
                 ·{' '}
                 {
-                  bestMatch.review_count
+                  bestMatch
+                    .review_count
                 }{' '}
                 recensioni
               </p>
-
-              <small>
-                Il tempo di arrivo è
-                una stima indicativa.
-              </small>
             </div>
           )}
         </div>
@@ -2576,30 +2636,19 @@ export default function Home() {
             </label>
 
             <h2>
-              Stato dei tuoi interventi
+              Stato interventi
             </h2>
 
             <div
               style={{
                 marginBottom: 20,
-                display:
-                  'inline-block',
-                padding:
-                  '8px 14px',
-                borderRadius:
-                  999,
-                border:
-                  '1px solid #ddd',
-                fontWeight:
-                  700
+                fontWeight: 700
               }}
             >
               {realtimeConnected
                 ? '🟢 Stato LIVE'
                 : '🟡 Connessione LIVE...'}
             </div>
-
-            <br />
 
             <button
               className="outline"
@@ -2640,14 +2689,14 @@ export default function Home() {
                   >
                     <div className="live">
                       {completed
-                        ? '✅ INTERVENTO COMPLETATO'
+                        ? '✅ COMPLETATO'
                         : accepted
                           ? '🟢 PROFESSIONISTA TROVATO'
                           : '🔴 RICERCA IN CORSO'}
                     </div>
 
                     <h3>
-                      {job.category_name ??
+                      {job.category_name ||
                         'Intervento'}
                     </h3>
 
@@ -2672,7 +2721,7 @@ export default function Home() {
                             onClick={() =>
                               openChat(
                                 job.id,
-                                job.professional_name ??
+                                job.professional_name ||
                                   'Intervento'
                               )
                             }
@@ -2706,7 +2755,7 @@ export default function Home() {
                                 onClick={() =>
                                   openReview(
                                     job.id,
-                                    job.professional_name ??
+                                    job.professional_name ||
                                       'Professionista'
                                   )
                                 }
@@ -2737,19 +2786,20 @@ export default function Home() {
 
       <section className="section">
         <label className="tag">
-          MATCHING INTELLIGENTE
+          LAVOROSUBITO
         </label>
 
         <h2>
-          Categoria, distanza,
-          urgenza e reputazione.
+          Il professionista giusto,
+          quando serve.
         </h2>
 
         <p>
-          Le nuove richieste vengono
-          distribuite in tempo reale
-          ai professionisti
-          compatibili.
+          Matching basato su
+          specializzazione,
+          disponibilità,
+          distanza,
+          urgenza e reputazione.
         </p>
       </section>
 
@@ -2763,7 +2813,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V18
+          © 2026 LavoroSubito · V20
         </small>
       </footer>
 
@@ -2796,41 +2846,41 @@ export default function Home() {
 
             {authMode ===
               'signup' && (
-              <>
-                <input
-                  required
-                  placeholder="Nome e cognome"
-                  value={
-                    name
-                  }
-                  onChange={e =>
-                    setName(
-                      e.target.value
-                    )
-                  }
-                />
+                <>
+                  <input
+                    required
+                    placeholder="Nome e cognome"
+                    value={
+                      name
+                    }
+                    onChange={e =>
+                      setName(
+                        e.target.value
+                      )
+                    }
+                  />
 
-                <select
-                  value={
-                    role
-                  }
-                  onChange={e =>
-                    setRole(
-                      e.target
-                        .value as AppRole
-                    )
-                  }
-                >
-                  <option value="cliente">
-                    Cliente
-                  </option>
+                  <select
+                    value={
+                      role
+                    }
+                    onChange={e =>
+                      setRole(
+                        e.target
+                          .value as AppRole
+                      )
+                    }
+                  >
+                    <option value="cliente">
+                      Cliente
+                    </option>
 
-                  <option value="professionista">
-                    Professionista
-                  </option>
-                </select>
-              </>
-            )}
+                    <option value="professionista">
+                      Professionista
+                    </option>
+                  </select>
+                </>
+              )}
 
             <input
               required
@@ -2848,9 +2898,7 @@ export default function Home() {
 
             <input
               required
-              minLength={
-                6
-              }
+              minLength={6}
               type="password"
               placeholder="Password"
               value={
