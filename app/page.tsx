@@ -282,6 +282,11 @@ export default function Home() {
     setDistanceSaving
   ] = useState(false);
 
+  const [
+    realtimeConnected,
+    setRealtimeConnected
+  ] = useState(false);
+
   useEffect(() => {
     supabase.auth
       .getUser()
@@ -329,6 +334,9 @@ export default function Home() {
                 false
               );
               setMaxDistance(30);
+              setRealtimeConnected(
+                false
+              );
             }
           }
         );
@@ -336,6 +344,73 @@ export default function Home() {
     return () =>
       data.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (
+      !user ||
+      !profileRole
+    ) {
+      return;
+    }
+
+    const channel =
+      supabase
+        .channel(
+          `lavorosubito-jobs-${user.id}`
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'jobs'
+          },
+          async payload => {
+            if (
+              profileRole ===
+              'professionista'
+            ) {
+              await loadJobs();
+              await loadAcceptedJobs();
+
+              if (
+                payload.eventType ===
+                'INSERT'
+              ) {
+                setMessage(
+                  '🔔 Nuova richiesta ricevuta. Elenco aggiornato automaticamente.'
+                );
+              }
+            }
+
+            if (
+              profileRole ===
+              'cliente'
+            ) {
+              await loadClientJobs();
+            }
+          }
+        )
+        .subscribe(status => {
+          setRealtimeConnected(
+            status ===
+              'SUBSCRIBED'
+          );
+        });
+
+    return () => {
+      setRealtimeConnected(
+        false
+      );
+
+      supabase.removeChannel(
+        channel
+      );
+    };
+  }, [
+    user?.id,
+    profileRole
+  ]);
 
   async function loadProfile(
     userId: string
@@ -631,8 +706,7 @@ export default function Home() {
   }
 
   async function updateProfessionalLocation() {
-    if (!user)
-      return;
+    if (!user) return;
 
     setProfessionalLocationLoading(
       true
@@ -970,8 +1044,7 @@ export default function Home() {
   async function acceptJob(
     jobId: string
   ) {
-    if (!user)
-      return;
+    if (!user) return;
 
     setBusy(true);
     setMessage('');
@@ -1011,8 +1084,7 @@ export default function Home() {
   async function completeJob(
     jobId: string
   ) {
-    if (!user)
-      return;
+    if (!user) return;
 
     const confirmation =
       window.confirm(
@@ -1215,14 +1287,8 @@ export default function Home() {
     );
 
     setRating(5);
-
-    setReviewComment(
-      ''
-    );
-
-    setReviewMessage(
-      ''
-    );
+    setReviewComment('');
+    setReviewMessage('');
   }
 
   async function submitReview(
@@ -1379,8 +1445,7 @@ export default function Home() {
   }
 
   async function toggleAvailability() {
-    if (!user)
-      return;
+    if (!user) return;
 
     const next =
       !online;
@@ -1532,23 +1597,12 @@ export default function Home() {
 
           <div
             style={{
-              maxHeight:
-                330,
-
-              overflowY:
-                'auto',
-
-              marginTop:
-                20,
-
-              marginBottom:
-                20,
-
-              display:
-                'grid',
-
-              gap:
-                10
+              maxHeight: 330,
+              overflowY: 'auto',
+              marginTop: 20,
+              marginBottom: 20,
+              display: 'grid',
+              gap: 10
             }}
           >
             {chatLoading && (
@@ -1569,20 +1623,14 @@ export default function Home() {
                       m.id
                     }
                     style={{
-                      padding:
-                        12,
-
-                      borderRadius:
-                        12,
-
+                      padding: 12,
+                      borderRadius: 12,
                       border:
                         '1px solid #ddd',
-
                       marginLeft:
                         mine
                           ? 35
                           : 0,
-
                       marginRight:
                         mine
                           ? 0
@@ -1615,8 +1663,7 @@ export default function Home() {
               }
               onChange={e =>
                 setChatText(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
               placeholder="Scrivi un messaggio..."
@@ -1671,26 +1718,13 @@ export default function Home() {
 
           <div
             style={{
-              display:
-                'flex',
-
-              gap:
-                6,
-
-              fontSize:
-                34,
-
-              margin:
-                '20px 0'
+              display: 'flex',
+              gap: 6,
+              fontSize: 34,
+              margin: '20px 0'
             }}
           >
-            {[
-              1,
-              2,
-              3,
-              4,
-              5
-            ].map(
+            {[1, 2, 3, 4, 5].map(
               star => (
                 <button
                   key={
@@ -1703,14 +1737,10 @@ export default function Home() {
                     )
                   }
                   style={{
-                    border:
-                      'none',
-
+                    border: 'none',
                     background:
                       'transparent',
-
-                    fontSize:
-                      34
+                    fontSize: 34
                   }}
                 >
                   {star <=
@@ -1728,8 +1758,7 @@ export default function Home() {
             }
             onChange={e =>
               setReviewComment(
-                e.target
-                  .value
+                e.target.value
               )
             }
             placeholder="Scrivi un commento..."
@@ -1783,8 +1812,7 @@ export default function Home() {
         <section
           className="section"
           style={{
-            paddingTop:
-              70
+            paddingTop: 70
           }}
         >
           <label className="tag">
@@ -1794,15 +1822,33 @@ export default function Home() {
           <h2>
             Ciao{' '}
             {fullName ||
-              'Professionista'}
-            .
+              'Professionista'}.
           </h2>
+
+          <div
+            style={{
+              marginTop: 15,
+              display:
+                'inline-block',
+              padding:
+                '8px 14px',
+              borderRadius:
+                999,
+              border:
+                '1px solid #ddd',
+              fontWeight:
+                700
+            }}
+          >
+            {realtimeConnected
+              ? '🟢 Aggiornamento LIVE attivo'
+              : '🟡 Connessione LIVE in corso...'}
+          </div>
 
           <div
             className="proPanel"
             style={{
-              marginTop:
-                30
+              marginTop: 30
             }}
           >
             <div>
@@ -1821,11 +1867,8 @@ export default function Home() {
 
               <div
                 style={{
-                  fontSize:
-                    24,
-
-                  fontWeight:
-                    700
+                  fontSize: 24,
+                  fontWeight: 700
                 }}
               >
                 ⭐{' '}
@@ -1874,8 +1917,7 @@ export default function Home() {
           <div
             className="card"
             style={{
-              marginTop:
-                20
+              marginTop: 20
             }}
           >
             <label className="tag">
@@ -1906,8 +1948,7 @@ export default function Home() {
 
             <h3
               style={{
-                marginTop:
-                  30
+                marginTop: 30
               }}
             >
               Raggio massimo:{' '}
@@ -1916,17 +1957,11 @@ export default function Home() {
 
             <div
               style={{
-                display:
-                  'grid',
-
+                display: 'grid',
                 gridTemplateColumns:
                   'repeat(3, 1fr)',
-
-                gap:
-                  10,
-
-                marginTop:
-                  15
+                gap: 10,
+                marginTop: 15
               }}
             >
               {distances.map(
@@ -1951,8 +1986,7 @@ export default function Home() {
                       )
                     }
                   >
-                    {distance}{' '}
-                    km
+                    {distance} km
                   </button>
                 )
               )}
@@ -1963,8 +1997,7 @@ export default function Home() {
             <div
               className="success"
               style={{
-                marginTop:
-                  20
+                marginTop: 20
               }}
             >
               {message}
@@ -1973,8 +2006,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop:
-                50
+              marginTop: 50
             }}
           >
             <label className="tag">
@@ -1986,8 +2018,8 @@ export default function Home() {
             </h2>
 
             <p>
-              Ordinati per urgenza,
-              tempo stimato e distanza.
+              Le nuove richieste
+              compaiono automaticamente.
             </p>
 
             <button
@@ -1996,7 +2028,7 @@ export default function Home() {
                 loadJobs
               }
             >
-              ↻ Aggiorna
+              ↻ Aggiorna manualmente
             </button>
           </div>
 
@@ -2012,8 +2044,7 @@ export default function Home() {
                 <div
                   className="card"
                   style={{
-                    marginTop:
-                      20
+                    marginTop: 20
                   }}
                 >
                   <h3>
@@ -2037,8 +2068,7 @@ export default function Home() {
                 }
                 className="card"
                 style={{
-                  marginTop:
-                    18
+                  marginTop: 18
                 }}
               >
                 <div className="live">
@@ -2066,14 +2096,9 @@ export default function Home() {
                   null && (
                   <div
                     style={{
-                      fontSize:
-                        21,
-
-                      fontWeight:
-                        800,
-
-                      marginTop:
-                        15
+                      fontSize: 21,
+                      fontWeight: 800,
+                      marginTop: 15
                     }}
                   >
                     📍{' '}
@@ -2090,12 +2115,8 @@ export default function Home() {
                   null && (
                   <div
                     style={{
-                      fontSize:
-                        21,
-
-                      fontWeight:
-                        800,
-
+                      fontSize: 21,
+                      fontWeight: 800,
                       margin:
                         '8px 0 18px'
                     }}
@@ -2129,8 +2150,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop:
-                70
+              marginTop: 70
             }}
           >
             <label className="tag">
@@ -2155,8 +2175,7 @@ export default function Home() {
                   }
                   className="card"
                   style={{
-                    marginTop:
-                      18
+                    marginTop: 18
                   }}
                 >
                   <div className="live">
@@ -2191,8 +2210,7 @@ export default function Home() {
                     <button
                       className="outline"
                       style={{
-                        marginTop:
-                          12
+                        marginTop: 12
                       }}
                       onClick={() =>
                         completeJob(
@@ -2210,8 +2228,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop:
-                70
+              marginTop: 70
             }}
           >
             <label className="tag">
@@ -2231,8 +2248,7 @@ export default function Home() {
                 }
                 className="card"
                 style={{
-                  marginTop:
-                    18
+                  marginTop: 18
                 }}
               >
                 <div>
@@ -2267,7 +2283,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V17
+            © 2026 LavoroSubito · V18
           </small>
         </footer>
 
@@ -2353,8 +2369,7 @@ export default function Home() {
                     c
                   }
                   className={
-                    cat ===
-                    c
+                    cat === c
                       ? 'cat selected'
                       : 'cat'
                   }
@@ -2390,8 +2405,7 @@ export default function Home() {
                     u
                   }
                   className={
-                    urg ===
-                    u
+                    urg === u
                       ? 'selUrg'
                       : ''
                   }
@@ -2413,8 +2427,7 @@ export default function Home() {
             }
             onChange={e =>
               setDescription(
-                e.target
-                  .value
+                e.target.value
               )
             }
             placeholder="Descrivi brevemente il problema..."
@@ -2424,11 +2437,8 @@ export default function Home() {
             type="button"
             className="outline"
             style={{
-              width:
-                '100%',
-
-              marginBottom:
-                12
+              width: '100%',
+              marginBottom: 12
             }}
             onClick={
               detectLocation
@@ -2465,8 +2475,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  20
+                marginTop: 20
               }}
             >
               🔎 Matching in corso...
@@ -2477,9 +2486,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  20,
-
+                marginTop: 20,
                 border:
                   '2px solid #48b779'
               }}
@@ -2496,14 +2503,9 @@ export default function Home() {
 
               <div
                 style={{
-                  fontSize:
-                    30,
-
-                  fontWeight:
-                    800,
-
-                  marginBottom:
-                    15
+                  fontSize: 30,
+                  fontWeight: 800,
+                  marginBottom: 15
                 }}
               >
                 🎯{' '}
@@ -2557,10 +2559,8 @@ export default function Home() {
               </p>
 
               <small>
-                Il tempo di arrivo è una
-                stima indicativa e non
-                considera ancora traffico
-                o viabilità reale.
+                Il tempo di arrivo è
+                una stima indicativa.
               </small>
             </div>
           )}
@@ -2579,6 +2579,28 @@ export default function Home() {
               Stato dei tuoi interventi
             </h2>
 
+            <div
+              style={{
+                marginBottom: 20,
+                display:
+                  'inline-block',
+                padding:
+                  '8px 14px',
+                borderRadius:
+                  999,
+                border:
+                  '1px solid #ddd',
+                fontWeight:
+                  700
+              }}
+            >
+              {realtimeConnected
+                ? '🟢 Stato LIVE'
+                : '🟡 Connessione LIVE...'}
+            </div>
+
+            <br />
+
             <button
               className="outline"
               onClick={
@@ -2587,6 +2609,12 @@ export default function Home() {
             >
               ↻ Aggiorna
             </button>
+
+            {clientJobsLoading && (
+              <p>
+                Caricamento...
+              </p>
+            )}
 
             {clientJobs.map(
               job => {
@@ -2607,8 +2635,7 @@ export default function Home() {
                     }
                     className="card"
                     style={{
-                      marginTop:
-                        18
+                      marginTop: 18
                     }}
                   >
                     <div className="live">
@@ -2640,8 +2667,7 @@ export default function Home() {
                           <button
                             className="full"
                             style={{
-                              marginTop:
-                                15
+                              marginTop: 15
                             }}
                             onClick={() =>
                               openChat(
@@ -2658,8 +2684,7 @@ export default function Home() {
                             <button
                               className="outline"
                               style={{
-                                marginTop:
-                                  12
+                                marginTop: 12
                               }}
                               onClick={() =>
                                 completeJob(
@@ -2676,8 +2701,7 @@ export default function Home() {
                               <button
                                 className="outline"
                                 style={{
-                                  marginTop:
-                                    12
+                                  marginTop: 12
                                 }}
                                 onClick={() =>
                                   openReview(
@@ -2696,8 +2720,7 @@ export default function Home() {
                               <div
                                 className="success"
                                 style={{
-                                  marginTop:
-                                    12
+                                  marginTop: 12
                                 }}
                               >
                                 ⭐ Recensione inviata
@@ -2723,10 +2746,10 @@ export default function Home() {
         </h2>
 
         <p>
-          Una richiesta SUBITO
-          privilegia professionisti
-          realmente raggiungibili in
-          tempi brevi.
+          Le nuove richieste vengono
+          distribuite in tempo reale
+          ai professionisti
+          compatibili.
         </p>
       </section>
 
@@ -2740,7 +2763,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V17
+          © 2026 LavoroSubito · V18
         </small>
       </footer>
 
@@ -2782,8 +2805,7 @@ export default function Home() {
                   }
                   onChange={e =>
                     setName(
-                      e.target
-                        .value
+                      e.target.value
                     )
                   }
                 />
@@ -2819,8 +2841,7 @@ export default function Home() {
               }
               onChange={e =>
                 setEmail(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
             />
@@ -2837,8 +2858,7 @@ export default function Home() {
               }
               onChange={e =>
                 setPassword(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
             />
