@@ -15,12 +15,23 @@ const cats = [
   'Altro'
 ];
 
-const icons = ['🔧', '⚡', '🔑', '🔥', '❄️', '🪟', '🚗', '🏠'];
+const icons = [
+  '🔧',
+  '⚡',
+  '🔑',
+  '🔥',
+  '❄️',
+  '🪟',
+  '🚗',
+  '🏠'
+];
 
 const slug = (v: string) =>
   v.toLowerCase().replaceAll(' ', '-');
 
-type AppRole = 'cliente' | 'professionista';
+type AppRole =
+  | 'cliente'
+  | 'professionista';
 
 type Job = {
   id: string;
@@ -28,7 +39,10 @@ type Job = {
   urgency: string;
   status: string;
   created_at?: string;
-  categories?: { name?: string } | null;
+  distance_km?: number | null;
+  categories?: {
+    name?: string;
+  } | null;
 };
 
 type AcceptedJob = {
@@ -83,13 +97,16 @@ type Coordinates = {
 };
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] =
+    useState<User | null>(null);
 
   const [role, setRole] =
     useState<AppRole>('cliente');
 
-  const [profileRole, setProfileRole] =
-    useState<AppRole | null>(null);
+  const [
+    profileRole,
+    setProfileRole
+  ] = useState<AppRole | null>(null);
 
   const [fullName, setFullName] =
     useState('');
@@ -100,8 +117,10 @@ export default function Home() {
   const [urg, setUrg] =
     useState('SUBITO');
 
-  const [description, setDescription] =
-    useState('');
+  const [
+    description,
+    setDescription
+  ] = useState('');
 
   const [message, setMessage] =
     useState('');
@@ -113,7 +132,9 @@ export default function Home() {
     useState(false);
 
   const [authMode, setAuthMode] =
-    useState<'login' | 'signup'>('signup');
+    useState<'login' | 'signup'>(
+      'signup'
+    );
 
   const [name, setName] =
     useState('');
@@ -130,40 +151,58 @@ export default function Home() {
   const [jobs, setJobs] =
     useState<Job[]>([]);
 
-  const [jobsLoading, setJobsLoading] =
-    useState(false);
+  const [
+    jobsLoading,
+    setJobsLoading
+  ] = useState(false);
 
-  const [acceptedJobs, setAcceptedJobs] =
-    useState<AcceptedJob[]>([]);
+  const [
+    acceptedJobs,
+    setAcceptedJobs
+  ] = useState<AcceptedJob[]>([]);
 
-  const [clientJobs, setClientJobs] =
-    useState<ClientJob[]>([]);
+  const [
+    clientJobs,
+    setClientJobs
+  ] = useState<ClientJob[]>([]);
 
   const [
     clientJobsLoading,
     setClientJobsLoading
   ] = useState(false);
 
-  const [chatJobId, setChatJobId] =
-    useState<string | null>(null);
+  const [
+    chatJobId,
+    setChatJobId
+  ] = useState<string | null>(null);
 
-  const [chatTitle, setChatTitle] =
-    useState('');
+  const [
+    chatTitle,
+    setChatTitle
+  ] = useState('');
 
-  const [chatMessages, setChatMessages] =
-    useState<ChatMessage[]>([]);
+  const [
+    chatMessages,
+    setChatMessages
+  ] = useState<ChatMessage[]>([]);
 
   const [chatText, setChatText] =
     useState('');
 
-  const [chatLoading, setChatLoading] =
-    useState(false);
+  const [
+    chatLoading,
+    setChatLoading
+  ] = useState(false);
 
-  const [chatSending, setChatSending] =
-    useState(false);
+  const [
+    chatSending,
+    setChatSending
+  ] = useState(false);
 
-  const [reviewJobId, setReviewJobId] =
-    useState<string | null>(null);
+  const [
+    reviewJobId,
+    setReviewJobId
+  ] = useState<string | null>(null);
 
   const [
     reviewProfessionalName,
@@ -191,10 +230,17 @@ export default function Home() {
   const [
     professionalReviews,
     setProfessionalReviews
-  ] = useState<ProfessionalReview[]>([]);
+  ] = useState<
+    ProfessionalReview[]
+  >([]);
 
-  const [bestMatch, setBestMatch] =
-    useState<MatchResult | null>(null);
+  const [
+    bestMatch,
+    setBestMatch
+  ] =
+    useState<MatchResult | null>(
+      null
+    );
 
   const [
     matchingLoading,
@@ -209,7 +255,10 @@ export default function Home() {
   const [
     coordinates,
     setCoordinates
-  ] = useState<Coordinates | null>(null);
+  ] =
+    useState<Coordinates | null>(
+      null
+    );
 
   const [
     professionalLocationLoading,
@@ -222,44 +271,58 @@ export default function Home() {
   ] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        setUser(data.user);
 
-      if (data.user) {
-        loadProfile(data.user.id);
-      }
-    });
+        if (data.user) {
+          loadProfile(
+            data.user.id
+          );
+        }
+      });
 
     const { data } =
-      supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          const currentUser =
-            session?.user ?? null;
+      supabase.auth
+        .onAuthStateChange(
+          (_event, session) => {
+            const currentUser =
+              session?.user ?? null;
 
-          setUser(currentUser);
+            setUser(
+              currentUser
+            );
 
-          if (currentUser) {
-            loadProfile(currentUser.id);
-          } else {
-            setProfileRole(null);
-            setFullName('');
-            setJobs([]);
-            setAcceptedJobs([]);
-            setClientJobs([]);
-            setProfessionalReviews([]);
-            setBestMatch(null);
-            setOnline(false);
-            setChatJobId(null);
-            setChatMessages([]);
-            setReviewJobId(null);
-            setCoordinates(null);
-            setProfessionalLocationSet(false);
+            if (currentUser) {
+              loadProfile(
+                currentUser.id
+              );
+            } else {
+              setProfileRole(null);
+              setFullName('');
+              setJobs([]);
+              setAcceptedJobs([]);
+              setClientJobs([]);
+              setProfessionalReviews(
+                []
+              );
+              setBestMatch(null);
+              setOnline(false);
+              setChatJobId(null);
+              setChatMessages([]);
+              setReviewJobId(null);
+              setCoordinates(null);
+              setProfessionalLocationSet(
+                false
+              );
+            }
           }
-        }
-      );
+        );
 
     return () =>
-      data.subscription.unsubscribe();
+      data.subscription
+        .unsubscribe();
   }, []);
 
   async function loadProfile(
@@ -268,22 +331,32 @@ export default function Home() {
     const { data, error } =
       await supabase
         .from('profiles')
-        .select('role, full_name')
+        .select(
+          'role, full_name'
+        )
         .eq('id', userId)
         .single();
 
     if (error || !data) {
-      setProfileRole('cliente');
+      setProfileRole(
+        'cliente'
+      );
+
       await loadClientJobs();
       return;
     }
 
-    const detectedRole: AppRole =
-      data.role === 'professionista'
-        ? 'professionista'
-        : 'cliente';
+    const detectedRole:
+      AppRole =
+        data.role ===
+        'professionista'
+          ? 'professionista'
+          : 'cliente';
 
-    setProfileRole(detectedRole);
+    setProfileRole(
+      detectedRole
+    );
+
     setFullName(
       data.full_name ?? ''
     );
@@ -292,10 +365,18 @@ export default function Home() {
       detectedRole ===
       'professionista'
     ) {
-      await loadAvailability(userId);
-      await loadProfessionalLocation(userId);
+      await loadAvailability(
+        userId
+      );
+
+      await loadProfessionalLocation(
+        userId
+      );
+
       await loadJobs();
+
       await loadAcceptedJobs();
+
       await loadProfessionalReviews();
     } else {
       await loadClientJobs();
@@ -308,13 +389,15 @@ export default function Home() {
     const { data } =
       await supabase
         .from('professionals')
-        .select('latitude, longitude')
+        .select(
+          'latitude, longitude'
+        )
         .eq('id', userId)
         .maybeSingle();
 
     setProfessionalLocationSet(
       data?.latitude != null &&
-      data?.longitude != null
+        data?.longitude != null
     );
   }
 
@@ -355,14 +438,22 @@ export default function Home() {
         (data ?? []).map(
           (job: any) => ({
             id: job.id,
+
             description:
               job.description,
+
             urgency:
               job.urgency,
+
             status:
               job.status,
+
             created_at:
               job.created_at,
+
+            distance_km:
+              job.distance_km,
+
             categories: {
               name:
                 job.category_name
@@ -370,7 +461,9 @@ export default function Home() {
           })
         );
 
-      setJobs(matchingJobs);
+      setJobs(
+        matchingJobs
+      );
     }
 
     setJobsLoading(false);
@@ -396,7 +489,9 @@ export default function Home() {
   }
 
   async function loadClientJobs() {
-    setClientJobsLoading(true);
+    setClientJobsLoading(
+      true
+    );
 
     const { data, error } =
       await supabase.rpc(
@@ -415,7 +510,9 @@ export default function Home() {
       );
     }
 
-    setClientJobsLoading(false);
+    setClientJobsLoading(
+      false
+    );
   }
 
   async function loadProfessionalReviews() {
@@ -429,49 +526,58 @@ export default function Home() {
         `Errore recensioni: ${error.message}`
       );
 
-      setProfessionalReviews([]);
+      setProfessionalReviews(
+        []
+      );
     } else {
       setProfessionalReviews(
-        (data ?? []) as ProfessionalReview[]
+        (data ??
+          []) as ProfessionalReview[]
       );
     }
   }
 
   function getCurrentPosition():
     Promise<Coordinates | null> {
-    return new Promise(resolve => {
-      if (
-        !navigator.geolocation
-      ) {
-        resolve(null);
-        return;
+    return new Promise(
+      resolve => {
+        if (
+          !navigator.geolocation
+        ) {
+          resolve(null);
+          return;
+        }
+
+        navigator.geolocation
+          .getCurrentPosition(
+            position => {
+              resolve({
+                latitude:
+                  position
+                    .coords
+                    .latitude,
+
+                longitude:
+                  position
+                    .coords
+                    .longitude
+              });
+            },
+
+            () =>
+              resolve(null),
+
+            {
+              enableHighAccuracy:
+                true,
+
+              timeout: 12000,
+
+              maximumAge: 60000
+            }
+          );
       }
-
-      navigator.geolocation
-        .getCurrentPosition(
-          position => {
-            resolve({
-              latitude:
-                position.coords
-                  .latitude,
-
-              longitude:
-                position.coords
-                  .longitude
-            });
-          },
-
-          () => {
-            resolve(null);
-          },
-
-          {
-            enableHighAccuracy: true,
-            timeout: 12000,
-            maximumAge: 60000
-          }
-        );
-    });
+    );
   }
 
   async function detectLocation() {
@@ -488,7 +594,9 @@ export default function Home() {
         'Non è stato possibile ottenere la posizione. Controlla i permessi GPS.'
       );
     } else {
-      setCoordinates(position);
+      setCoordinates(
+        position
+      );
 
       setMessage(
         '📍 Posizione rilevata correttamente.'
@@ -501,7 +609,10 @@ export default function Home() {
   async function updateProfessionalLocation() {
     if (!user) return;
 
-    setProfessionalLocationLoading(true);
+    setProfessionalLocationLoading(
+      true
+    );
+
     setMessage('');
 
     const position =
@@ -512,7 +623,10 @@ export default function Home() {
         'Non è stato possibile ottenere la posizione. Controlla i permessi GPS.'
       );
 
-      setProfessionalLocationLoading(false);
+      setProfessionalLocationLoading(
+        false
+      );
+
       return;
     }
 
@@ -533,7 +647,10 @@ export default function Home() {
         `Errore aggiornamento posizione: ${error.message}`
       );
 
-      setProfessionalLocationLoading(false);
+      setProfessionalLocationLoading(
+        false
+      );
+
       return;
     }
 
@@ -542,30 +659,43 @@ export default function Home() {
         'Non è stato possibile aggiornare la posizione professionale.'
       );
 
-      setProfessionalLocationLoading(false);
+      setProfessionalLocationLoading(
+        false
+      );
+
       return;
     }
 
-    setProfessionalLocationSet(true);
+    setProfessionalLocationSet(
+      true
+    );
 
     setMessage(
       '📍 Posizione professionale aggiornata correttamente.'
     );
 
-    setProfessionalLocationLoading(false);
+    await loadJobs();
+
+    setProfessionalLocationLoading(
+      false
+    );
   }
 
   async function findBestMatch(
     jobId: string
   ) {
-    setMatchingLoading(true);
+    setMatchingLoading(
+      true
+    );
+
     setBestMatch(null);
 
     const { data, error } =
       await supabase.rpc(
         'find_professionals_for_job',
         {
-          p_job_id: jobId
+          p_job_id:
+            jobId
         }
       );
 
@@ -574,14 +704,20 @@ export default function Home() {
         `Richiesta creata, ma errore matching: ${error.message}`
       );
 
-      setMatchingLoading(false);
+      setMatchingLoading(
+        false
+      );
+
       return;
     }
 
     const results =
-      (data ?? []) as MatchResult[];
+      (data ??
+        []) as MatchResult[];
 
-    if (results.length > 0) {
+    if (
+      results.length > 0
+    ) {
       setBestMatch(
         results[0]
       );
@@ -597,7 +733,9 @@ export default function Home() {
       );
     }
 
-    setMatchingLoading(false);
+    setMatchingLoading(
+      false
+    );
   }
 
   async function submitJob() {
@@ -608,12 +746,15 @@ export default function Home() {
       setMessage(
         'Scegli una categoria e descrivi il problema.'
       );
+
       return;
     }
 
     if (!user) {
       setRole('cliente');
-      setAuthMode('signup');
+      setAuthMode(
+        'signup'
+      );
       setAuthOpen(true);
 
       setMessage(
@@ -630,15 +771,23 @@ export default function Home() {
     let currentCoordinates =
       coordinates;
 
-    if (!currentCoordinates) {
-      setLocationLoading(true);
+    if (
+      !currentCoordinates
+    ) {
+      setLocationLoading(
+        true
+      );
 
       currentCoordinates =
         await getCurrentPosition();
 
-      setLocationLoading(false);
+      setLocationLoading(
+        false
+      );
 
-      if (currentCoordinates) {
+      if (
+        currentCoordinates
+      ) {
         setCoordinates(
           currentCoordinates
         );
@@ -651,7 +800,10 @@ export default function Home() {
     } = await supabase
       .from('categories')
       .select('id')
-      .eq('slug', slug(cat))
+      .eq(
+        'slug',
+        slug(cat)
+      )
       .single();
 
     if (
@@ -686,11 +838,13 @@ export default function Home() {
 
         latitude:
           currentCoordinates
-            ?.latitude ?? null,
+            ?.latitude ??
+          null,
 
         longitude:
           currentCoordinates
-            ?.longitude ?? null
+            ?.longitude ??
+          null
       })
       .select('id')
       .single();
@@ -713,6 +867,7 @@ export default function Home() {
     setDescription('');
 
     await loadClientJobs();
+
     await findBestMatch(
       newJob.id
     );
@@ -732,7 +887,8 @@ export default function Home() {
       await supabase.rpc(
         'accept_job',
         {
-          p_job_id: jobId
+          p_job_id:
+            jobId
         }
       );
 
@@ -763,12 +919,12 @@ export default function Home() {
   ) {
     if (!user) return;
 
-    const confirmComplete =
+    const confirmation =
       window.confirm(
         'Confermi che l’intervento è stato completato?'
       );
 
-    if (!confirmComplete)
+    if (!confirmation)
       return;
 
     setBusy(true);
@@ -778,7 +934,8 @@ export default function Home() {
       await supabase.rpc(
         'complete_job',
         {
-          p_job_id: jobId
+          p_job_id:
+            jobId
         }
       );
 
@@ -788,6 +945,7 @@ export default function Home() {
       );
 
       setBusy(false);
+
       return;
     }
 
@@ -797,6 +955,7 @@ export default function Home() {
       );
 
       setBusy(false);
+
       return;
     }
 
@@ -820,18 +979,28 @@ export default function Home() {
     jobId: string,
     title: string
   ) {
-    setChatJobId(jobId);
-    setChatTitle(title);
+    setChatJobId(
+      jobId
+    );
+
+    setChatTitle(
+      title
+    );
+
     setChatText('');
     setChatMessages([]);
 
-    await loadChat(jobId);
+    await loadChat(
+      jobId
+    );
   }
 
   async function loadChat(
     jobId: string
   ) {
-    setChatLoading(true);
+    setChatLoading(
+      true
+    );
 
     const { data, error } =
       await supabase
@@ -856,11 +1025,14 @@ export default function Home() {
       );
     } else {
       setChatMessages(
-        (data ?? []) as ChatMessage[]
+        (data ??
+          []) as ChatMessage[]
       );
     }
 
-    setChatLoading(false);
+    setChatLoading(
+      false
+    );
   }
 
   async function sendChatMessage(
@@ -876,7 +1048,9 @@ export default function Home() {
       return;
     }
 
-    setChatSending(true);
+    setChatSending(
+      true
+    );
 
     const { error } =
       await supabase
@@ -904,7 +1078,9 @@ export default function Home() {
       );
     }
 
-    setChatSending(false);
+    setChatSending(
+      false
+    );
   }
 
   function closeChat() {
@@ -918,7 +1094,9 @@ export default function Home() {
     jobId: string,
     professionalName: string
   ) {
-    setReviewJobId(jobId);
+    setReviewJobId(
+      jobId
+    );
 
     setReviewProfessionalName(
       professionalName
@@ -931,9 +1109,9 @@ export default function Home() {
 
   function closeReview() {
     setReviewJobId(null);
-
-    setReviewProfessionalName('');
-
+    setReviewProfessionalName(
+      ''
+    );
     setRating(5);
     setReviewComment('');
     setReviewMessage('');
@@ -944,10 +1122,16 @@ export default function Home() {
   ) {
     e.preventDefault();
 
-    if (!reviewJobId)
+    if (
+      !reviewJobId
+    ) {
       return;
+    }
 
-    setReviewSending(true);
+    setReviewSending(
+      true
+    );
+
     setReviewMessage('');
 
     const { data, error } =
@@ -977,7 +1161,10 @@ export default function Home() {
           : `Errore recensione: ${error.message}`
       );
 
-      setReviewSending(false);
+      setReviewSending(
+        false
+      );
+
       return;
     }
 
@@ -986,7 +1173,10 @@ export default function Home() {
         'Non è possibile recensire questo intervento.'
       );
 
-      setReviewSending(false);
+      setReviewSending(
+        false
+      );
+
       return;
     }
 
@@ -998,7 +1188,9 @@ export default function Home() {
 
     closeReview();
 
-    setReviewSending(false);
+    setReviewSending(
+      false
+    );
   }
 
   async function authSubmit(
@@ -1010,22 +1202,24 @@ export default function Home() {
     setMessage('');
 
     if (
-      authMode === 'signup'
+      authMode ===
+      'signup'
     ) {
       const { error } =
-        await supabase.auth.signUp({
-          email,
-          password,
+        await supabase.auth
+          .signUp({
+            email,
+            password,
 
-          options: {
-            data: {
-              full_name:
-                name,
+            options: {
+              data: {
+                full_name:
+                  name,
 
-              role
+                role
+              }
             }
-          }
-        });
+          });
 
       if (error) {
         setMessage(
@@ -1042,19 +1236,25 @@ export default function Home() {
         error
       } =
         await supabase.auth
-          .signInWithPassword({
-            email,
-            password
-          });
+          .signInWithPassword(
+            {
+              email,
+              password
+            }
+          );
 
       if (error) {
         setMessage(
           error.message
         );
       } else {
-        setAuthOpen(false);
+        setAuthOpen(
+          false
+        );
 
-        if (data.user) {
+        if (
+          data.user
+        ) {
           await loadProfile(
             data.user.id
           );
@@ -1066,9 +1266,11 @@ export default function Home() {
   }
 
   async function toggleAvailability() {
-    if (!user) return;
+    if (!user)
+      return;
 
-    const next = !online;
+    const next =
+      !online;
 
     setBusy(true);
     setMessage('');
@@ -1095,7 +1297,9 @@ export default function Home() {
         `Errore disponibilità: ${error.message}`
       );
     } else {
-      setOnline(next);
+      setOnline(
+        next
+      );
 
       setMessage(
         next
@@ -1108,7 +1312,8 @@ export default function Home() {
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    await supabase.auth
+      .signOut();
 
     setMessage('');
     setBestMatch(null);
@@ -1118,15 +1323,21 @@ export default function Home() {
   function availabilityLabel(
     status: string
   ) {
-    if (status === 'ora') {
+    if (
+      status === 'ora'
+    ) {
       return '🟢 Disponibile ora';
     }
 
-    if (status === '1-2h') {
+    if (
+      status === '1-2h'
+    ) {
       return '🟡 Disponibile entro 1–2 ore';
     }
 
-    if (status === 'oggi') {
+    if (
+      status === 'oggi'
+    ) {
       return '🟠 Disponibile oggi';
     }
 
@@ -1134,9 +1345,13 @@ export default function Home() {
   }
 
   const averageRating =
-    professionalReviews.length > 0
+    professionalReviews.length >
+    0
       ? professionalReviews.reduce(
-          (sum, review) =>
+          (
+            sum,
+            review
+          ) =>
             sum +
             Number(
               review.rating
@@ -1153,7 +1368,9 @@ export default function Home() {
           <button
             type="button"
             className="x"
-            onClick={closeChat}
+            onClick={
+              closeChat
+            }
           >
             ×
           </button>
@@ -1169,11 +1386,16 @@ export default function Home() {
 
           <div
             style={{
-              maxHeight: 330,
-              overflowY: 'auto',
-              marginTop: 20,
-              marginBottom: 20,
-              display: 'grid',
+              maxHeight:
+                330,
+              overflowY:
+                'auto',
+              marginTop:
+                20,
+              marginBottom:
+                20,
+              display:
+                'grid',
               gap: 10
             }}
           >
@@ -1189,7 +1411,6 @@ export default function Home() {
                 <div className="card">
                   <p>
                     Nessun messaggio.
-                    Inizia la conversazione.
                   </p>
                 </div>
               )}
@@ -1204,8 +1425,12 @@ export default function Home() {
                   <div
                     key={m.id}
                     style={{
-                      padding: 12,
-                      borderRadius: 12,
+                      padding:
+                        12,
+
+                      borderRadius:
+                        12,
+
                       border:
                         '1px solid #ddd',
 
@@ -1226,22 +1451,9 @@ export default function Home() {
                         : 'Interlocutore'}
                     </b>
 
-                    <p
-                      style={{
-                        margin:
-                          '5px 0'
-                      }}
-                    >
+                    <p>
                       {m.message}
                     </p>
-
-                    <small>
-                      {new Date(
-                        m.created_at
-                      ).toLocaleString(
-                        'it-IT'
-                      )}
-                    </small>
                   </div>
                 );
               }
@@ -1254,26 +1466,25 @@ export default function Home() {
             }
           >
             <input
-              value={chatText}
+              value={
+                chatText
+              }
               onChange={e =>
                 setChatText(
-                  e.target.value
+                  e.target
+                    .value
                 )
               }
               placeholder="Scrivi un messaggio..."
-              maxLength={1000}
             />
 
             <button
               className="full"
               disabled={
-                chatSending ||
-                !chatText.trim()
+                chatSending
               }
             >
-              {chatSending
-                ? 'Invio...'
-                : 'Invia messaggio →'}
+              💬 Invia
             </button>
           </form>
         </div>
@@ -1304,29 +1515,40 @@ export default function Home() {
           </label>
 
           <h2>
-            Come è andato l'intervento?
+            Come è andato
+            l'intervento?
           </h2>
 
           <p>
-            Valuta il lavoro di{' '}
+            Valuta{' '}
             <b>
-              {reviewProfessionalName ||
-                'professionista'}
-            </b>.
+              {reviewProfessionalName}
+            </b>
           </p>
 
           <div
             style={{
-              display: 'flex',
+              display:
+                'flex',
               gap: 6,
-              fontSize: 34,
-              margin: '20px 0'
+              fontSize:
+                34,
+              margin:
+                '20px 0'
             }}
           >
-            {[1, 2, 3, 4, 5].map(
+            {[
+              1,
+              2,
+              3,
+              4,
+              5
+            ].map(
               star => (
                 <button
-                  key={star}
+                  key={
+                    star
+                  }
                   type="button"
                   onClick={() =>
                     setRating(
@@ -1334,11 +1556,14 @@ export default function Home() {
                     )
                   }
                   style={{
-                    border: 'none',
+                    border:
+                      'none',
+
                     background:
                       'transparent',
-                    padding: 0,
-                    fontSize: 34
+
+                    fontSize:
+                      34
                   }}
                 >
                   {star <=
@@ -1356,7 +1581,8 @@ export default function Home() {
             }
             onChange={e =>
               setReviewComment(
-                e.target.value
+                e.target
+                  .value
               )
             }
             placeholder="Scrivi un commento..."
@@ -1408,8 +1634,8 @@ export default function Home() {
         <section
           className="section"
           style={{
-            paddingTop: 70,
-            minHeight: '75vh'
+            paddingTop:
+              70
           }}
         >
           <label className="tag">
@@ -1419,13 +1645,15 @@ export default function Home() {
           <h2>
             Ciao{' '}
             {fullName ||
-              'Professionista'}.
+              'Professionista'}
+            .
           </h2>
 
           <div
             className="proPanel"
             style={{
-              marginTop: 30
+              marginTop:
+                30
             }}
           >
             <div>
@@ -1444,31 +1672,27 @@ export default function Home() {
 
               <div
                 style={{
-                  marginTop: 15
+                  fontSize:
+                    24,
+                  fontWeight:
+                    700
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 700
-                  }}
-                >
-                  ⭐{' '}
-                  {professionalReviews.length >
-                  0
-                    ? averageRating.toFixed(
-                        1
-                      )
-                    : '—'}
-                </div>
-
-                <small>
-                  {professionalReviews.length ===
-                  1
-                    ? '1 recensione'
-                    : `${professionalReviews.length} recensioni`}
-                </small>
+                ⭐{' '}
+                {professionalReviews.length >
+                0
+                  ? averageRating.toFixed(
+                      1
+                    )
+                  : '—'}
               </div>
+
+              <small>
+                {
+                  professionalReviews.length
+                }{' '}
+                recensioni
+              </small>
             </div>
 
             <div className="switchLine">
@@ -1485,7 +1709,6 @@ export default function Home() {
                 onClick={
                   toggleAvailability
                 }
-                disabled={busy}
               >
                 <span />
               </button>
@@ -1501,8 +1724,8 @@ export default function Home() {
           <div
             className="card"
             style={{
-              marginTop: 20,
-              maxWidth: '100%'
+              marginTop:
+                20
             }}
           >
             <label className="tag">
@@ -1514,18 +1737,9 @@ export default function Home() {
             </h3>
 
             <p>
-              La posizione serve per
-              calcolare la distanza dai
-              clienti e migliorare il
-              matching.
-            </p>
-
-            <p>
-              <b>
-                {professionalLocationSet
-                  ? '✅ Posizione configurata'
-                  : '⚠️ Posizione non configurata'}
-              </b>
+              {professionalLocationSet
+                ? '✅ Posizione configurata'
+                : '⚠️ Posizione non configurata'}
             </p>
 
             <button
@@ -1538,10 +1752,8 @@ export default function Home() {
               }
             >
               {professionalLocationLoading
-                ? '📍 Rilevamento posizione...'
-                : professionalLocationSet
-                  ? '📍 Aggiorna la mia posizione'
-                  : '📍 Imposta la mia posizione'}
+                ? '📍 Rilevamento...'
+                : '📍 Aggiorna la mia posizione'}
             </button>
           </div>
 
@@ -1549,7 +1761,8 @@ export default function Home() {
             <div
               className="success"
               style={{
-                marginTop: 20
+                marginTop:
+                  20
               }}
             >
               {message}
@@ -1558,7 +1771,8 @@ export default function Home() {
 
           <div
             style={{
-              marginTop: 50
+              marginTop:
+                50
             }}
           >
             <label className="tag">
@@ -1569,39 +1783,54 @@ export default function Home() {
               Lavori compatibili
             </h2>
 
+            <p>
+              Le richieste sono ordinate
+              per urgenza e distanza.
+            </p>
+
             <button
               className="outline"
-              onClick={loadJobs}
+              onClick={
+                loadJobs
+              }
             >
               ↻ Aggiorna
             </button>
           </div>
 
+          {jobsLoading && (
+            <p>
+              Caricamento...
+            </p>
+          )}
+
           {!jobsLoading &&
-            jobs.length === 0 && (
-              <div
+            jobs.length ===
+              0 && (
+                <div
+                  className="card"
+                  style={{
+                    marginTop:
+                      20
+                  }}
+                >
+                  <h3>
+                    Nessun lavoro compatibile
+                  </h3>
+                </div>
+              )}
+
+          {jobs.map(
+            job => (
+              <article
+                key={
+                  job.id
+                }
                 className="card"
                 style={{
-                  marginTop: 20
+                  marginTop:
+                    18
                 }}
-              >
-                <h3>
-                  Nessun lavoro compatibile
-                </h3>
-              </div>
-            )}
-
-          <div
-            style={{
-              display: 'grid',
-              gap: 18,
-              marginTop: 20
-            }}
-          >
-            {jobs.map(job => (
-              <article
-                key={job.id}
-                className="card"
               >
                 <div className="live">
                   ● MATCH COMPATIBILE
@@ -1624,6 +1853,35 @@ export default function Home() {
                   {job.urgency.toUpperCase()}
                 </p>
 
+                {job.distance_km !=
+                  null && (
+                  <div
+                    style={{
+                      fontSize:
+                        22,
+                      fontWeight:
+                        800,
+                      margin:
+                        '15px 0'
+                    }}
+                  >
+                    📍{' '}
+                    {Number(
+                      job.distance_km
+                    ).toFixed(
+                      1
+                    )}{' '}
+                    km da te
+                  </div>
+                )}
+
+                {job.distance_km ==
+                  null && (
+                  <p>
+                    📍 Distanza non disponibile
+                  </p>
+                )}
+
                 <button
                   className="full"
                   disabled={
@@ -1641,12 +1899,13 @@ export default function Home() {
                     : 'Vai online per accettare'}
                 </button>
               </article>
-            ))}
-          </div>
+            )
+          )}
 
           <div
             style={{
-              marginTop: 70
+              marginTop:
+                70
             }}
           >
             <label className="tag">
@@ -1666,10 +1925,13 @@ export default function Home() {
 
               return (
                 <article
-                  key={job.id}
+                  key={
+                    job.id
+                  }
                   className="card"
                   style={{
-                    marginTop: 18
+                    marginTop:
+                      18
                   }}
                 >
                   <div className="live">
@@ -1704,7 +1966,8 @@ export default function Home() {
                     <button
                       className="outline"
                       style={{
-                        marginTop: 12
+                        marginTop:
+                          12
                       }}
                       onClick={() =>
                         completeJob(
@@ -1722,7 +1985,8 @@ export default function Home() {
 
           <div
             style={{
-              marginTop: 70
+              marginTop:
+                70
             }}
           >
             <label className="tag">
@@ -1734,28 +1998,6 @@ export default function Home() {
             </h2>
           </div>
 
-          <div
-            className="card"
-            style={{
-              marginTop: 20
-            }}
-          >
-            <h3>
-              ⭐{' '}
-              {professionalReviews.length >
-              0
-                ? averageRating.toFixed(
-                    1
-                  )
-                : 'Nessuna valutazione'}
-            </h3>
-
-            <p>
-              {professionalReviews.length}{' '}
-              recensioni
-            </p>
-          </div>
-
           {professionalReviews.map(
             review => (
               <article
@@ -1764,7 +2006,8 @@ export default function Home() {
                 }
                 className="card"
                 style={{
-                  marginTop: 18
+                  marginTop:
+                    18
                 }}
               >
                 <div>
@@ -1799,7 +2042,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V14
+            © 2026 LavoroSubito · V15
           </small>
         </footer>
 
@@ -1833,6 +2076,7 @@ export default function Home() {
               setAuthMode(
                 'login'
               );
+
               setAuthOpen(
                 true
               );
@@ -1852,6 +2096,7 @@ export default function Home() {
           <h1>
             Un problema?
             <br />
+
             <span>
               Risolviamolo subito.
             </span>
@@ -1859,8 +2104,8 @@ export default function Home() {
 
           <p>
             Trova il professionista
-            disponibile più adatto e
-            più vicino a te.
+            disponibile più adatto
+            e più vicino a te.
           </p>
         </div>
 
@@ -1871,16 +2116,23 @@ export default function Home() {
 
           <div className="grid">
             {cats.map(
-              (c, i) => (
+              (
+                c,
+                i
+              ) => (
                 <button
-                  key={c}
+                  key={
+                    c
+                  }
                   className={
                     cat === c
                       ? 'cat selected'
                       : 'cat'
                   }
                   onClick={() =>
-                    setCat(c)
+                    setCat(
+                      c
+                    )
                   }
                 >
                   <strong>
@@ -1898,28 +2150,37 @@ export default function Home() {
               'SUBITO',
               'OGGI',
               '48H'
-            ].map(u => (
-              <button
-                key={u}
-                className={
-                  urg === u
-                    ? 'selUrg'
-                    : ''
-                }
-                onClick={() =>
-                  setUrg(u)
-                }
-              >
-                {u}
-              </button>
-            ))}
+            ].map(
+              u => (
+                <button
+                  key={
+                    u
+                  }
+                  className={
+                    urg === u
+                      ? 'selUrg'
+                      : ''
+                  }
+                  onClick={() =>
+                    setUrg(
+                      u
+                    )
+                  }
+                >
+                  {u}
+                </button>
+              )
+            )}
           </div>
 
           <input
-            value={description}
+            value={
+              description
+            }
             onChange={e =>
               setDescription(
-                e.target.value
+                e.target
+                  .value
               )
             }
             placeholder="Descrivi brevemente il problema..."
@@ -1929,18 +2190,17 @@ export default function Home() {
             type="button"
             className="outline"
             style={{
-              width: '100%',
-              marginBottom: 12
+              width:
+                '100%',
+              marginBottom:
+                12
             }}
             onClick={
               detectLocation
             }
-            disabled={
-              locationLoading
-            }
           >
             {locationLoading
-              ? '📍 Rilevamento posizione...'
+              ? '📍 Rilevamento...'
               : coordinates
                 ? '✓ Posizione rilevata'
                 : '📍 Usa la mia posizione'}
@@ -1948,7 +2208,9 @@ export default function Home() {
 
           <button
             className="full"
-            disabled={busy}
+            disabled={
+              busy
+            }
             onClick={
               submitJob
             }
@@ -1968,92 +2230,83 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 20
+                marginTop:
+                  20
               }}
             >
-              <h3>
-                🔎 Matching in corso...
-              </h3>
+              🔎 Matching in corso...
             </div>
           )}
 
-          {!matchingLoading &&
-            bestMatch && (
+          {bestMatch && (
+            <div
+              className="card"
+              style={{
+                marginTop:
+                  20,
+                border:
+                  '2px solid #48b779'
+              }}
+            >
+              <label className="tag">
+                MIGLIOR MATCH
+              </label>
+
+              <h2>
+                {
+                  bestMatch.professional_name
+                }
+              </h2>
+
               <div
-                className="card"
                 style={{
-                  marginTop: 20,
-                  border:
-                    '2px solid #48b779'
+                  fontSize:
+                    30,
+                  fontWeight:
+                    800
                 }}
               >
-                <label className="tag">
-                  MIGLIOR MATCH
-                </label>
-
-                <h2>
-                  {bestMatch.professional_name}
-                </h2>
-
-                <div
-                  style={{
-                    fontSize: 30,
-                    fontWeight: 800,
-                    margin:
-                      '15px 0'
-                  }}
-                >
-                  🎯{' '}
-                  {bestMatch.match_score}
-                  /100
-                </div>
-
-                {bestMatch.distance_km !==
-                  null && (
-                  <div
-                    style={{
-                      fontSize: 22,
-                      fontWeight: 700,
-                      marginBottom: 18
-                    }}
-                  >
-                    📍{' '}
-                    {Number(
-                      bestMatch.distance_km
-                    ).toFixed(1)}{' '}
-                    km da te
-                  </div>
-                )}
-
-                <p>
-                  <b>
-                    Disponibilità:
-                  </b>
-                  <br />
-
-                  {availabilityLabel(
-                    bestMatch.availability_status
-                  )}
-                </p>
-
-                <p>
-                  <b>
-                    Valutazione:
-                  </b>{' '}
-                  ⭐{' '}
-                  {Number(
-                    bestMatch.average_rating
-                  ).toFixed(1)}
-                </p>
-
-                <p>
-                  <b>
-                    Recensioni:
-                  </b>{' '}
-                  {bestMatch.review_count}
-                </p>
+                🎯{' '}
+                {
+                  bestMatch.match_score
+                }
+                /100
               </div>
-            )}
+
+              {bestMatch.distance_km !=
+                null && (
+                <h3>
+                  📍{' '}
+                  {Number(
+                    bestMatch.distance_km
+                  ).toFixed(
+                    1
+                  )}{' '}
+                  km da te
+                </h3>
+              )}
+
+              <p>
+                {availabilityLabel(
+                  bestMatch.availability_status
+                )}
+              </p>
+
+              <p>
+                ⭐{' '}
+                {Number(
+                  bestMatch.average_rating
+                ).toFixed(
+                  1
+                )}{' '}
+                ·{' '}
+                {
+                  bestMatch.review_count
+                }{' '}
+                recensioni
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -2092,10 +2345,13 @@ export default function Home() {
 
                 return (
                   <article
-                    key={job.id}
+                    key={
+                      job.id
+                    }
                     className="card"
                     style={{
-                      marginTop: 18
+                      marginTop:
+                        18
                     }}
                   >
                     <div className="live">
@@ -2127,7 +2383,8 @@ export default function Home() {
                           <button
                             className="full"
                             style={{
-                              marginTop: 15
+                              marginTop:
+                                15
                             }}
                             onClick={() =>
                               openChat(
@@ -2144,7 +2401,8 @@ export default function Home() {
                             <button
                               className="outline"
                               style={{
-                                marginTop: 12
+                                marginTop:
+                                  12
                               }}
                               onClick={() =>
                                 completeJob(
@@ -2161,7 +2419,8 @@ export default function Home() {
                               <button
                                 className="outline"
                                 style={{
-                                  marginTop: 12
+                                  marginTop:
+                                    12
                                 }}
                                 onClick={() =>
                                   openReview(
@@ -2180,7 +2439,8 @@ export default function Home() {
                               <div
                                 className="success"
                                 style={{
-                                  marginTop: 12
+                                  marginTop:
+                                    12
                                 }}
                               >
                                 ⭐ Recensione inviata
@@ -2221,7 +2481,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V14
+          © 2026 LavoroSubito · V15
         </small>
       </footer>
 
@@ -2258,16 +2518,21 @@ export default function Home() {
                 <input
                   required
                   placeholder="Nome e cognome"
-                  value={name}
+                  value={
+                    name
+                  }
                   onChange={e =>
                     setName(
-                      e.target.value
+                      e.target
+                        .value
                     )
                   }
                 />
 
                 <select
-                  value={role}
+                  value={
+                    role
+                  }
                   onChange={e =>
                     setRole(
                       e.target
@@ -2290,37 +2555,45 @@ export default function Home() {
               required
               type="email"
               placeholder="Email"
-              value={email}
+              value={
+                email
+              }
               onChange={e =>
                 setEmail(
-                  e.target.value
+                  e.target
+                    .value
                 )
               }
             />
 
             <input
               required
-              minLength={6}
+              minLength={
+                6
+              }
               type="password"
               placeholder="Password"
-              value={password}
+              value={
+                password
+              }
               onChange={e =>
                 setPassword(
-                  e.target.value
+                  e.target
+                    .value
                 )
               }
             />
 
             <button
               className="full"
-              disabled={busy}
+              disabled={
+                busy
+              }
             >
-              {busy
-                ? 'Attendi...'
-                : authMode ===
-                    'signup'
-                  ? 'Crea account'
-                  : 'Accedi'}
+              {authMode ===
+              'signup'
+                ? 'Crea account'
+                : 'Accedi'}
             </button>
           </form>
         </div>
