@@ -26,12 +26,12 @@ const icons = [
   '🏠'
 ];
 
+const distances = [10, 20, 30, 50, 100];
+
 const slug = (v: string) =>
   v.toLowerCase().replaceAll(' ', '-');
 
-type AppRole =
-  | 'cliente'
-  | 'professionista';
+type AppRole = 'cliente' | 'professionista';
 
 type Job = {
   id: string;
@@ -97,16 +97,13 @@ type Coordinates = {
 };
 
 export default function Home() {
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   const [role, setRole] =
     useState<AppRole>('cliente');
 
-  const [
-    profileRole,
-    setProfileRole
-  ] = useState<AppRole | null>(null);
+  const [profileRole, setProfileRole] =
+    useState<AppRole | null>(null);
 
   const [fullName, setFullName] =
     useState('');
@@ -117,10 +114,8 @@ export default function Home() {
   const [urg, setUrg] =
     useState('SUBITO');
 
-  const [
-    description,
-    setDescription
-  ] = useState('');
+  const [description, setDescription] =
+    useState('');
 
   const [message, setMessage] =
     useState('');
@@ -151,58 +146,40 @@ export default function Home() {
   const [jobs, setJobs] =
     useState<Job[]>([]);
 
-  const [
-    jobsLoading,
-    setJobsLoading
-  ] = useState(false);
+  const [jobsLoading, setJobsLoading] =
+    useState(false);
 
-  const [
-    acceptedJobs,
-    setAcceptedJobs
-  ] = useState<AcceptedJob[]>([]);
+  const [acceptedJobs, setAcceptedJobs] =
+    useState<AcceptedJob[]>([]);
 
-  const [
-    clientJobs,
-    setClientJobs
-  ] = useState<ClientJob[]>([]);
+  const [clientJobs, setClientJobs] =
+    useState<ClientJob[]>([]);
 
   const [
     clientJobsLoading,
     setClientJobsLoading
   ] = useState(false);
 
-  const [
-    chatJobId,
-    setChatJobId
-  ] = useState<string | null>(null);
+  const [chatJobId, setChatJobId] =
+    useState<string | null>(null);
 
-  const [
-    chatTitle,
-    setChatTitle
-  ] = useState('');
+  const [chatTitle, setChatTitle] =
+    useState('');
 
-  const [
-    chatMessages,
-    setChatMessages
-  ] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] =
+    useState<ChatMessage[]>([]);
 
   const [chatText, setChatText] =
     useState('');
 
-  const [
-    chatLoading,
-    setChatLoading
-  ] = useState(false);
+  const [chatLoading, setChatLoading] =
+    useState(false);
 
-  const [
-    chatSending,
-    setChatSending
-  ] = useState(false);
+  const [chatSending, setChatSending] =
+    useState(false);
 
-  const [
-    reviewJobId,
-    setReviewJobId
-  ] = useState<string | null>(null);
+  const [reviewJobId, setReviewJobId] =
+    useState<string | null>(null);
 
   const [
     reviewProfessionalName,
@@ -212,35 +189,22 @@ export default function Home() {
   const [rating, setRating] =
     useState(5);
 
-  const [
-    reviewComment,
-    setReviewComment
-  ] = useState('');
+  const [reviewComment, setReviewComment] =
+    useState('');
 
-  const [
-    reviewSending,
-    setReviewSending
-  ] = useState(false);
+  const [reviewSending, setReviewSending] =
+    useState(false);
 
-  const [
-    reviewMessage,
-    setReviewMessage
-  ] = useState('');
+  const [reviewMessage, setReviewMessage] =
+    useState('');
 
   const [
     professionalReviews,
     setProfessionalReviews
-  ] = useState<
-    ProfessionalReview[]
-  >([]);
+  ] = useState<ProfessionalReview[]>([]);
 
-  const [
-    bestMatch,
-    setBestMatch
-  ] =
-    useState<MatchResult | null>(
-      null
-    );
+  const [bestMatch, setBestMatch] =
+    useState<MatchResult | null>(null);
 
   const [
     matchingLoading,
@@ -252,13 +216,8 @@ export default function Home() {
     setLocationLoading
   ] = useState(false);
 
-  const [
-    coordinates,
-    setCoordinates
-  ] =
-    useState<Coordinates | null>(
-      null
-    );
+  const [coordinates, setCoordinates] =
+    useState<Coordinates | null>(null);
 
   const [
     professionalLocationLoading,
@@ -270,6 +229,14 @@ export default function Home() {
     setProfessionalLocationSet
   ] = useState(false);
 
+  const [maxDistance, setMaxDistance] =
+    useState(30);
+
+  const [
+    distanceSaving,
+    setDistanceSaving
+  ] = useState(false);
+
   useEffect(() => {
     supabase.auth
       .getUser()
@@ -277,52 +244,45 @@ export default function Home() {
         setUser(data.user);
 
         if (data.user) {
-          loadProfile(
-            data.user.id
-          );
+          loadProfile(data.user.id);
         }
       });
 
     const { data } =
-      supabase.auth
-        .onAuthStateChange(
-          (_event, session) => {
-            const currentUser =
-              session?.user ?? null;
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          const currentUser =
+            session?.user ?? null;
 
-            setUser(
-              currentUser
+          setUser(currentUser);
+
+          if (currentUser) {
+            loadProfile(
+              currentUser.id
             );
-
-            if (currentUser) {
-              loadProfile(
-                currentUser.id
-              );
-            } else {
-              setProfileRole(null);
-              setFullName('');
-              setJobs([]);
-              setAcceptedJobs([]);
-              setClientJobs([]);
-              setProfessionalReviews(
-                []
-              );
-              setBestMatch(null);
-              setOnline(false);
-              setChatJobId(null);
-              setChatMessages([]);
-              setReviewJobId(null);
-              setCoordinates(null);
-              setProfessionalLocationSet(
-                false
-              );
-            }
+          } else {
+            setProfileRole(null);
+            setFullName('');
+            setJobs([]);
+            setAcceptedJobs([]);
+            setClientJobs([]);
+            setProfessionalReviews([]);
+            setBestMatch(null);
+            setOnline(false);
+            setChatJobId(null);
+            setChatMessages([]);
+            setReviewJobId(null);
+            setCoordinates(null);
+            setProfessionalLocationSet(
+              false
+            );
+            setMaxDistance(30);
           }
-        );
+        }
+      );
 
     return () =>
-      data.subscription
-        .unsubscribe();
+      data.subscription.unsubscribe();
   }, []);
 
   async function loadProfile(
@@ -331,32 +291,22 @@ export default function Home() {
     const { data, error } =
       await supabase
         .from('profiles')
-        .select(
-          'role, full_name'
-        )
+        .select('role, full_name')
         .eq('id', userId)
         .single();
 
     if (error || !data) {
-      setProfileRole(
-        'cliente'
-      );
-
+      setProfileRole('cliente');
       await loadClientJobs();
       return;
     }
 
-    const detectedRole:
-      AppRole =
-        data.role ===
-        'professionista'
-          ? 'professionista'
-          : 'cliente';
+    const detectedRole: AppRole =
+      data.role === 'professionista'
+        ? 'professionista'
+        : 'cliente';
 
-    setProfileRole(
-      detectedRole
-    );
-
+    setProfileRole(detectedRole);
     setFullName(
       data.full_name ?? ''
     );
@@ -369,35 +319,38 @@ export default function Home() {
         userId
       );
 
-      await loadProfessionalLocation(
+      await loadProfessionalSettings(
         userId
       );
 
       await loadJobs();
-
       await loadAcceptedJobs();
-
       await loadProfessionalReviews();
     } else {
       await loadClientJobs();
     }
   }
 
-  async function loadProfessionalLocation(
+  async function loadProfessionalSettings(
     userId: string
   ) {
     const { data } =
       await supabase
         .from('professionals')
         .select(
-          'latitude, longitude'
+          'latitude, longitude, max_distance_km'
         )
         .eq('id', userId)
         .maybeSingle();
 
     setProfessionalLocationSet(
       data?.latitude != null &&
-        data?.longitude != null
+      data?.longitude != null
+    );
+
+    setMaxDistance(
+      data?.max_distance_km ??
+        30
     );
   }
 
@@ -438,22 +391,16 @@ export default function Home() {
         (data ?? []).map(
           (job: any) => ({
             id: job.id,
-
             description:
               job.description,
-
             urgency:
               job.urgency,
-
             status:
               job.status,
-
             created_at:
               job.created_at,
-
             distance_km:
               job.distance_km,
-
             categories: {
               name:
                 job.category_name
@@ -461,9 +408,7 @@ export default function Home() {
           })
         );
 
-      setJobs(
-        matchingJobs
-      );
+      setJobs(matchingJobs);
     }
 
     setJobsLoading(false);
@@ -479,7 +424,6 @@ export default function Home() {
       setMessage(
         `Errore lavori accettati: ${error.message}`
       );
-
       setAcceptedJobs([]);
     } else {
       setAcceptedJobs(
@@ -489,9 +433,7 @@ export default function Home() {
   }
 
   async function loadClientJobs() {
-    setClientJobsLoading(
-      true
-    );
+    setClientJobsLoading(true);
 
     const { data, error } =
       await supabase.rpc(
@@ -502,7 +444,6 @@ export default function Home() {
       setMessage(
         `Errore richieste cliente: ${error.message}`
       );
-
       setClientJobs([]);
     } else {
       setClientJobs(
@@ -510,9 +451,7 @@ export default function Home() {
       );
     }
 
-    setClientJobsLoading(
-      false
-    );
+    setClientJobsLoading(false);
   }
 
   async function loadProfessionalReviews() {
@@ -526,58 +465,43 @@ export default function Home() {
         `Errore recensioni: ${error.message}`
       );
 
-      setProfessionalReviews(
-        []
-      );
+      setProfessionalReviews([]);
     } else {
       setProfessionalReviews(
-        (data ??
-          []) as ProfessionalReview[]
+        (data ?? []) as ProfessionalReview[]
       );
     }
   }
 
   function getCurrentPosition():
     Promise<Coordinates | null> {
-    return new Promise(
-      resolve => {
-        if (
-          !navigator.geolocation
-        ) {
-          resolve(null);
-          return;
-        }
-
-        navigator.geolocation
-          .getCurrentPosition(
-            position => {
-              resolve({
-                latitude:
-                  position
-                    .coords
-                    .latitude,
-
-                longitude:
-                  position
-                    .coords
-                    .longitude
-              });
-            },
-
-            () =>
-              resolve(null),
-
-            {
-              enableHighAccuracy:
-                true,
-
-              timeout: 12000,
-
-              maximumAge: 60000
-            }
-          );
+    return new Promise(resolve => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
       }
-    );
+
+      navigator.geolocation
+        .getCurrentPosition(
+          position => {
+            resolve({
+              latitude:
+                position.coords.latitude,
+
+              longitude:
+                position.coords.longitude
+            });
+          },
+
+          () => resolve(null),
+
+          {
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 60000
+          }
+        );
+    });
   }
 
   async function detectLocation() {
@@ -594,9 +518,7 @@ export default function Home() {
         'Non è stato possibile ottenere la posizione. Controlla i permessi GPS.'
       );
     } else {
-      setCoordinates(
-        position
-      );
+      setCoordinates(position);
 
       setMessage(
         '📍 Posizione rilevata correttamente.'
@@ -620,7 +542,7 @@ export default function Home() {
 
     if (!position) {
       setMessage(
-        'Non è stato possibile ottenere la posizione. Controlla i permessi GPS.'
+        'Non è stato possibile ottenere la posizione.'
       );
 
       setProfessionalLocationLoading(
@@ -644,7 +566,7 @@ export default function Home() {
 
     if (error) {
       setMessage(
-        `Errore aggiornamento posizione: ${error.message}`
+        `Errore posizione: ${error.message}`
       );
 
       setProfessionalLocationLoading(
@@ -656,7 +578,7 @@ export default function Home() {
 
     if (data === false) {
       setMessage(
-        'Non è stato possibile aggiornare la posizione professionale.'
+        'Non è stato possibile aggiornare la posizione.'
       );
 
       setProfessionalLocationLoading(
@@ -681,21 +603,61 @@ export default function Home() {
     );
   }
 
+  async function saveMaxDistance(
+    distance: number
+  ) {
+    setDistanceSaving(true);
+    setMessage('');
+
+    const { data, error } =
+      await supabase.rpc(
+        'update_my_max_distance',
+        {
+          p_max_distance:
+            distance
+        }
+      );
+
+    if (error) {
+      setMessage(
+        `Errore raggio di lavoro: ${error.message}`
+      );
+
+      setDistanceSaving(false);
+      return;
+    }
+
+    if (data === false) {
+      setMessage(
+        'Non è stato possibile salvare il raggio di lavoro.'
+      );
+
+      setDistanceSaving(false);
+      return;
+    }
+
+    setMaxDistance(distance);
+
+    setMessage(
+      `📍 Raggio massimo impostato a ${distance} km.`
+    );
+
+    await loadJobs();
+
+    setDistanceSaving(false);
+  }
+
   async function findBestMatch(
     jobId: string
   ) {
-    setMatchingLoading(
-      true
-    );
-
+    setMatchingLoading(true);
     setBestMatch(null);
 
     const { data, error } =
       await supabase.rpc(
         'find_professionals_for_job',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
@@ -704,20 +666,14 @@ export default function Home() {
         `Richiesta creata, ma errore matching: ${error.message}`
       );
 
-      setMatchingLoading(
-        false
-      );
-
+      setMatchingLoading(false);
       return;
     }
 
     const results =
-      (data ??
-        []) as MatchResult[];
+      (data ?? []) as MatchResult[];
 
-    if (
-      results.length > 0
-    ) {
+    if (results.length > 0) {
       setBestMatch(
         results[0]
       );
@@ -733,9 +689,7 @@ export default function Home() {
       );
     }
 
-    setMatchingLoading(
-      false
-    );
+    setMatchingLoading(false);
   }
 
   async function submitJob() {
@@ -746,15 +700,12 @@ export default function Home() {
       setMessage(
         'Scegli una categoria e descrivi il problema.'
       );
-
       return;
     }
 
     if (!user) {
       setRole('cliente');
-      setAuthMode(
-        'signup'
-      );
+      setAuthMode('signup');
       setAuthOpen(true);
 
       setMessage(
@@ -771,23 +722,11 @@ export default function Home() {
     let currentCoordinates =
       coordinates;
 
-    if (
-      !currentCoordinates
-    ) {
-      setLocationLoading(
-        true
-      );
-
+    if (!currentCoordinates) {
       currentCoordinates =
         await getCurrentPosition();
 
-      setLocationLoading(
-        false
-      );
-
-      if (
-        currentCoordinates
-      ) {
+      if (currentCoordinates) {
         setCoordinates(
           currentCoordinates
         );
@@ -838,21 +777,16 @@ export default function Home() {
 
         latitude:
           currentCoordinates
-            ?.latitude ??
-          null,
+            ?.latitude ?? null,
 
         longitude:
           currentCoordinates
-            ?.longitude ??
-          null
+            ?.longitude ?? null
       })
       .select('id')
       .single();
 
-    if (
-      error ||
-      !newJob
-    ) {
+    if (error || !newJob) {
       setMessage(
         `Errore: ${
           error?.message ??
@@ -887,8 +821,7 @@ export default function Home() {
       await supabase.rpc(
         'accept_job',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
@@ -896,9 +829,7 @@ export default function Home() {
       setMessage(
         `Errore accettazione: ${error.message}`
       );
-    } else if (
-      data === false
-    ) {
+    } else if (data === false) {
       setMessage(
         'Questo lavoro è già stato accettato.'
       );
@@ -924,8 +855,7 @@ export default function Home() {
         'Confermi che l’intervento è stato completato?'
       );
 
-    if (!confirmation)
-      return;
+    if (!confirmation) return;
 
     setBusy(true);
     setMessage('');
@@ -934,18 +864,16 @@ export default function Home() {
       await supabase.rpc(
         'complete_job',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
     if (error) {
       setMessage(
-        `Errore completamento intervento: ${error.message}`
+        `Errore completamento: ${error.message}`
       );
 
       setBusy(false);
-
       return;
     }
 
@@ -955,7 +883,6 @@ export default function Home() {
       );
 
       setBusy(false);
-
       return;
     }
 
@@ -979,28 +906,18 @@ export default function Home() {
     jobId: string,
     title: string
   ) {
-    setChatJobId(
-      jobId
-    );
-
-    setChatTitle(
-      title
-    );
-
+    setChatJobId(jobId);
+    setChatTitle(title);
     setChatText('');
     setChatMessages([]);
 
-    await loadChat(
-      jobId
-    );
+    await loadChat(jobId);
   }
 
   async function loadChat(
     jobId: string
   ) {
-    setChatLoading(
-      true
-    );
+    setChatLoading(true);
 
     const { data, error } =
       await supabase
@@ -1008,16 +925,10 @@ export default function Home() {
         .select(
           'id, job_id, sender_id, message, created_at'
         )
-        .eq(
-          'job_id',
-          jobId
-        )
-        .order(
-          'created_at',
-          {
-            ascending: true
-          }
-        );
+        .eq('job_id', jobId)
+        .order('created_at', {
+          ascending: true
+        });
 
     if (error) {
       setMessage(
@@ -1025,14 +936,11 @@ export default function Home() {
       );
     } else {
       setChatMessages(
-        (data ??
-          []) as ChatMessage[]
+        (data ?? []) as ChatMessage[]
       );
     }
 
-    setChatLoading(
-      false
-    );
+    setChatLoading(false);
   }
 
   async function sendChatMessage(
@@ -1048,9 +956,7 @@ export default function Home() {
       return;
     }
 
-    setChatSending(
-      true
-    );
+    setChatSending(true);
 
     const { error } =
       await supabase
@@ -1078,9 +984,7 @@ export default function Home() {
       );
     }
 
-    setChatSending(
-      false
-    );
+    setChatSending(false);
   }
 
   function closeChat() {
@@ -1094,14 +998,10 @@ export default function Home() {
     jobId: string,
     professionalName: string
   ) {
-    setReviewJobId(
-      jobId
-    );
-
+    setReviewJobId(jobId);
     setReviewProfessionalName(
       professionalName
     );
-
     setRating(5);
     setReviewComment('');
     setReviewMessage('');
@@ -1109,9 +1009,7 @@ export default function Home() {
 
   function closeReview() {
     setReviewJobId(null);
-    setReviewProfessionalName(
-      ''
-    );
+    setReviewProfessionalName('');
     setRating(5);
     setReviewComment('');
     setReviewMessage('');
@@ -1122,16 +1020,9 @@ export default function Home() {
   ) {
     e.preventDefault();
 
-    if (
-      !reviewJobId
-    ) {
-      return;
-    }
+    if (!reviewJobId) return;
 
-    setReviewSending(
-      true
-    );
-
+    setReviewSending(true);
     setReviewMessage('');
 
     const { data, error } =
@@ -1161,10 +1052,7 @@ export default function Home() {
           : `Errore recensione: ${error.message}`
       );
 
-      setReviewSending(
-        false
-      );
-
+      setReviewSending(false);
       return;
     }
 
@@ -1173,10 +1061,7 @@ export default function Home() {
         'Non è possibile recensire questo intervento.'
       );
 
-      setReviewSending(
-        false
-      );
-
+      setReviewSending(false);
       return;
     }
 
@@ -1188,9 +1073,7 @@ export default function Home() {
 
     closeReview();
 
-    setReviewSending(
-      false
-    );
+    setReviewSending(false);
   }
 
   async function authSubmit(
@@ -1236,25 +1119,19 @@ export default function Home() {
         error
       } =
         await supabase.auth
-          .signInWithPassword(
-            {
-              email,
-              password
-            }
-          );
+          .signInWithPassword({
+            email,
+            password
+          });
 
       if (error) {
         setMessage(
           error.message
         );
       } else {
-        setAuthOpen(
-          false
-        );
+        setAuthOpen(false);
 
-        if (
-          data.user
-        ) {
+        if (data.user) {
           await loadProfile(
             data.user.id
           );
@@ -1266,8 +1143,7 @@ export default function Home() {
   }
 
   async function toggleAvailability() {
-    if (!user)
-      return;
+    if (!user) return;
 
     const next =
       !online;
@@ -1297,9 +1173,7 @@ export default function Home() {
         `Errore disponibilità: ${error.message}`
       );
     } else {
-      setOnline(
-        next
-      );
+      setOnline(next);
 
       setMessage(
         next
@@ -1312,8 +1186,7 @@ export default function Home() {
   }
 
   async function logout() {
-    await supabase.auth
-      .signOut();
+    await supabase.auth.signOut();
 
     setMessage('');
     setBestMatch(null);
@@ -1323,21 +1196,15 @@ export default function Home() {
   function availabilityLabel(
     status: string
   ) {
-    if (
-      status === 'ora'
-    ) {
+    if (status === 'ora') {
       return '🟢 Disponibile ora';
     }
 
-    if (
-      status === '1-2h'
-    ) {
+    if (status === '1-2h') {
       return '🟡 Disponibile entro 1–2 ore';
     }
 
-    if (
-      status === 'oggi'
-    ) {
+    if (status === 'oggi') {
       return '🟠 Disponibile oggi';
     }
 
@@ -1345,13 +1212,9 @@ export default function Home() {
   }
 
   const averageRating =
-    professionalReviews.length >
-    0
+    professionalReviews.length > 0
       ? professionalReviews.reduce(
-          (
-            sum,
-            review
-          ) =>
+          (sum, review) =>
             sum +
             Number(
               review.rating
@@ -1368,9 +1231,7 @@ export default function Home() {
           <button
             type="button"
             className="x"
-            onClick={
-              closeChat
-            }
+            onClick={closeChat}
           >
             ×
           </button>
@@ -1386,16 +1247,11 @@ export default function Home() {
 
           <div
             style={{
-              maxHeight:
-                330,
-              overflowY:
-                'auto',
-              marginTop:
-                20,
-              marginBottom:
-                20,
-              display:
-                'grid',
+              maxHeight: 330,
+              overflowY: 'auto',
+              marginTop: 20,
+              marginBottom: 20,
+              display: 'grid',
               gap: 10
             }}
           >
@@ -1404,16 +1260,6 @@ export default function Home() {
                 Caricamento messaggi...
               </p>
             )}
-
-            {!chatLoading &&
-              chatMessages.length ===
-                0 && (
-                <div className="card">
-                  <p>
-                    Nessun messaggio.
-                  </p>
-                </div>
-              )}
 
             {chatMessages.map(
               m => {
@@ -1425,24 +1271,14 @@ export default function Home() {
                   <div
                     key={m.id}
                     style={{
-                      padding:
-                        12,
-
-                      borderRadius:
-                        12,
-
+                      padding: 12,
+                      borderRadius: 12,
                       border:
                         '1px solid #ddd',
-
                       marginLeft:
-                        mine
-                          ? 35
-                          : 0,
-
+                        mine ? 35 : 0,
                       marginRight:
-                        mine
-                          ? 0
-                          : 35
+                        mine ? 0 : 35
                     }}
                   >
                     <b>
@@ -1451,9 +1287,7 @@ export default function Home() {
                         : 'Interlocutore'}
                     </b>
 
-                    <p>
-                      {m.message}
-                    </p>
+                    <p>{m.message}</p>
                   </div>
                 );
               }
@@ -1466,13 +1300,10 @@ export default function Home() {
             }
           >
             <input
-              value={
-                chatText
-              }
+              value={chatText}
               onChange={e =>
                 setChatText(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
               placeholder="Scrivi un messaggio..."
@@ -1515,8 +1346,7 @@ export default function Home() {
           </label>
 
           <h2>
-            Come è andato
-            l'intervento?
+            Come è andato l'intervento?
           </h2>
 
           <p>
@@ -1528,46 +1358,28 @@ export default function Home() {
 
           <div
             style={{
-              display:
-                'flex',
+              display: 'flex',
               gap: 6,
-              fontSize:
-                34,
-              margin:
-                '20px 0'
+              fontSize: 34,
+              margin: '20px 0'
             }}
           >
-            {[
-              1,
-              2,
-              3,
-              4,
-              5
-            ].map(
+            {[1, 2, 3, 4, 5].map(
               star => (
                 <button
-                  key={
-                    star
-                  }
+                  key={star}
                   type="button"
                   onClick={() =>
-                    setRating(
-                      star
-                    )
+                    setRating(star)
                   }
                   style={{
-                    border:
-                      'none',
-
+                    border: 'none',
                     background:
                       'transparent',
-
-                    fontSize:
-                      34
+                    fontSize: 34
                   }}
                 >
-                  {star <=
-                  rating
+                  {star <= rating
                     ? '⭐'
                     : '☆'}
                 </button>
@@ -1581,8 +1393,7 @@ export default function Home() {
             }
             onChange={e =>
               setReviewComment(
-                e.target
-                  .value
+                e.target.value
               )
             }
             placeholder="Scrivi un commento..."
@@ -1618,9 +1429,7 @@ export default function Home() {
           <div className="logo">
             <b>L</b>{' '}
             Lavoro
-            <span>
-              Subito
-            </span>
+            <span>Subito</span>
           </div>
 
           <button
@@ -1634,8 +1443,7 @@ export default function Home() {
         <section
           className="section"
           style={{
-            paddingTop:
-              70
+            paddingTop: 70
           }}
         >
           <label className="tag">
@@ -1645,15 +1453,13 @@ export default function Home() {
           <h2>
             Ciao{' '}
             {fullName ||
-              'Professionista'}
-            .
+              'Professionista'}.
           </h2>
 
           <div
             className="proPanel"
             style={{
-              marginTop:
-                30
+              marginTop: 30
             }}
           >
             <div>
@@ -1666,16 +1472,12 @@ export default function Home() {
                   user.email}
               </h3>
 
-              <p>
-                {user.email}
-              </p>
+              <p>{user.email}</p>
 
               <div
                 style={{
-                  fontSize:
-                    24,
-                  fontWeight:
-                    700
+                  fontSize: 24,
+                  fontWeight: 700
                 }}
               >
                 ⭐{' '}
@@ -1724,16 +1526,15 @@ export default function Home() {
           <div
             className="card"
             style={{
-              marginTop:
-                20
+              marginTop: 20
             }}
           >
             <label className="tag">
-              POSIZIONE DI LAVORO
+              ZONA DI LAVORO
             </label>
 
             <h3>
-              📍 Posizione professionale
+              📍 Posizione e raggio
             </h3>
 
             <p>
@@ -1751,18 +1552,65 @@ export default function Home() {
                 professionalLocationLoading
               }
             >
-              {professionalLocationLoading
-                ? '📍 Rilevamento...'
-                : '📍 Aggiorna la mia posizione'}
+              📍 Aggiorna la mia posizione
             </button>
+
+            <h3
+              style={{
+                marginTop: 30
+              }}
+            >
+              Raggio massimo: {maxDistance} km
+            </h3>
+
+            <p>
+              Vedrai solo i lavori entro
+              questa distanza.
+            </p>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  'repeat(3, 1fr)',
+                gap: 10,
+                marginTop: 15
+              }}
+            >
+              {distances.map(
+                distance => (
+                  <button
+                    key={
+                      distance
+                    }
+                    type="button"
+                    className={
+                      maxDistance ===
+                      distance
+                        ? 'full'
+                        : 'outline'
+                    }
+                    disabled={
+                      distanceSaving
+                    }
+                    onClick={() =>
+                      saveMaxDistance(
+                        distance
+                      )
+                    }
+                  >
+                    {distance} km
+                  </button>
+                )
+              )}
+            </div>
           </div>
 
           {message && (
             <div
               className="success"
               style={{
-                marginTop:
-                  20
+                marginTop: 20
               }}
             >
               {message}
@@ -1771,8 +1619,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop:
-                50
+              marginTop: 50
             }}
           >
             <label className="tag">
@@ -1784,15 +1631,16 @@ export default function Home() {
             </h2>
 
             <p>
-              Le richieste sono ordinate
-              per urgenza e distanza.
+              Solo lavori entro{' '}
+              <b>
+                {maxDistance} km
+              </b>{' '}
+              dalla tua posizione.
             </p>
 
             <button
               className="outline"
-              onClick={
-                loadJobs
-              }
+              onClick={loadJobs}
             >
               ↻ Aggiorna
             </button>
@@ -1805,31 +1653,32 @@ export default function Home() {
           )}
 
           {!jobsLoading &&
-            jobs.length ===
-              0 && (
-                <div
-                  className="card"
-                  style={{
-                    marginTop:
-                      20
-                  }}
-                >
-                  <h3>
-                    Nessun lavoro compatibile
-                  </h3>
-                </div>
-              )}
+            jobs.length === 0 && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 20
+                }}
+              >
+                <h3>
+                  Nessun lavoro nel tuo raggio
+                </h3>
+
+                <p>
+                  Non ci sono richieste
+                  compatibili entro{' '}
+                  {maxDistance} km.
+                </p>
+              </div>
+            )}
 
           {jobs.map(
             job => (
               <article
-                key={
-                  job.id
-                }
+                key={job.id}
                 className="card"
                 style={{
-                  marginTop:
-                    18
+                  marginTop: 18
                 }}
               >
                 <div className="live">
@@ -1857,10 +1706,8 @@ export default function Home() {
                   null && (
                   <div
                     style={{
-                      fontSize:
-                        22,
-                      fontWeight:
-                        800,
+                      fontSize: 22,
+                      fontWeight: 800,
                       margin:
                         '15px 0'
                     }}
@@ -1868,18 +1715,9 @@ export default function Home() {
                     📍{' '}
                     {Number(
                       job.distance_km
-                    ).toFixed(
-                      1
-                    )}{' '}
+                    ).toFixed(1)}{' '}
                     km da te
                   </div>
-                )}
-
-                {job.distance_km ==
-                  null && (
-                  <p>
-                    📍 Distanza non disponibile
-                  </p>
                 )}
 
                 <button
@@ -1904,8 +1742,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop:
-                70
+              marginTop: 70
             }}
           >
             <label className="tag">
@@ -1925,13 +1762,10 @@ export default function Home() {
 
               return (
                 <article
-                  key={
-                    job.id
-                  }
+                  key={job.id}
                   className="card"
                   style={{
-                    marginTop:
-                      18
+                    marginTop: 18
                   }}
                 >
                   <div className="live">
@@ -1966,8 +1800,7 @@ export default function Home() {
                     <button
                       className="outline"
                       style={{
-                        marginTop:
-                          12
+                        marginTop: 12
                       }}
                       onClick={() =>
                         completeJob(
@@ -1985,8 +1818,7 @@ export default function Home() {
 
           <div
             style={{
-              marginTop:
-                70
+              marginTop: 70
             }}
           >
             <label className="tag">
@@ -2006,8 +1838,7 @@ export default function Home() {
                 }
                 className="card"
                 style={{
-                  marginTop:
-                    18
+                  marginTop: 18
                 }}
               >
                 <div>
@@ -2036,13 +1867,11 @@ export default function Home() {
           <div className="logo">
             <b>L</b>{' '}
             Lavoro
-            <span>
-              Subito
-            </span>
+            <span>Subito</span>
           </div>
 
           <small>
-            © 2026 LavoroSubito · V15
+            © 2026 LavoroSubito · V16
           </small>
         </footer>
 
@@ -2057,9 +1886,7 @@ export default function Home() {
         <div className="logo">
           <b>L</b>{' '}
           Lavoro
-          <span>
-            Subito
-          </span>
+          <span>Subito</span>
         </div>
 
         {user ? (
@@ -2076,7 +1903,6 @@ export default function Home() {
               setAuthMode(
                 'login'
               );
-
               setAuthOpen(
                 true
               );
@@ -2116,23 +1942,16 @@ export default function Home() {
 
           <div className="grid">
             {cats.map(
-              (
-                c,
-                i
-              ) => (
+              (c, i) => (
                 <button
-                  key={
-                    c
-                  }
+                  key={c}
                   className={
                     cat === c
                       ? 'cat selected'
                       : 'cat'
                   }
                   onClick={() =>
-                    setCat(
-                      c
-                    )
+                    setCat(c)
                   }
                 >
                   <strong>
@@ -2153,18 +1972,14 @@ export default function Home() {
             ].map(
               u => (
                 <button
-                  key={
-                    u
-                  }
+                  key={u}
                   className={
                     urg === u
                       ? 'selUrg'
                       : ''
                   }
                   onClick={() =>
-                    setUrg(
-                      u
-                    )
+                    setUrg(u)
                   }
                 >
                   {u}
@@ -2179,8 +1994,7 @@ export default function Home() {
             }
             onChange={e =>
               setDescription(
-                e.target
-                  .value
+                e.target.value
               )
             }
             placeholder="Descrivi brevemente il problema..."
@@ -2190,10 +2004,8 @@ export default function Home() {
             type="button"
             className="outline"
             style={{
-              width:
-                '100%',
-              marginBottom:
-                12
+              width: '100%',
+              marginBottom: 12
             }}
             onClick={
               detectLocation
@@ -2208,9 +2020,7 @@ export default function Home() {
 
           <button
             className="full"
-            disabled={
-              busy
-            }
+            disabled={busy}
             onClick={
               submitJob
             }
@@ -2230,8 +2040,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  20
+                marginTop: 20
               }}
             >
               🔎 Matching in corso...
@@ -2242,8 +2051,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  20,
+                marginTop: 20,
                 border:
                   '2px solid #48b779'
               }}
@@ -2260,10 +2068,8 @@ export default function Home() {
 
               <div
                 style={{
-                  fontSize:
-                    30,
-                  fontWeight:
-                    800
+                  fontSize: 30,
+                  fontWeight: 800
                 }}
               >
                 🎯{' '}
@@ -2279,9 +2085,7 @@ export default function Home() {
                   📍{' '}
                   {Number(
                     bestMatch.distance_km
-                  ).toFixed(
-                    1
-                  )}{' '}
+                  ).toFixed(1)}{' '}
                   km da te
                 </h3>
               )}
@@ -2296,9 +2100,7 @@ export default function Home() {
                 ⭐{' '}
                 {Number(
                   bestMatch.average_rating
-                ).toFixed(
-                  1
-                )}{' '}
+                ).toFixed(1)}{' '}
                 ·{' '}
                 {
                   bestMatch.review_count
@@ -2350,8 +2152,7 @@ export default function Home() {
                     }
                     className="card"
                     style={{
-                      marginTop:
-                        18
+                      marginTop: 18
                     }}
                   >
                     <div className="live">
@@ -2383,8 +2184,7 @@ export default function Home() {
                           <button
                             className="full"
                             style={{
-                              marginTop:
-                                15
+                              marginTop: 15
                             }}
                             onClick={() =>
                               openChat(
@@ -2401,8 +2201,7 @@ export default function Home() {
                             <button
                               className="outline"
                               style={{
-                                marginTop:
-                                  12
+                                marginTop: 12
                               }}
                               onClick={() =>
                                 completeJob(
@@ -2419,8 +2218,7 @@ export default function Home() {
                               <button
                                 className="outline"
                                 style={{
-                                  marginTop:
-                                    12
+                                  marginTop: 12
                                 }}
                                 onClick={() =>
                                   openReview(
@@ -2439,8 +2237,7 @@ export default function Home() {
                               <div
                                 className="success"
                                 style={{
-                                  marginTop:
-                                    12
+                                  marginTop: 12
                                 }}
                               >
                                 ⭐ Recensione inviata
@@ -2475,13 +2272,11 @@ export default function Home() {
         <div className="logo">
           <b>L</b>{' '}
           Lavoro
-          <span>
-            Subito
-          </span>
+          <span>Subito</span>
         </div>
 
         <small>
-          © 2026 LavoroSubito · V15
+          © 2026 LavoroSubito · V16
         </small>
       </footer>
 
@@ -2497,9 +2292,7 @@ export default function Home() {
               type="button"
               className="x"
               onClick={() =>
-                setAuthOpen(
-                  false
-                )
+                setAuthOpen(false)
               }
             >
               ×
@@ -2518,21 +2311,16 @@ export default function Home() {
                 <input
                   required
                   placeholder="Nome e cognome"
-                  value={
-                    name
-                  }
+                  value={name}
                   onChange={e =>
                     setName(
-                      e.target
-                        .value
+                      e.target.value
                     )
                   }
                 />
 
                 <select
-                  value={
-                    role
-                  }
+                  value={role}
                   onChange={e =>
                     setRole(
                       e.target
@@ -2555,40 +2343,30 @@ export default function Home() {
               required
               type="email"
               placeholder="Email"
-              value={
-                email
-              }
+              value={email}
               onChange={e =>
                 setEmail(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
             />
 
             <input
               required
-              minLength={
-                6
-              }
+              minLength={6}
               type="password"
               placeholder="Password"
-              value={
-                password
-              }
+              value={password}
               onChange={e =>
                 setPassword(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
             />
 
             <button
               className="full"
-              disabled={
-                busy
-              }
+              disabled={busy}
             >
               {authMode ===
               'signup'
