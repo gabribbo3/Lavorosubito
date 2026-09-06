@@ -54,6 +54,15 @@ type Category = {
   slug?: string | null;
 };
 
+type SetupStatus = {
+  categories_count: number;
+  has_categories: boolean;
+  has_location: boolean;
+  has_radius: boolean;
+  has_availability: boolean;
+  setup_complete: boolean;
+};
+
 type Job = {
   id: string;
   description: string;
@@ -141,6 +150,9 @@ export default function Home() {
 
   const [realtimeConnected, setRealtimeConnected] =
     useState(false);
+
+  const [setupStatus, setSetupStatus] =
+    useState<SetupStatus | null>(null);
 
   const [allCategories, setAllCategories] =
     useState<Category[]>([]);
@@ -361,7 +373,7 @@ export default function Home() {
     const channel =
       supabase
         .channel(
-          `lavorosubito-v20-${user.id}`
+          `lavorosubito-v21-${user.id}`
         )
         .on(
           'postgres_changes',
@@ -426,6 +438,7 @@ export default function Home() {
     setClientJobs([]);
     setProfessionalReviews([]);
     setSelectedCategoryIds([]);
+    setSetupStatus(null);
     setBestMatch(null);
     setChatJobId(null);
     setChatMessages([]);
@@ -492,6 +505,7 @@ export default function Home() {
           userId
         ),
         loadProfessionalCategories(),
+        loadSetupStatus(),
         loadJobs(),
         loadAcceptedJobs(),
         loadProfessionalReviews()
@@ -499,6 +513,59 @@ export default function Home() {
     } else {
       await loadClientJobs();
     }
+  }
+
+  async function loadSetupStatus() {
+    const { data, error } =
+      await supabase.rpc(
+        'my_professional_setup_status'
+      );
+
+    if (
+      error ||
+      !data ||
+      data.length === 0
+    ) {
+      return;
+    }
+
+    setSetupStatus(
+      data[0] as SetupStatus
+    );
+  }
+
+  function setupPercentage() {
+    if (!setupStatus) {
+      return 0;
+    }
+
+    let completed = 0;
+
+    if (
+      setupStatus.has_categories
+    ) {
+      completed++;
+    }
+
+    if (
+      setupStatus.has_location
+    ) {
+      completed++;
+    }
+
+    if (
+      setupStatus.has_radius
+    ) {
+      completed++;
+    }
+
+    if (
+      setupStatus.has_availability
+    ) {
+      completed++;
+    }
+
+    return completed * 25;
   }
 
   async function loadAllCategories() {
@@ -604,6 +671,7 @@ export default function Home() {
       );
 
       await loadJobs();
+      await loadSetupStatus();
     }
 
     setCategorySaving(false);
@@ -779,13 +847,11 @@ export default function Home() {
             position => {
               resolve({
                 latitude:
-                  position
-                    .coords
+                  position.coords
                     .latitude,
 
                 longitude:
-                  position
-                    .coords
+                  position.coords
                     .longitude
               });
             },
@@ -885,6 +951,7 @@ export default function Home() {
       );
 
       await loadJobs();
+      await loadSetupStatus();
     }
 
     setProfessionalLocationLoading(
@@ -927,6 +994,7 @@ export default function Home() {
       );
 
       await loadJobs();
+      await loadSetupStatus();
     }
 
     setDistanceSaving(false);
@@ -969,6 +1037,8 @@ export default function Home() {
           ? '🟢 Ora sei disponibile.'
           : '⚫ Ora sei offline.'
       );
+
+      await loadSetupStatus();
     }
 
     setBusy(false);
@@ -1083,7 +1153,6 @@ export default function Home() {
       );
 
       setMatchingLoading(false);
-
       return;
     }
 
@@ -1156,8 +1225,7 @@ export default function Home() {
 
     const {
       data: category,
-      error:
-        categoryError
+      error: categoryError
     } =
       await supabase
         .from('categories')
@@ -1230,6 +1298,7 @@ export default function Home() {
     setDescription('');
 
     await loadClientJobs();
+
     await findBestMatch(
       newJob.id
     );
@@ -1562,6 +1631,9 @@ export default function Home() {
         professionalReviews.length
       : 0;
 
+  const percentage =
+    setupPercentage();
+
   const ChatModal = () =>
     chatJobId ? (
       <div className="modal">
@@ -1839,9 +1911,114 @@ export default function Home() {
           </div>
 
           <div
+            className="card"
+            style={{
+              marginTop: 25,
+              border:
+                percentage === 100
+                  ? '2px solid #48b779'
+                  : '2px solid #e4b23c'
+            }}
+          >
+            <label className="tag">
+              V21 · CONFIGURAZIONE PROFILO
+            </label>
+
+            <h2>
+              Profilo {percentage}% completato
+            </h2>
+
+            <div
+              style={{
+                width: '100%',
+                height: 14,
+                background:
+                  '#ededed',
+                borderRadius: 999,
+                overflow: 'hidden',
+                margin:
+                  '20px 0'
+              }}
+            >
+              <div
+                style={{
+                  width:
+                    `${percentage}%`,
+                  height: '100%',
+                  background:
+                    percentage ===
+                    100
+                      ? '#48b779'
+                      : '#f0b93a',
+                  transition:
+                    'width .3s ease'
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: 10
+              }}
+            >
+              <div>
+                {setupStatus
+                  ?.has_categories
+                  ? '✅'
+                  : '⬜'}{' '}
+                Categorie professionali
+              </div>
+
+              <div>
+                {setupStatus
+                  ?.has_location
+                  ? '✅'
+                  : '⬜'}{' '}
+                Posizione
+              </div>
+
+              <div>
+                {setupStatus
+                  ?.has_radius
+                  ? '✅'
+                  : '⬜'}{' '}
+                Raggio di lavoro
+              </div>
+
+              <div>
+                {setupStatus
+                  ?.has_availability
+                  ? '✅'
+                  : '⬜'}{' '}
+                Disponibilità
+              </div>
+            </div>
+
+            {percentage === 100 ? (
+              <div
+                className="success"
+                style={{
+                  marginTop: 20
+                }}
+              >
+                ✅ Profilo pronto per ricevere lavori.
+              </div>
+            ) : (
+              <p
+                style={{
+                  marginTop: 20
+                }}
+              >
+                Completa i passaggi mancanti per rendere operativo il tuo profilo.
+              </p>
+            )}
+          </div>
+
+          <div
             className="proPanel"
             style={{
-              marginTop: 30
+              marginTop: 20
             }}
           >
             <div>
@@ -1913,7 +2090,7 @@ export default function Home() {
             }}
           >
             <label className="tag">
-              V20 · SPECIALIZZAZIONI
+              SPECIALIZZAZIONI
             </label>
 
             <h2>
@@ -1921,9 +2098,7 @@ export default function Home() {
             </h2>
 
             <p>
-              Seleziona tutti i tipi
-              di intervento che sei
-              in grado di svolgere.
+              Seleziona tutti i tipi di intervento che puoi svolgere.
             </p>
 
             <div
@@ -1986,18 +2161,6 @@ export default function Home() {
                 ? 'Salvataggio...'
                 : '💾 Salva categorie'}
             </button>
-
-            <small
-              style={{
-                display: 'block',
-                marginTop: 12
-              }}
-            >
-              I nuovi lavori saranno
-              filtrati automaticamente
-              in base alle categorie
-              selezionate.
-            </small>
           </div>
 
           <div
@@ -2132,10 +2295,7 @@ export default function Home() {
                   </h3>
 
                   <p>
-                    Controlla categorie,
-                    posizione,
-                    disponibilità e
-                    raggio.
+                    Controlla categorie, posizione, disponibilità e raggio.
                   </p>
                 </div>
               )}
@@ -2345,7 +2505,7 @@ export default function Home() {
           </div>
 
           <small>
-            © 2026 LavoroSubito · V20
+            © 2026 LavoroSubito · V21
           </small>
         </footer>
 
@@ -2408,10 +2568,7 @@ export default function Home() {
           </h1>
 
           <p>
-            Trova rapidamente il
-            professionista più adatto
-            e disponibile nella tua
-            zona.
+            Trova rapidamente il professionista più adatto e disponibile nella tua zona.
           </p>
         </div>
 
@@ -2790,16 +2947,11 @@ export default function Home() {
         </label>
 
         <h2>
-          Il professionista giusto,
-          quando serve.
+          Il professionista giusto, quando serve.
         </h2>
 
         <p>
-          Matching basato su
-          specializzazione,
-          disponibilità,
-          distanza,
-          urgenza e reputazione.
+          Matching basato su specializzazione, disponibilità, distanza, urgenza e reputazione.
         </p>
       </section>
 
@@ -2813,7 +2965,7 @@ export default function Home() {
         </div>
 
         <small>
-          © 2026 LavoroSubito · V20
+          © 2026 LavoroSubito · V21
         </small>
       </footer>
 
