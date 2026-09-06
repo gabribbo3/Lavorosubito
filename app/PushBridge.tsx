@@ -37,13 +37,37 @@ export default function PushBridge() {
   useEffect(() => {
     let channel: any = null;
 
-    async function start() {
+    async function loadRole() {
+      const {
+        data: { user }
+      } =
+        await supabase.auth.getUser();
+
+      if (!user) {
+        setRole(null);
+        return;
+      }
+
+      const { data: profile } =
+        await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      setRole(
+        profile?.role ?? null
+      );
+    }
+
+    async function startClientPushListener() {
       const {
         data: { session }
       } =
         await supabase.auth.getSession();
 
-      const user = session?.user;
+      const user =
+        session?.user;
 
       if (!user) return;
 
@@ -54,13 +78,9 @@ export default function PushBridge() {
           .eq('id', user.id)
           .maybeSingle();
 
-      const currentRole =
-        profile?.role ?? null;
-
-      setRole(currentRole);
-
       if (
-        currentRole !== 'cliente'
+        profile?.role !==
+        'cliente'
       ) {
         return;
       }
@@ -128,17 +148,29 @@ export default function PushBridge() {
                   }
                 );
               } catch {
-                // La richiesta resta valida
-                // anche se la push fallisce.
               }
             }
           )
           .subscribe();
     }
 
-    start();
+    loadRole();
+    startClientPushListener();
+
+    const {
+      data: authListener
+    } =
+      supabase.auth
+        .onAuthStateChange(
+          async () => {
+            await loadRole();
+          }
+        );
 
     return () => {
+      authListener.subscription
+        .unsubscribe();
+
       if (channel) {
         supabase.removeChannel(
           channel
