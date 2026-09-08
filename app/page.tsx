@@ -123,11 +123,8 @@ export default function Home() {
   const [availabilityStatus, setAvailabilityStatus] =
     useState<AvailabilityStatus>('offline');
 
-  const [availabilitySaving, setAvailabilitySaving] =
-    useState(false);
-
-  const [realtimeConnected, setRealtimeConnected] =
-    useState(false);
+  const [availabilitySaving, setAvailabilitySaving] = useState(false);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
 
   const [setupStatus, setSetupStatus] =
     useState<SetupStatus | null>(null);
@@ -138,11 +135,9 @@ export default function Home() {
   const [selectedCategoryIds, setSelectedCategoryIds] =
     useState<string[]>([]);
 
-  const [categorySaving, setCategorySaving] =
-    useState(false);
+  const [categorySaving, setCategorySaving] = useState(false);
 
-  const [maxDistance, setMaxDistance] =
-    useState(30);
+  const [maxDistance, setMaxDistance] = useState(30);
 
   const [professionalLocationSet, setProfessionalLocationSet] =
     useState(false);
@@ -150,35 +145,21 @@ export default function Home() {
   const [professionalLocationLoading, setProfessionalLocationLoading] =
     useState(false);
 
-  const [distanceSaving, setDistanceSaving] =
-    useState(false);
+  const [distanceSaving, setDistanceSaving] = useState(false);
 
-  const [businessName, setBusinessName] =
-    useState('');
-
-  const [phone, setPhone] =
-    useState('');
-
-  const [vatNumber, setVatNumber] =
-    useState('');
-
-  const [taxCode, setTaxCode] =
-    useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [vatNumber, setVatNumber] = useState('');
+  const [taxCode, setTaxCode] = useState('');
 
   const [verificationStatus, setVerificationStatus] =
     useState('da_verificare');
 
-  const [identityVerified, setIdentityVerified] =
-    useState(false);
+  const [identityVerified, setIdentityVerified] = useState(false);
+  const [identitySaving, setIdentitySaving] = useState(false);
 
-  const [identitySaving, setIdentitySaving] =
-    useState(false);
-
-  const [jobs, setJobs] =
-    useState<Job[]>([]);
-
-  const [jobsLoading, setJobsLoading] =
-    useState(false);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
 
   const [acceptedJobs, setAcceptedJobs] =
     useState<AcceptedJob[]>([]);
@@ -186,65 +167,43 @@ export default function Home() {
   const [professionalReviews, setProfessionalReviews] =
     useState<ProfessionalReview[]>([]);
 
-  const [clientJobs, setClientJobs] =
-    useState<ClientJob[]>([]);
+  const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
+  const [clientJobsLoading, setClientJobsLoading] = useState(false);
 
-  const [clientJobsLoading, setClientJobsLoading] =
-    useState(false);
-
-  const [cat, setCat] =
-    useState('');
-
-  const [urg, setUrg] =
-    useState('SUBITO');
-
-  const [description, setDescription] =
-    useState('');
+  const [cat, setCat] = useState('');
+  const [urg, setUrg] = useState('SUBITO');
+  const [description, setDescription] = useState('');
 
   const [coordinates, setCoordinates] =
     useState<Coordinates | null>(null);
 
-  const [locationLoading, setLocationLoading] =
-    useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   const [bestMatch, setBestMatch] =
     useState<MatchResult | null>(null);
 
-  const [matchingLoading, setMatchingLoading] =
-    useState(false);
+  const [matchingLoading, setMatchingLoading] = useState(false);
 
-  const [authOpen, setAuthOpen] =
-    useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   const [authMode, setAuthMode] =
     useState<'login' | 'signup'>('login');
 
-  const [name, setName] =
-    useState('');
-
-  const [email, setEmail] =
-    useState('');
-
-  const [password, setPassword] =
-    useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const [chatJobId, setChatJobId] =
     useState<string | null>(null);
 
-  const [chatTitle, setChatTitle] =
-    useState('');
+  const [chatTitle, setChatTitle] = useState('');
 
   const [chatMessages, setChatMessages] =
     useState<ChatMessage[]>([]);
 
-  const [chatText, setChatText] =
-    useState('');
-
-  const [chatLoading, setChatLoading] =
-    useState(false);
-
-  const [chatSending, setChatSending] =
-    useState(false);
+  const [chatText, setChatText] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
 
   const [reviewJobId, setReviewJobId] =
     useState<string | null>(null);
@@ -252,17 +211,10 @@ export default function Home() {
   const [reviewProfessionalName, setReviewProfessionalName] =
     useState('');
 
-  const [rating, setRating] =
-    useState(5);
-
-  const [reviewComment, setReviewComment] =
-    useState('');
-
-  const [reviewSending, setReviewSending] =
-    useState(false);
-
-  const [reviewMessage, setReviewMessage] =
-    useState('');
+  const [rating, setRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSending, setReviewSending] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -295,7 +247,7 @@ export default function Home() {
     if (!user || !profileRole) return;
 
     const channel = supabase
-      .channel(`lavorosubito-v28-${user.id}`)
+      .channel(`lavorosubito-v31-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -761,6 +713,7 @@ export default function Home() {
       setMessage(
         `Errore richieste cliente: ${error.message}`
       );
+
       setClientJobs([]);
     } else {
       setClientJobs(
@@ -769,6 +722,47 @@ export default function Home() {
     }
 
     setClientJobsLoading(false);
+  }
+
+  // V31
+  async function cancelJob(jobId: string) {
+    const confirmation =
+      window.confirm(
+        'Vuoi davvero annullare questa richiesta?'
+      );
+
+    if (!confirmation) return;
+
+    setBusy(true);
+    setMessage('');
+
+    const { data, error } =
+      await supabase.rpc(
+        'cancel_my_job',
+        {
+          p_job_id: jobId
+        }
+      );
+
+    if (error) {
+      setMessage(
+        `Errore annullamento: ${error.message}`
+      );
+    } else if (data === false) {
+      setMessage(
+        'La richiesta non può più essere annullata.'
+      );
+    } else {
+      setBestMatch(null);
+
+      setMessage(
+        '✅ Richiesta annullata correttamente.'
+      );
+
+      await loadClientJobs();
+    }
+
+    setBusy(false);
   }
 
   function getCurrentPosition():
@@ -809,6 +803,7 @@ export default function Home() {
       setMessage(
         'Non è stato possibile ottenere la posizione.'
       );
+
       setLocationLoading(false);
       return;
     }
@@ -852,7 +847,9 @@ export default function Home() {
         `Errore posizione: ${error.message}`
       );
     } else if (data === false) {
-      setMessage('Posizione non aggiornata.');
+      setMessage(
+        'Posizione non aggiornata.'
+      );
     } else {
       setProfessionalLocationSet(true);
 
@@ -1637,7 +1634,7 @@ export default function Home() {
               }}
             >
               <label className="tag">
-                V28 · PRIMO ACCESSO
+                V31 · PRIMO ACCESSO
               </label>
 
               <h2>
@@ -1806,7 +1803,7 @@ export default function Home() {
             }}
           >
             <label className="tag">
-              V28 · VERIFICA PROFESSIONISTA
+              V31 · VERIFICA PROFESSIONISTA
             </label>
 
             <h2>
@@ -1848,7 +1845,6 @@ export default function Home() {
                   e.target.value
                 )
               }
-              placeholder="Es. Rossi Impianti"
             />
 
             <label>
@@ -1863,7 +1859,6 @@ export default function Home() {
                   e.target.value
                 )
               }
-              placeholder="Telefono"
             />
 
             <label>
@@ -1877,7 +1872,6 @@ export default function Home() {
                   e.target.value.toUpperCase()
                 )
               }
-              placeholder="Partita IVA"
             />
 
             <label>
@@ -1891,7 +1885,6 @@ export default function Home() {
                   e.target.value.toUpperCase()
                 )
               }
-              placeholder="Codice fiscale"
             />
 
             <button
@@ -1901,9 +1894,7 @@ export default function Home() {
                 saveProfessionalIdentity
               }
             >
-              {identitySaving
-                ? 'Salvataggio...'
-                : '💾 Salva dati professionali'}
+              💾 Salva dati professionali
             </button>
           </div>
 
@@ -1916,23 +1907,16 @@ export default function Home() {
             }}
           >
             <label className="tag">
-              V28 · DISPONIBILITÀ
+              DISPONIBILITÀ
             </label>
 
             <h2>
               ⏱ Quando sei disponibile?
             </h2>
 
-            <p>
-              Indica quando puoi iniziare un nuovo
-              intervento. Puoi modificarlo in qualsiasi
-              momento.
-            </p>
-
             <div
               style={{
-                margin:
-                  '20px 0',
+                margin: '20px 0',
                 padding: 15,
                 border:
                   '1px solid #ddd',
@@ -1955,7 +1939,6 @@ export default function Home() {
               }}
             >
               <button
-                type="button"
                 className={
                   availabilityStatus === 'ora'
                     ? 'full'
@@ -1970,7 +1953,6 @@ export default function Home() {
               </button>
 
               <button
-                type="button"
                 className={
                   availabilityStatus === '1-2h'
                     ? 'full'
@@ -1985,7 +1967,6 @@ export default function Home() {
               </button>
 
               <button
-                type="button"
                 className={
                   availabilityStatus === 'oggi'
                     ? 'full'
@@ -2000,7 +1981,6 @@ export default function Home() {
               </button>
 
               <button
-                type="button"
                 className={
                   availabilityStatus === 'offline'
                     ? 'full'
@@ -2014,20 +1994,13 @@ export default function Home() {
                 ⚫ Offline
               </button>
             </div>
-
-            {availabilitySaving && (
-              <p>
-                Aggiornamento disponibilità...
-              </p>
-            )}
           </div>
 
           <div
             id="setup-categories"
             className="card"
             style={{
-              marginTop: 20,
-              scrollMarginTop: 100
+              marginTop: 20
             }}
           >
             <h2>
@@ -2052,7 +2025,6 @@ export default function Home() {
                   return (
                     <button
                       key={category.id}
-                      type="button"
                       className={
                         selected
                           ? 'full'
@@ -2076,17 +2048,12 @@ export default function Home() {
 
             <button
               className="full"
-              style={{
-                marginTop: 20
-              }}
               onClick={
                 saveProfessionalCategories
               }
               disabled={categorySaving}
             >
-              {categorySaving
-                ? 'Salvataggio...'
-                : '💾 Salva categorie'}
+              💾 Salva categorie
             </button>
           </div>
 
@@ -2094,8 +2061,7 @@ export default function Home() {
             id="setup-location"
             className="card"
             style={{
-              marginTop: 20,
-              scrollMarginTop: 100
+              marginTop: 20
             }}
           >
             <h2>
@@ -2117,18 +2083,11 @@ export default function Home() {
                 updateProfessionalLocation
               }
             >
-              {professionalLocationLoading
-                ? 'Rilevamento...'
-                : '📍 Usa la mia posizione'}
+              📍 Usa la mia posizione
             </button>
 
-            <h3
-              style={{
-                marginTop: 25
-              }}
-            >
-              Raggio massimo:{' '}
-              {maxDistance} km
+            <h3>
+              Raggio massimo: {maxDistance} km
             </h3>
 
             <div
@@ -2143,16 +2102,12 @@ export default function Home() {
                 distance => (
                   <button
                     key={distance}
-                    type="button"
                     className={
-                      maxDistance ===
-                      distance
+                      maxDistance === distance
                         ? 'full'
                         : 'outline'
                     }
-                    disabled={
-                      distanceSaving
-                    }
+                    disabled={distanceSaving}
                     onClick={() =>
                       saveMaxDistance(
                         distance
@@ -2192,12 +2147,7 @@ export default function Home() {
                   Lavori compatibili
                 </h2>
 
-                <div
-                  style={{
-                    marginBottom: 15,
-                    fontWeight: 700
-                  }}
-                >
+                <div>
                   {availabilityLabel(
                     availabilityStatus
                   )}
@@ -2211,53 +2161,28 @@ export default function Home() {
                 </button>
               </div>
 
-              {availabilityStatus ===
-                'offline' && (
-                <div
-                  className="card"
-                  style={{
-                    marginTop: 20
-                  }}
-                >
-                  <h3>
-                    ⚫ Sei offline
-                  </h3>
-
-                  <p>
-                    Seleziona una disponibilità
-                    diversa da Offline per accettare
-                    nuovi interventi.
-                  </p>
-                </div>
-              )}
-
               {jobsLoading && (
                 <p>Caricamento...</p>
               )}
 
-              {!jobsLoading &&
-                jobs.length === 0 && (
+              {jobs.length === 0 &&
+                !jobsLoading && (
                   <div
                     className="card"
                     style={{
                       marginTop: 20
                     }}
                   >
-                    <h3>
-                      Nessun lavoro compatibile
-                    </h3>
-
                     <p>
-                      Al momento non ci sono richieste
-                      compatibili con il tuo profilo.
+                      Nessun lavoro compatibile.
                     </p>
                   </div>
                 )}
 
               {jobs.map(job => (
                 <article
-                  className="card"
                   key={job.id}
+                  className="card"
                   style={{
                     marginTop: 18
                   }}
@@ -2311,7 +2236,7 @@ export default function Home() {
                   >
                     {availableForJobs
                       ? 'Accetta lavoro →'
-                      : 'Imposta la disponibilità per accettare'}
+                      : 'Sei offline'}
                   </button>
                 </article>
               ))}
@@ -2323,25 +2248,14 @@ export default function Home() {
               marginTop: 60
             }}
           >
-            <label className="tag">
-              I MIEI LAVORI
-            </label>
-
             <h2>
               Lavori accettati
             </h2>
           </div>
 
           {acceptedJobs.length === 0 && (
-            <div
-              className="card"
-              style={{
-                marginTop: 18
-              }}
-            >
-              <p>
-                Non hai ancora lavori accettati.
-              </p>
+            <div className="card">
+              Nessun lavoro accettato.
             </div>
           )}
 
@@ -2379,9 +2293,6 @@ export default function Home() {
                 'completata' && (
                 <button
                   className="outline"
-                  style={{
-                    marginTop: 12
-                  }}
                   onClick={() =>
                     completeJob(
                       job.id
@@ -2393,77 +2304,11 @@ export default function Home() {
               )}
             </article>
           ))}
-
-          <div
-            style={{
-              marginTop: 60
-            }}
-          >
-            <label className="tag">
-              RECENSIONI
-            </label>
-
-            <h2>
-              Le mie recensioni
-            </h2>
-          </div>
-
-          {professionalReviews.length ===
-            0 && (
-              <div
-                className="card"
-                style={{
-                  marginTop: 18
-                }}
-              >
-                <p>
-                  Non hai ancora recensioni.
-                </p>
-              </div>
-            )}
-
-          {professionalReviews.map(
-            review => (
-              <article
-                key={
-                  review.review_id
-                }
-                className="card"
-                style={{
-                  marginTop: 18
-                }}
-              >
-                <div>
-                  {'⭐'.repeat(
-                    Number(
-                      review.rating
-                    )
-                  )}
-                </div>
-
-                <h3>
-                  {review.client_name ||
-                    'Cliente LavoroSubito'}
-                </h3>
-
-                <p>
-                  {review.comment ||
-                    'Nessun commento.'}
-                </p>
-              </article>
-            )
-          )}
         </section>
 
         <footer>
-          <div className="logo">
-            <b>L</b>{' '}
-            Lavoro
-            <span>Subito</span>
-          </div>
-
           <small>
-            © 2026 LavoroSubito · V28
+            © 2026 LavoroSubito · V31
           </small>
         </footer>
 
@@ -2584,12 +2429,7 @@ export default function Home() {
           />
 
           <button
-            type="button"
             className="outline"
-            style={{
-              width: '100%',
-              marginBottom: 12
-            }}
             disabled={locationLoading}
             onClick={detectLocation}
           >
@@ -2605,9 +2445,7 @@ export default function Home() {
             disabled={busy}
             onClick={submitJob}
           >
-            {busy
-              ? 'Ricerca...'
-              : 'Trova chi è disponibile →'}
+            Trova chi è disponibile →
           </button>
 
           {message && (
@@ -2617,13 +2455,8 @@ export default function Home() {
           )}
 
           {matchingLoading && (
-            <div
-              className="card"
-              style={{
-                marginTop: 20
-              }}
-            >
-              🔎 Ricerca di professionisti verificati...
+            <div className="card">
+              🔎 Matching in corso...
             </div>
           )}
 
@@ -2727,20 +2560,30 @@ export default function Home() {
               const completed =
                 job.status === 'completata';
 
+              const cancelled =
+                job.status === 'annullata';
+
+              const open =
+                job.status === 'aperta';
+
               return (
                 <article
                   key={job.id}
                   className="card"
                   style={{
-                    marginTop: 18
+                    marginTop: 18,
+                    opacity:
+                      cancelled ? 0.65 : 1
                   }}
                 >
                   <div className="live">
-                    {completed
-                      ? '✅ COMPLETATO'
-                      : accepted
-                        ? '🟢 PROFESSIONISTA TROVATO'
-                        : '🔴 RICERCA IN CORSO'}
+                    {cancelled
+                      ? '⚫ ANNULLATA'
+                      : completed
+                        ? '✅ COMPLETATO'
+                        : accepted
+                          ? '🟢 PROFESSIONISTA TROVATO'
+                          : '🔴 RICERCA IN CORSO'}
                   </div>
 
                   <h3>
@@ -2752,6 +2595,40 @@ export default function Home() {
                     {job.description}
                   </p>
 
+                  <p>
+                    <b>Urgenza:</b>{' '}
+                    {job.urgency?.toUpperCase()}
+                  </p>
+
+                  {open && (
+                    <button
+                      type="button"
+                      className="outline"
+                      disabled={busy}
+                      style={{
+                        marginTop: 12,
+                        borderColor:
+                          '#d9534f'
+                      }}
+                      onClick={() =>
+                        cancelJob(job.id)
+                      }
+                    >
+                      ❌ Annulla richiesta
+                    </button>
+                  )}
+
+                  {cancelled && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        fontWeight: 700
+                      }}
+                    >
+                      Questa richiesta è stata annullata.
+                    </div>
+                  )}
+
                   {accepted &&
                     job.professional_name && (
                       <>
@@ -2762,9 +2639,6 @@ export default function Home() {
 
                         <button
                           className="full"
-                          style={{
-                            marginTop: 15
-                          }}
                           onClick={() =>
                             openChat(
                               job.id,
@@ -2779,9 +2653,6 @@ export default function Home() {
                         {!completed && (
                           <button
                             className="outline"
-                            style={{
-                              marginTop: 12
-                            }}
                             onClick={() =>
                               completeJob(
                                 job.id
@@ -2796,9 +2667,6 @@ export default function Home() {
                           !job.reviewed && (
                             <button
                               className="outline"
-                              style={{
-                                marginTop: 12
-                              }}
                               onClick={() =>
                                 openReview(
                                   job.id,
@@ -2813,12 +2681,7 @@ export default function Home() {
 
                         {completed &&
                           job.reviewed && (
-                            <div
-                              className="success"
-                              style={{
-                                marginTop: 12
-                              }}
-                            >
+                            <div className="success">
                               ⭐ Recensione inviata
                             </div>
                           )}
@@ -2848,14 +2711,8 @@ export default function Home() {
       </section>
 
       <footer>
-        <div className="logo">
-          <b>L</b>{' '}
-          Lavoro
-          <span>Subito</span>
-        </div>
-
         <small>
-          © 2026 LavoroSubito · V28
+          © 2026 LavoroSubito · V31
         </small>
       </footer>
 
@@ -2886,8 +2743,7 @@ export default function Home() {
                 display: 'grid',
                 gridTemplateColumns:
                   '1fr 1fr',
-                gap: 10,
-                marginBottom: 20
+                gap: 10
               }}
             >
               <button
