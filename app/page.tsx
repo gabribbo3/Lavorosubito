@@ -66,6 +66,7 @@ type AcceptedJob = {
   status: string;
   created_at?: string;
   category_name?: string | null;
+  address?: string | null;
 };
 
 type ClientJob = {
@@ -77,6 +78,7 @@ type ClientJob = {
   category_name?: string | null;
   professional_name?: string | null;
   reviewed: boolean;
+  address?: string | null;
 };
 
 type ChatMessage = {
@@ -167,12 +169,17 @@ export default function Home() {
   const [professionalReviews, setProfessionalReviews] =
     useState<ProfessionalReview[]>([]);
 
-  const [clientJobs, setClientJobs] = useState<ClientJob[]>([]);
+  const [clientJobs, setClientJobs] =
+    useState<ClientJob[]>([]);
+
   const [clientJobsLoading, setClientJobsLoading] = useState(false);
 
   const [cat, setCat] = useState('');
   const [urg, setUrg] = useState('SUBITO');
   const [description, setDescription] = useState('');
+
+  // V33
+  const [address, setAddress] = useState('');
 
   const [coordinates, setCoordinates] =
     useState<Coordinates | null>(null);
@@ -247,7 +254,7 @@ export default function Home() {
     if (!user || !profileRole) return;
 
     const channel = supabase
-      .channel(`lavorosubito-v31-${user.id}`)
+      .channel(`lavorosubito-v33-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -301,6 +308,7 @@ export default function Home() {
     setChatMessages([]);
     setReviewJobId(null);
     setCoordinates(null);
+    setAddress('');
     setProfessionalLocationSet(false);
     setMaxDistance(30);
     setRealtimeConnected(false);
@@ -713,7 +721,6 @@ export default function Home() {
       setMessage(
         `Errore richieste cliente: ${error.message}`
       );
-
       setClientJobs([]);
     } else {
       setClientJobs(
@@ -724,7 +731,6 @@ export default function Home() {
     setClientJobsLoading(false);
   }
 
-  // V31
   async function cancelJob(jobId: string) {
     const confirmation =
       window.confirm(
@@ -811,7 +817,7 @@ export default function Home() {
     setCoordinates(position);
 
     setMessage(
-      '📍 Posizione rilevata correttamente.'
+      '📍 Posizione GPS rilevata correttamente.'
     );
 
     setLocationLoading(false);
@@ -1028,6 +1034,13 @@ export default function Home() {
       return;
     }
 
+    if (!address.trim()) {
+      setMessage(
+        'Inserisci l’indirizzo dell’intervento.'
+      );
+      return;
+    }
+
     if (!user) {
       setRole('cliente');
       setAuthMode('signup');
@@ -1090,8 +1103,13 @@ export default function Home() {
         urgency: urg.toLowerCase(),
         description:
           description.trim(),
+
+        // V33
+        address: address.trim(),
+
         latitude:
           currentCoordinates?.latitude ?? null,
+
         longitude:
           currentCoordinates?.longitude ?? null
       })
@@ -1114,6 +1132,7 @@ export default function Home() {
     }
 
     setDescription('');
+    setAddress('');
 
     await loadClientJobs();
     await findBestMatch(newJob.id);
@@ -1189,7 +1208,10 @@ export default function Home() {
       );
     } else {
       setChatText('');
-      await loadChat(chatJobId);
+
+      await loadChat(
+        chatJobId
+      );
     }
 
     setChatSending(false);
@@ -1571,6 +1593,10 @@ export default function Home() {
       </div>
     ) : null;
 
+  // ============================
+  // AREA PROFESSIONISTA
+  // ============================
+
   if (
     user &&
     profileRole === 'professionista'
@@ -1634,23 +1660,14 @@ export default function Home() {
               }}
             >
               <label className="tag">
-                V31 · PRIMO ACCESSO
+                V33 · PRIMO ACCESSO
               </label>
 
               <h2>
                 👋 Configuriamo il tuo profilo
               </h2>
 
-              <p>
-                Completa questi passaggi per iniziare
-                a ricevere richieste compatibili.
-              </p>
-
-              <h3
-                style={{
-                  marginTop: 25
-                }}
-              >
+              <h3>
                 {percentage}% completato
               </h3>
 
@@ -1677,84 +1694,16 @@ export default function Home() {
                 />
               </div>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 12
-                }}
+              <button
+                className="full"
+                onClick={() =>
+                  scrollToSection(
+                    'setup-categories'
+                  )
+                }
               >
-                <button
-                  className={
-                    setupStatus?.has_categories
-                      ? 'outline'
-                      : 'full'
-                  }
-                  onClick={() =>
-                    scrollToSection(
-                      'setup-categories'
-                    )
-                  }
-                >
-                  {setupStatus?.has_categories
-                    ? '✅'
-                    : '1️⃣'}{' '}
-                  Scegli le categorie
-                </button>
-
-                <button
-                  className={
-                    setupStatus?.has_location
-                      ? 'outline'
-                      : 'full'
-                  }
-                  onClick={() =>
-                    scrollToSection(
-                      'setup-location'
-                    )
-                  }
-                >
-                  {setupStatus?.has_location
-                    ? '✅'
-                    : '2️⃣'}{' '}
-                  Imposta la posizione
-                </button>
-
-                <button
-                  className={
-                    setupStatus?.has_radius
-                      ? 'outline'
-                      : 'full'
-                  }
-                  onClick={() =>
-                    scrollToSection(
-                      'setup-location'
-                    )
-                  }
-                >
-                  {setupStatus?.has_radius
-                    ? '✅'
-                    : '3️⃣'}{' '}
-                  Scegli il raggio di lavoro
-                </button>
-
-                <button
-                  className={
-                    setupStatus?.has_availability
-                      ? 'outline'
-                      : 'full'
-                  }
-                  onClick={() =>
-                    scrollToSection(
-                      'setup-availability'
-                    )
-                  }
-                >
-                  {setupStatus?.has_availability
-                    ? '✅'
-                    : '4️⃣'}{' '}
-                  Imposta la disponibilità
-                </button>
-              </div>
+                🛠 Configura profilo
+              </button>
             </div>
           )}
 
@@ -1763,8 +1712,7 @@ export default function Home() {
               <div
                 className="success"
                 style={{
-                  marginTop: 25,
-                  padding: 20
+                  marginTop: 25
                 }}
               >
                 ✅ Profilo operativo e verificato.
@@ -1776,19 +1724,12 @@ export default function Home() {
               <div
                 className="card"
                 style={{
-                  marginTop: 25,
-                  border:
-                    '2px solid #e4b23c'
+                  marginTop: 25
                 }}
               >
                 <h2>
                   🔒 Matching in attesa di verifica
                 </h2>
-
-                <p>
-                  Prima di ricevere e accettare lavori
-                  devi essere approvato da LavoroSubito.
-                </p>
 
                 <b>
                   {verificationLabel()}
@@ -1803,36 +1744,22 @@ export default function Home() {
             }}
           >
             <label className="tag">
-              V31 · VERIFICA PROFESSIONISTA
+              VERIFICA PROFESSIONISTA
             </label>
 
             <h2>
               🪪 Dati professionali
             </h2>
 
-            <div
-              style={{
-                marginTop: 18,
-                marginBottom: 22,
-                padding: 15,
-                borderRadius: 12,
-                border:
-                  identityVerified
-                    ? '1px solid #48b779'
-                    : verificationStatus ===
-                        'rifiutato'
-                      ? '1px solid #d9534f'
-                      : '1px solid #e4b23c'
-              }}
-            >
+            <p>
               <b>
                 {verificationLabel()}
               </b>
+            </p>
 
-              <p>
-                {verificationDescription()}
-              </p>
-            </div>
+            <p>
+              {verificationDescription()}
+            </p>
 
             <label>
               Nome attività
@@ -1852,7 +1779,6 @@ export default function Home() {
             </label>
 
             <input
-              type="tel"
               value={phone}
               onChange={e =>
                 setPhone(
@@ -1869,7 +1795,7 @@ export default function Home() {
               value={vatNumber}
               onChange={e =>
                 setVatNumber(
-                  e.target.value.toUpperCase()
+                  e.target.value
                 )
               }
             />
@@ -1882,7 +1808,7 @@ export default function Home() {
               value={taxCode}
               onChange={e =>
                 setTaxCode(
-                  e.target.value.toUpperCase()
+                  e.target.value
                 )
               }
             />
@@ -1902,8 +1828,7 @@ export default function Home() {
             id="setup-availability"
             className="card"
             style={{
-              marginTop: 20,
-              scrollMarginTop: 100
+              marginTop: 20
             }}
           >
             <label className="tag">
@@ -1914,28 +1839,21 @@ export default function Home() {
               ⏱ Quando sei disponibile?
             </h2>
 
-            <div
-              style={{
-                margin: '20px 0',
-                padding: 15,
-                border:
-                  '1px solid #ddd',
-                borderRadius: 12,
-                fontWeight: 700
-              }}
-            >
+            <p>
               Stato attuale:{' '}
-              {availabilityLabel(
-                availabilityStatus
-              )}
-            </div>
+              <b>
+                {availabilityLabel(
+                  availabilityStatus
+                )}
+              </b>
+            </p>
 
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns:
                   '1fr 1fr',
-                gap: 12
+                gap: 10
               }}
             >
               <button
@@ -1946,10 +1864,12 @@ export default function Home() {
                 }
                 disabled={availabilitySaving}
                 onClick={() =>
-                  updateAvailability('ora')
+                  updateAvailability(
+                    'ora'
+                  )
                 }
               >
-                🟢 Disponibile ora
+                🟢 Ora
               </button>
 
               <button
@@ -1960,10 +1880,12 @@ export default function Home() {
                 }
                 disabled={availabilitySaving}
                 onClick={() =>
-                  updateAvailability('1-2h')
+                  updateAvailability(
+                    '1-2h'
+                  )
                 }
               >
-                🟡 Entro 1–2 ore
+                🟡 1–2 ore
               </button>
 
               <button
@@ -1974,7 +1896,9 @@ export default function Home() {
                 }
                 disabled={availabilitySaving}
                 onClick={() =>
-                  updateAvailability('oggi')
+                  updateAvailability(
+                    'oggi'
+                  )
                 }
               >
                 🟠 Oggi
@@ -1988,7 +1912,9 @@ export default function Home() {
                 }
                 disabled={availabilitySaving}
                 onClick={() =>
-                  updateAvailability('offline')
+                  updateAvailability(
+                    'offline'
+                  )
                 }
               >
                 ⚫ Offline
@@ -2147,11 +2073,11 @@ export default function Home() {
                   Lavori compatibili
                 </h2>
 
-                <div>
+                <p>
                   {availabilityLabel(
                     availabilityStatus
                   )}
-                </div>
+                </p>
 
                 <button
                   className="outline"
@@ -2165,17 +2091,15 @@ export default function Home() {
                 <p>Caricamento...</p>
               )}
 
-              {jobs.length === 0 &&
-                !jobsLoading && (
+              {!jobsLoading &&
+                jobs.length === 0 && (
                   <div
                     className="card"
                     style={{
                       marginTop: 20
                     }}
                   >
-                    <p>
-                      Nessun lavoro compatibile.
-                    </p>
+                    Nessun lavoro compatibile.
                   </div>
                 )}
 
@@ -2203,6 +2127,11 @@ export default function Home() {
                   <p>
                     <b>Urgenza:</b>{' '}
                     {job.urgency.toUpperCase()}
+                  </p>
+
+                  <p>
+                    🔒 L'indirizzo completo sarà
+                    visibile dopo l'accettazione.
                   </p>
 
                   {job.distance_km != null && (
@@ -2248,6 +2177,10 @@ export default function Home() {
               marginTop: 60
             }}
           >
+            <label className="tag">
+              I MIEI LAVORI
+            </label>
+
             <h2>
               Lavori accettati
             </h2>
@@ -2275,6 +2208,28 @@ export default function Home() {
               <p>
                 {job.description}
               </p>
+
+              {job.address && (
+                <div
+                  className="success"
+                  style={{
+                    margin:
+                      '15px 0'
+                  }}
+                >
+                  <b>
+                    📍 Indirizzo intervento
+                  </b>
+
+                  <p
+                    style={{
+                      marginBottom: 0
+                    }}
+                  >
+                    {job.address}
+                  </p>
+                </div>
+              )}
 
               <button
                 className="full"
@@ -2304,11 +2259,53 @@ export default function Home() {
               )}
             </article>
           ))}
+
+          <div
+            style={{
+              marginTop: 60
+            }}
+          >
+            <h2>
+              ⭐ Recensioni
+            </h2>
+          </div>
+
+          {professionalReviews.map(
+            review => (
+              <article
+                key={
+                  review.review_id
+                }
+                className="card"
+                style={{
+                  marginTop: 18
+                }}
+              >
+                <div>
+                  {'⭐'.repeat(
+                    Number(
+                      review.rating
+                    )
+                  )}
+                </div>
+
+                <h3>
+                  {review.client_name ||
+                    'Cliente'}
+                </h3>
+
+                <p>
+                  {review.comment ||
+                    'Nessun commento.'}
+                </p>
+              </article>
+            )
+          )}
         </section>
 
         <footer>
           <small>
-            © 2026 LavoroSubito · V31
+            © 2026 LavoroSubito · V33
           </small>
         </footer>
 
@@ -2316,6 +2313,10 @@ export default function Home() {
       </main>
     );
   }
+
+  // ============================
+  // AREA CLIENTE
+  // ============================
 
   return (
     <main>
@@ -2368,6 +2369,10 @@ export default function Home() {
         </div>
 
         <div className="card">
+          <label className="tag">
+            V33
+          </label>
+
           <h2>
             Di cosa hai bisogno?
           </h2>
@@ -2418,17 +2423,48 @@ export default function Home() {
             ))}
           </div>
 
-          <input
+          <label>
+            Descrivi il problema
+          </label>
+
+          <textarea
             value={description}
             onChange={e =>
               setDescription(
                 e.target.value
               )
             }
-            placeholder="Descrivi il problema..."
+            placeholder="Es. Perdita d'acqua sotto il lavandino..."
+            rows={4}
           />
 
+          <label>
+            📍 Indirizzo intervento
+          </label>
+
+          <input
+            value={address}
+            onChange={e =>
+              setAddress(
+                e.target.value
+              )
+            }
+            placeholder="Es. Via Roma 15, Urbino"
+          />
+
+          <small
+            style={{
+              display: 'block',
+              marginBottom: 15
+            }}
+          >
+            L'indirizzo completo verrà mostrato al
+            professionista solo dopo che avrà accettato
+            il lavoro.
+          </small>
+
           <button
+            type="button"
             className="outline"
             disabled={locationLoading}
             onClick={detectLocation}
@@ -2436,8 +2472,8 @@ export default function Home() {
             {locationLoading
               ? '📍 Rilevamento...'
               : coordinates
-                ? '✅ Posizione rilevata'
-                : '📍 Usa la mia posizione'}
+                ? '✅ Posizione GPS rilevata'
+                : '📍 Usa anche la mia posizione GPS'}
           </button>
 
           <button
@@ -2445,7 +2481,9 @@ export default function Home() {
             disabled={busy}
             onClick={submitJob}
           >
-            Trova chi è disponibile →
+            {busy
+              ? 'Ricerca...'
+              : 'Trova chi è disponibile →'}
           </button>
 
           {message && (
@@ -2595,6 +2633,31 @@ export default function Home() {
                     {job.description}
                   </p>
 
+                  {job.address && (
+                    <div
+                      style={{
+                        margin:
+                          '12px 0',
+                        padding: 12,
+                        border:
+                          '1px solid #ddd',
+                        borderRadius: 10
+                      }}
+                    >
+                      <b>
+                        📍 Indirizzo intervento
+                      </b>
+
+                      <p
+                        style={{
+                          marginBottom: 0
+                        }}
+                      >
+                        {job.address}
+                      </p>
+                    </div>
+                  )}
+
                   <p>
                     <b>Urgenza:</b>{' '}
                     {job.urgency?.toUpperCase()}
@@ -2602,16 +2665,16 @@ export default function Home() {
 
                   {open && (
                     <button
-                      type="button"
                       className="outline"
                       disabled={busy}
                       style={{
-                        marginTop: 12,
                         borderColor:
                           '#d9534f'
                       }}
                       onClick={() =>
-                        cancelJob(job.id)
+                        cancelJob(
+                          job.id
+                        )
                       }
                     >
                       ❌ Annulla richiesta
@@ -2619,14 +2682,11 @@ export default function Home() {
                   )}
 
                   {cancelled && (
-                    <div
-                      style={{
-                        marginTop: 12,
-                        fontWeight: 700
-                      }}
-                    >
-                      Questa richiesta è stata annullata.
-                    </div>
+                    <p>
+                      <b>
+                        Questa richiesta è stata annullata.
+                      </b>
+                    </p>
                   )}
 
                   {accepted &&
@@ -2712,7 +2772,7 @@ export default function Home() {
 
       <footer>
         <small>
-          © 2026 LavoroSubito · V31
+          © 2026 LavoroSubito · V33
         </small>
       </footer>
 
@@ -2754,7 +2814,9 @@ export default function Home() {
                     : 'outline'
                 }
                 onClick={() =>
-                  setAuthMode('login')
+                  setAuthMode(
+                    'login'
+                  )
                 }
               >
                 Accedi
@@ -2768,7 +2830,9 @@ export default function Home() {
                     : 'outline'
                 }
                 onClick={() =>
-                  setAuthMode('signup')
+                  setAuthMode(
+                    'signup'
+                  )
                 }
               >
                 Registrati
