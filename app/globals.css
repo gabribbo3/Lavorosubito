@@ -141,8 +141,7 @@ header {
 
   line-height: 0.96;
 
-  letter-spacing:
-    -4px;
+  letter-spacing: -4px;
 
   margin:
     14px 0;
@@ -398,6 +397,11 @@ textarea {
 
   margin:
     8px 0 15px;
+}
+
+.section h3 {
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .success,
@@ -828,31 +832,298 @@ footer {
 
   .section {
     padding:
-      26px 0 55px;
+      20px 0 42px;
   }
 
   .section h2 {
     font-size: 29px;
+
+    margin-bottom: 11px;
   }
 
+  .section h3 {
+    font-size: 18px;
+
+    margin:
+      7px 0 9px;
+  }
+
+  /*
+    AREA PROFESSIONISTA / STORICO
+    Le card dentro .section vengono compattate.
+    La card principale della home cliente non viene toccata.
+  */
+  .section > .card,
+  .section .job {
+    padding:
+      14px;
+
+    border-radius:
+      17px;
+  }
+
+  .section > .card {
+    margin-top:
+      11px !important;
+  }
+
+  .section > .card label {
+    font-size:
+      13px;
+
+    margin:
+      9px 0 5px;
+  }
+
+  .section > .card input,
+  .section > .card select {
+    padding:
+      10px 11px;
+
+    min-height:
+      42px;
+  }
+
+  /*
+    Disponibilità, categorie, raggio:
+    pulsanti più piccoli su mobile.
+  */
+  .section > .card .actions {
+    gap:
+      6px;
+
+    margin-top:
+      9px;
+  }
+
+  .section > .card .actions .full,
+  .section > .card .actions .outline {
+    width:
+      auto;
+
+    min-height:
+      38px;
+
+    padding:
+      8px 10px;
+
+    font-size:
+      12px;
+
+    border-radius:
+      11px;
+  }
+
+  .section > .card .grid {
+    gap:
+      6px;
+  }
+
+  .section > .card .cat {
+    min-height:
+      42px;
+
+    padding:
+      8px 9px;
+
+    font-size:
+      12px;
+
+    border-radius:
+      11px;
+  }
+
+  /*
+    KPI professionista:
+    4 box piccoli in una griglia compatta.
+  */
+  .kpi {
+    grid-template-columns:
+      repeat(
+        4,
+        1fr
+      );
+
+    gap:
+      6px;
+
+    margin-top:
+      10px;
+  }
+
+  .kpi .card {
+    padding:
+      9px 7px;
+
+    border-radius:
+      14px;
+
+    text-align:
+      center;
+  }
+
+  .kpi .muted {
+    font-size:
+      11px;
+  }
+
+  .kpi strong {
+    font-size:
+      19px;
+
+    margin-top:
+      3px;
+  }
+
+  /*
+    Messaggi LIVE / verifica più compatti.
+  */
+  .section > .success,
+  .section > .notice {
+    padding:
+      10px 12px;
+
+    margin:
+      9px 0;
+
+    font-size:
+      13px;
+
+    border-radius:
+      12px;
+  }
+
+  /*
+    Filtri lavori in una riga più compatta.
+  */
   .filter {
-    gap: 6px;
+    gap:
+      5px;
+
+    margin:
+      11px 0;
   }
 
   .filter button {
     padding:
+      7px 9px;
+
+    font-size:
+      11px;
+
+    min-height:
+      36px;
+  }
+
+  /*
+    Card lavori.
+  */
+  .job {
+    margin:
+      9px 0;
+  }
+
+  .job h3 {
+    font-size:
+      17px;
+
+    margin:
+      7px 0;
+  }
+
+  .job p {
+    font-size:
+      13px;
+
+    line-height:
+      1.4;
+
+    margin:
+      7px 0;
+  }
+
+  .job .status {
+    font-size:
+      10px;
+
+    letter-spacing:
+      0.7px;
+  }
+
+  .job-top {
+    gap:
+      8px;
+  }
+
+  .job-top > b {
+    font-size:
+      12px;
+  }
+
+  .job .photo {
+    max-height:
+      260px;
+
+    margin:
+      8px 0;
+
+    border-radius:
+      13px;
+  }
+
+  .job .success,
+  .job .notice {
+    padding:
       9px 11px;
 
-    font-size: 13px;
+    margin:
+      8px 0;
+
+    font-size:
+      12px;
+
+    border-radius:
+      11px;
   }
 
-  .kpi {
-    grid-template-columns:
-      1fr 1fr;
+  .job .actions {
+    gap:
+      6px;
+
+    margin-top:
+      8px;
   }
 
-  .kpi strong {
-    font-size: 24px;
+  .job .actions .full,
+  .job .actions .outline,
+  .job .actions .danger {
+    width:
+      auto;
+
+    min-height:
+      38px;
+
+    padding:
+      8px 11px;
+
+    font-size:
+      12px;
+
+    border-radius:
+      11px;
+  }
+
+  /*
+    Recensioni: card più snelle.
+  */
+  .section .job > b:first-child {
+    font-size:
+      13px;
+  }
+
+  .section .job:last-child {
+    margin-bottom:
+      0;
   }
 
   .modal {
@@ -909,7 +1180,10 @@ footer {
     font-size: 16px;
   }
 
-  .cat {
+  /*
+    Home cliente: resta compatta.
+  */
+  .hero .cat {
     min-height: 48px;
 
     padding:
@@ -918,26 +1192,114 @@ footer {
     font-size: 13px;
   }
 
-  .cat strong {
+  .hero .cat strong {
     font-size: 18px;
   }
 
-  .card {
+  .hero .card {
     padding: 16px;
   }
 
-  .full,
-  .outline,
-  .danger {
+  .hero .full,
+  .hero .outline,
+  .hero .danger {
     width: 100%;
   }
 
-  .filter button {
-    width: auto;
+  /*
+    Professionista: ancora più compatto
+    sugli iPhone più stretti.
+  */
+  .section {
+    padding-top:
+      16px;
+  }
+
+  .section h2 {
+    font-size:
+      25px;
+  }
+
+  .section > .card,
+  .section .job {
+    padding:
+      12px;
+  }
+
+  .section > .card .actions .full,
+  .section > .card .actions .outline {
+    font-size:
+      11px;
+
+    padding:
+      7px 9px;
+  }
+
+  .section > .card .cat {
+    font-size:
+      11px;
+
+    padding:
+      7px 8px;
+  }
+
+  .kpi {
+    gap:
+      5px;
   }
 
   .kpi .card {
-    padding: 13px;
+    padding:
+      8px 5px;
+  }
+
+  .kpi .muted {
+    font-size:
+      10px;
+  }
+
+  .kpi strong {
+    font-size:
+      18px;
+  }
+
+  .filter button {
+    width:
+      auto;
+
+    font-size:
+      10px;
+
+    padding:
+      7px 8px;
+  }
+
+  .job h3 {
+    font-size:
+      16px;
+  }
+
+  .job p {
+    font-size:
+      12px;
+  }
+
+  .job .photo {
+    max-height:
+      220px;
+  }
+
+  .job .actions .full,
+  .job .actions .outline,
+  .job .actions .danger {
+    width:
+      auto;
+
+    font-size:
+      11px;
+
+    padding:
+      7px 9px;
   }
 
   footer {
