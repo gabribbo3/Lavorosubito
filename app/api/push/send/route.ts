@@ -15,7 +15,6 @@ function distanceKm(
   lat2: number,
   lon2: number
 ) {
-
   const earthRadius =
     6371;
 
@@ -37,25 +36,19 @@ function distanceKm(
     Math.sin(
       dLat / 2
     ) ** 2
-
     +
-
     Math.cos(
       lat1
       * Math.PI
       / 180
     )
-
     *
-
     Math.cos(
       lat2
       * Math.PI
       / 180
     )
-
     *
-
     Math.sin(
       dLon / 2
     ) ** 2;
@@ -71,16 +64,13 @@ function distanceKm(
       )
     )
   );
-
 }
 
 export async function POST(
   request:
     NextRequest
 ) {
-
   try {
-
     const supabaseUrl =
       process.env
         .NEXT_PUBLIC_SUPABASE_URL;
@@ -112,29 +102,22 @@ export async function POST(
       ||
       !vapidPrivateKey
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            false,
-
+          ok: false,
           error:
             'Configurazione server incompleta.'
         },
         {
-          status:
-            500
+          status: 500
         }
       );
-
     }
 
     const authorization =
-      request
-        .headers
-        .get(
-          'authorization'
-        );
+      request.headers.get(
+        'authorization'
+      );
 
     const accessToken =
       authorization
@@ -146,18 +129,14 @@ export async function POST(
     if (
       !accessToken
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            false
+          ok: false
         },
         {
-          status:
-            401
+          status: 401
         }
       );
-
     }
 
     const userClient =
@@ -165,69 +144,78 @@ export async function POST(
         supabaseUrl,
         publishableKey,
         {
-          global:
-            {
-              headers:
-                {
-                  Authorization:
-                    `Bearer ${accessToken}`
-                }
+          global: {
+            headers: {
+              Authorization:
+                `Bearer ${accessToken}`
             }
+          }
         }
       );
 
     const {
       data: {
         user
-      }
+      },
+      error:
+        userError
     } =
-      await userClient
-        .auth
+      await userClient.auth
         .getUser();
 
     if (
+      userError
+      ||
       !user
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            false
+          ok: false
         },
         {
-          status:
-            401
+          status: 401
         }
       );
-
     }
 
-    const body =
-      await request
-        .json();
+    let body:
+      any;
+
+    try {
+      body =
+        await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Richiesta non valida.'
+        },
+        {
+          status: 400
+        }
+      );
+    }
 
     const jobId =
-      body
-        ?.jobId;
+      body?.jobId;
 
     if (
       !jobId
+      ||
+      typeof jobId !==
+        'string'
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            false,
-
+          ok: false,
           error:
-            'jobId mancante.'
+            'jobId mancante o non valido.'
         },
         {
-          status:
-            400
+          status: 400
         }
       );
-
     }
 
     const admin =
@@ -235,11 +223,10 @@ export async function POST(
         supabaseUrl,
         serviceRoleKey,
         {
-          auth:
-            {
-              persistSession:
-                false
-            }
+          auth: {
+            persistSession:
+              false
+          }
         }
       );
 
@@ -254,7 +241,7 @@ export async function POST(
           'jobs'
         )
         .select(
-          'id,client_id,category_id,urgency,latitude,longitude,description'
+          'id,client_id,category_id,urgency,latitude,longitude,status'
         )
         .eq(
           'id',
@@ -267,44 +254,49 @@ export async function POST(
       ||
       !job
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            false,
-
+          ok: false,
           error:
             'Richiesta non trovata.'
         },
         {
-          status:
-            404
+          status: 404
         }
       );
-
     }
 
     if (
       job.client_id !==
-        user.id
+      user.id
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            false
+          ok: false
         },
         {
-          status:
-            403
+          status: 403
         }
       );
+    }
 
+    if (
+      job.status !==
+      'aperta'
+    ) {
+      return NextResponse.json(
+        {
+          ok: true,
+          sent: 0
+        }
+      );
     }
 
     const {
       data:
-        categoryRows
+        categoryRows,
+      error:
+        categoryError
     } =
       await admin
         .from(
@@ -317,6 +309,21 @@ export async function POST(
           'category_id',
           job.category_id
         );
+
+    if (
+      categoryError
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Errore durante la selezione dei professionisti.'
+        },
+        {
+          status: 500
+        }
+      );
+    }
 
     const professionalIds =
       [
@@ -337,31 +344,28 @@ export async function POST(
 
     if (
       professionalIds.length ===
-        0
+      0
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            true,
-
-          sent:
-            0
+          ok: true,
+          sent: 0
         }
       );
-
     }
 
     const {
       data:
-        professionals
+        professionals,
+      error:
+        professionalsError
     } =
       await admin
         .from(
           'professionals'
         )
         .select(
-          'id,business_name,verified,verification_status,latitude,longitude,max_distance_km'
+          'id,verified,verification_status,latitude,longitude,max_distance_km'
         )
         .in(
           'id',
@@ -376,9 +380,26 @@ export async function POST(
           'verificato'
         );
 
+    if (
+      professionalsError
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Errore durante la selezione dei professionisti.'
+        },
+        {
+          status: 500
+        }
+      );
+    }
+
     const {
       data:
-        availabilityRows
+        availabilityRows,
+      error:
+        availabilityError
     } =
       await admin
         .from(
@@ -392,6 +413,21 @@ export async function POST(
           professionalIds
         );
 
+    if (
+      availabilityError
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Errore durante la verifica della disponibilità.'
+        },
+        {
+          status: 500
+        }
+      );
+    }
+
     const availabilityMap =
       new Map(
         (
@@ -401,21 +437,16 @@ export async function POST(
           (
             row:
               any
-          ) =>
-            [
-              row
-                .professional_id,
-
-              row
-                .status
-            ]
+          ) => [
+            row.professional_id,
+            row.status
+          ]
         )
       );
 
     const urgency =
       String(
-        job
-          .urgency
+        job.urgency
         ?? ''
       )
         .toLowerCase();
@@ -429,12 +460,10 @@ export async function POST(
           professional:
             any
         ) => {
-
           const availability =
-            availabilityMap
-              .get(
-                professional.id
-              );
+            availabilityMap.get(
+              professional.id
+            );
 
           if (
             !availability
@@ -442,9 +471,7 @@ export async function POST(
             availability ===
               'offline'
           ) {
-
             return false;
-
           }
 
           if (
@@ -460,9 +487,7 @@ export async function POST(
               )
             )
           ) {
-
             return false;
-
           }
 
           if (
@@ -479,9 +504,7 @@ export async function POST(
               )
             )
           ) {
-
             return false;
-
           }
 
           if (
@@ -497,17 +520,23 @@ export async function POST(
             professional.longitude ==
               null
           ) {
-
             return true;
-
           }
 
           const distance =
             distanceKm(
-              job.latitude,
-              job.longitude,
-              professional.latitude,
-              professional.longitude
+              Number(
+                job.latitude
+              ),
+              Number(
+                job.longitude
+              ),
+              Number(
+                professional.latitude
+              ),
+              Number(
+                professional.longitude
+              )
             );
 
           const radius =
@@ -519,11 +548,9 @@ export async function POST(
 
           if (
             distance >
-              radius
+            radius
           ) {
-
             return false;
-
           }
 
           const estimatedMinutes =
@@ -538,11 +565,9 @@ export async function POST(
               'subito'
             &&
             estimatedMinutes >
-              45
+              120
           ) {
-
             return false;
-
           }
 
           if (
@@ -550,15 +575,12 @@ export async function POST(
               'oggi'
             &&
             estimatedMinutes >
-              180
+              240
           ) {
-
             return false;
-
           }
 
           return true;
-
         }
       );
 
@@ -571,24 +593,21 @@ export async function POST(
 
     if (
       targetIds.length ===
-        0
+      0
     ) {
-
       return NextResponse.json(
         {
-          ok:
-            true,
-
-          sent:
-            0
+          ok: true,
+          sent: 0
         }
       );
-
     }
 
     const {
       data:
-        subscriptions
+        subscriptions,
+      error:
+        subscriptionsError
     } =
       await admin
         .from(
@@ -601,6 +620,21 @@ export async function POST(
           'user_id',
           targetIds
         );
+
+    if (
+      subscriptionsError
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Errore durante il caricamento delle notifiche.'
+        },
+        {
+          status: 500
+        }
+      );
+    }
 
     webpush
       .setVapidDetails(
@@ -617,23 +651,20 @@ export async function POST(
       of subscriptions
       ?? []
     ) {
-
       try {
-
         await webpush
           .sendNotification(
             {
               endpoint:
                 subscription.endpoint,
 
-              keys:
-                {
-                  p256dh:
-                    subscription.p256dh,
+              keys: {
+                p256dh:
+                  subscription.p256dh,
 
-                  auth:
-                    subscription.auth
-                }
+                auth:
+                  subscription.auth
+              }
             },
             JSON.stringify(
               {
@@ -641,9 +672,7 @@ export async function POST(
                   'Nuovo lavoro compatibile',
 
                 body:
-                  job.description
-                  ||
-                  'Nuova richiesta disponibile',
+                  'È disponibile un nuovo intervento compatibile nella tua zona.',
 
                 url:
                   '/'
@@ -652,42 +681,26 @@ export async function POST(
           );
 
         sent++;
-
       } catch {
       }
-
     }
 
     return NextResponse.json(
       {
-        ok:
-          true,
-
+        ok: true,
         sent
       }
     );
-
-  } catch (
-    error:
-      any
-  ) {
-
+  } catch {
     return NextResponse.json(
       {
-        ok:
-          false,
-
+        ok: false,
         error:
-          error?.message
-          ??
-          'Errore server'
+          'Errore server.'
       },
       {
-        status:
-          500
+        status: 500
       }
     );
-
   }
-
 }
