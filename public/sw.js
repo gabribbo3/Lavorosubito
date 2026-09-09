@@ -1,62 +1,118 @@
-self.addEventListener('push', function (event) {
-  let data = {
-    title: 'LavoroSubito',
-    body: 'Hai una nuova richiesta di intervento.',
-    url: '/'
-  };
+self.addEventListener(
+  'push',
+  event => {
 
-  if (event.data) {
+    let data = {};
+
     try {
-      data = {
-        ...data,
-        ...event.data.json()
-      };
+
+      data =
+        event.data
+          ? event.data.json()
+          : {};
+
     } catch {
-      data.body = event.data.text();
     }
+
+    const title =
+      data.title
+      || 'LavoroSubito';
+
+    const options = {
+
+      body:
+        data.body
+        || 'Hai un nuovo aggiornamento.',
+
+      data: {
+        url:
+          data.url
+          || '/'
+      }
+
+    };
+
+    event.waitUntil(
+      self.registration
+        .showNotification(
+          title,
+          options
+        )
+    );
+
   }
+);
 
-  const options = {
-    body: data.body,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    data: {
-      url: data.url || '/'
-    },
-    vibrate: [200, 100, 200],
-    tag: data.tag || 'lavorosubito-job',
-    renotify: true
-  };
+self.addEventListener(
+  'notificationclick',
+  event => {
 
-  event.waitUntil(
-    self.registration.showNotification(
-      data.title || 'LavoroSubito',
-      options
-    )
-  );
-});
+    event.notification
+      .close();
 
-self.addEventListener('notificationclick', function (event) {
-  event.notification.close();
+    event.waitUntil(
 
-  const url =
-    event.notification.data?.url || '/';
+      clients
+        .matchAll(
+          {
+            type:
+              'window',
 
-  event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then(function (clientList) {
-      for (const client of clientList) {
-        if ('focus' in client) {
-          client.navigate(url);
-          return client.focus();
-        }
-      }
+            includeUncontrolled:
+              true
+          }
+        )
+        .then(
+          windowClients => {
 
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
-    })
-  );
-});
+            for (
+              const client
+              of windowClients
+            ) {
+
+              if (
+                'focus'
+                in client
+              ) {
+
+                if (
+                  'navigate'
+                  in client
+                ) {
+
+                  client.navigate(
+                    event.notification
+                      .data
+                      ?.url
+                    || '/'
+                  );
+
+                }
+
+                return client.focus();
+
+              }
+
+            }
+
+            if (
+              clients.openWindow
+            ) {
+
+              return clients
+                .openWindow(
+                  event.notification
+                    .data
+                    ?.url
+                  || '/'
+                );
+
+            }
+
+          }
+        )
+
+    );
+
+  }
+);
