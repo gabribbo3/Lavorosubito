@@ -4,45 +4,22 @@ import {
   ChangeEvent,
   FormEvent,
   useEffect,
+  useMemo,
   useState
 } from 'react';
 
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-const cats = [
-  'Idraulico',
-  'Elettricista',
-  'Fabbro',
-  'Caldaia',
-  'Climatizzatore',
-  'Serramenti',
-  'Meccanico',
-  'Altro'
-];
+type Role =
+  | 'cliente'
+  | 'professionista';
 
-const icons = [
-  '🔧',
-  '⚡',
-  '🔑',
-  '🔥',
-  '❄️',
-  '🪟',
-  '🚗',
-  '🏠'
-];
-
-const distances = [10, 20, 30, 50, 100];
-
-type AvailabilityStatus =
+type Availability =
   | 'ora'
   | '1-2h'
   | 'oggi'
   | 'offline';
-
-type AppRole =
-  | 'cliente'
-  | 'professionista';
 
 type ClientFilter =
   | 'tutti'
@@ -57,33 +34,10 @@ type ProFilter =
   | 'accettata'
   | 'completata';
 
-const slug = (value: string) =>
-  value
-    .toLowerCase()
-    .replaceAll(' ', '-');
-
 type Category = {
   id: string;
   name: string;
-  slug?: string | null;
-};
-
-type SetupStatus = {
-  categories_count: number;
-  has_categories: boolean;
-  has_location: boolean;
-  has_radius: boolean;
-  has_availability: boolean;
-  setup_complete: boolean;
-};
-
-type ProfessionalIdentity = {
-  business_name?: string | null;
-  phone?: string | null;
-  vat_number?: string | null;
-  tax_code?: string | null;
-  verification_status?: string | null;
-  verified?: boolean | null;
+  slug: string;
 };
 
 type Job = {
@@ -92,42 +46,21 @@ type Job = {
   urgency: string;
   status: string;
   created_at?: string;
+
+  category_name?: string | null;
+
   distance_km?: number | null;
+
   eta_minutes?: number | null;
-  category_name?: string | null;
-};
 
-type AcceptedJob = {
-  id: string;
-  description: string;
-  urgency: string;
-  status: string;
-  created_at?: string;
-  category_name?: string | null;
   address?: string | null;
-};
 
-type ClientJob = {
-  id: string;
-  description: string;
-  urgency: string;
-  status: string;
-  created_at?: string;
-  category_name?: string | null;
   professional_name?: string | null;
-  reviewed: boolean;
-  address?: string | null;
+
+  reviewed?: boolean;
 };
 
-type ChatMessage = {
-  id: string;
-  job_id: string;
-  sender_id: string;
-  message: string;
-  created_at: string;
-};
-
-type ProfessionalReview = {
+type Review = {
   review_id: string;
   rating: number;
   comment?: string | null;
@@ -135,7 +68,7 @@ type ProfessionalReview = {
   client_name?: string | null;
 };
 
-type MatchResult = {
+type Match = {
   professional_id: string;
   professional_name: string;
   availability_status: string;
@@ -146,70 +79,225 @@ type MatchResult = {
   match_score: number;
 };
 
-type Coordinates = {
-  latitude: number;
-  longitude: number;
+type Message = {
+  id: string;
+  job_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
 };
 
+type Identity = {
+  business_name?: string | null;
+  phone?: string | null;
+  vat_number?: string | null;
+  tax_code?: string | null;
+
+  verification_status?:
+    | string
+    | null;
+
+  verified?:
+    | boolean
+    | null;
+};
+
+type Setup = {
+  categories_count: number;
+  has_categories: boolean;
+  has_location: boolean;
+  has_radius: boolean;
+  has_availability: boolean;
+  setup_complete: boolean;
+};
+
+const cats = [
+  ['Idraulico', '🔧'],
+  ['Elettricista', '⚡'],
+  ['Fabbro', '🔑'],
+  ['Caldaia', '🔥'],
+  ['Climatizzatore', '❄️'],
+  ['Serramenti', '🪟'],
+  ['Meccanico', '🚗'],
+  ['Altro', '🏠']
+] as const;
+
+const distances = [
+  10,
+  20,
+  30,
+  50,
+  100
+];
+
+function slugify(
+  value: string
+) {
+  return value
+    .toLowerCase()
+    .replaceAll(
+      ' ',
+      '-'
+    );
+}
+
+function availabilityLabel(
+  value: string
+) {
+  if (
+    value ===
+    'ora'
+  ) {
+    return '🟢 Disponibile ora';
+  }
+
+  if (
+    value ===
+    '1-2h'
+  ) {
+    return '🟡 Entro 1–2 ore';
+  }
+
+  if (
+    value ===
+    'oggi'
+  ) {
+    return '🟠 Disponibile oggi';
+  }
+
+  return '⚫ Offline';
+}
+
+function etaLabel(
+  value?:
+    | number
+    | null
+) {
+  if (
+    value == null
+  ) {
+    return 'Tempo non disponibile';
+  }
+
+  if (
+    value < 60
+  ) {
+    return `Circa ${value} min`;
+  }
+
+  const hours =
+    Math.floor(
+      value / 60
+    );
+
+  const minutes =
+    value % 60;
+
+  return minutes
+    ? `Circa ${hours} h ${minutes} min`
+    : `Circa ${hours} h`;
+}
+
+function statusLabel(
+  status: string
+) {
+  if (
+    status ===
+    'aperta'
+  ) {
+    return '🔴 RICERCA IN CORSO';
+  }
+
+  if (
+    status ===
+    'accettata'
+  ) {
+    return '🟢 ACCETTATA';
+  }
+
+  if (
+    status ===
+    'completata'
+  ) {
+    return '✅ COMPLETATA';
+  }
+
+  if (
+    status ===
+    'annullata'
+  ) {
+    return '⚫ ANNULLATA';
+  }
+
+  return status
+    .toUpperCase();
+}
+
 export default function Home() {
-  const [user, setUser] =
-    useState<User | null>(null);
-
-  const [profileRole, setProfileRole] =
-    useState<AppRole | null>(null);
-
-  const [role, setRole] =
-    useState<AppRole>('cliente');
-
-  const [fullName, setFullName] =
-    useState('');
-
-  const [message, setMessage] =
-    useState('');
-
-  const [busy, setBusy] =
-    useState(false);
 
   const [
-    availabilityStatus,
-    setAvailabilityStatus
+    user,
+    setUser
   ] =
-    useState<AvailabilityStatus>(
-      'offline'
+    useState<User | null>(
+      null
     );
 
   const [
-    availabilitySaving,
-    setAvailabilitySaving
+    role,
+    setRole
+  ] =
+    useState<Role | null>(
+      null
+    );
+
+  const [
+    fullName,
+    setFullName
+  ] =
+    useState('');
+
+  const [
+    message,
+    setMessage
+  ] =
+    useState('');
+
+  const [
+    busy,
+    setBusy
   ] =
     useState(false);
 
   const [
-    realtimeConnected,
-    setRealtimeConnected
+    live,
+    setLive
   ] =
     useState(false);
 
-  const [setupStatus, setSetupStatus] =
-    useState<SetupStatus | null>(null);
+  const [
+    categories,
+    setCategories
+  ] =
+    useState<Category[]>(
+      []
+    );
 
   const [
-    allCategories,
-    setAllCategories
+    selectedProCats,
+    setSelectedProCats
   ] =
-    useState<Category[]>([]);
+    useState<string[]>(
+      []
+    );
 
   const [
-    selectedCategoryIds,
-    setSelectedCategoryIds
+    availability,
+    setAvailability
   ] =
-    useState<string[]>([]);
-
-  const [
-    categorySaving,
-    setCategorySaving
-  ] =
-    useState(false);
+    useState<Availability>(
+      'offline'
+    );
 
   const [
     maxDistance,
@@ -218,112 +306,82 @@ export default function Home() {
     useState(30);
 
   const [
-    professionalLocationSet,
-    setProfessionalLocationSet
+    setup,
+    setSetup
   ] =
-    useState(false);
+    useState<Setup | null>(
+      null
+    );
 
   const [
-    professionalLocationLoading,
-    setProfessionalLocationLoading
+    identity,
+    setIdentity
   ] =
-    useState(false);
+    useState<Identity>(
+      {}
+    );
 
   const [
-    distanceSaving,
-    setDistanceSaving
+    reviews,
+    setReviews
   ] =
-    useState(false);
-
-  const [
-    businessName,
-    setBusinessName
-  ] =
-    useState('');
-
-  const [phone, setPhone] =
-    useState('');
-
-  const [
-    vatNumber,
-    setVatNumber
-  ] =
-    useState('');
-
-  const [
-    taxCode,
-    setTaxCode
-  ] =
-    useState('');
-
-  const [
-    verificationStatus,
-    setVerificationStatus
-  ] =
-    useState('da_verificare');
-
-  const [
-    identityVerified,
-    setIdentityVerified
-  ] =
-    useState(false);
-
-  const [
-    identitySaving,
-    setIdentitySaving
-  ] =
-    useState(false);
-
-  const [jobs, setJobs] =
-    useState<Job[]>([]);
-
-  const [
-    jobsLoading,
-    setJobsLoading
-  ] =
-    useState(false);
-
-  const [
-    acceptedJobs,
-    setAcceptedJobs
-  ] =
-    useState<AcceptedJob[]>([]);
-
-  const [
-    professionalReviews,
-    setProfessionalReviews
-  ] =
-    useState<ProfessionalReview[]>([]);
+    useState<Review[]>(
+      []
+    );
 
   const [
     clientJobs,
     setClientJobs
   ] =
-    useState<ClientJob[]>([]);
+    useState<Job[]>(
+      []
+    );
 
   const [
-    clientJobsLoading,
-    setClientJobsLoading
+    matchingJobs,
+    setMatchingJobs
   ] =
-    useState(false);
+    useState<Job[]>(
+      []
+    );
+
+  const [
+    acceptedJobs,
+    setAcceptedJobs
+  ] =
+    useState<Job[]>(
+      []
+    );
 
   const [
     clientFilter,
     setClientFilter
   ] =
-    useState<ClientFilter>('tutti');
+    useState<ClientFilter>(
+      'tutti'
+    );
 
   const [
     proFilter,
     setProFilter
   ] =
-    useState<ProFilter>('tutti');
+    useState<ProFilter>(
+      'tutti'
+    );
 
-  const [cat, setCat] =
+  const [
+    cat,
+    setCat
+  ] =
     useState('');
 
-  const [urg, setUrg] =
-    useState('SUBITO');
+  const [
+    urgency,
+    setUrgency
+  ] =
+    useState(
+      'SUBITO'
+    );
 
   const [
     description,
@@ -338,32 +396,50 @@ export default function Home() {
     useState('');
 
   const [
-    coordinates,
-    setCoordinates
+    coords,
+    setCoords
   ] =
-    useState<Coordinates | null>(
+    useState<{
+      latitude: number;
+      longitude: number;
+    } | null>(
       null
     );
 
   const [
-    locationLoading,
-    setLocationLoading
+    photoFile,
+    setPhotoFile
   ] =
-    useState(false);
+    useState<File | null>(
+      null
+    );
+
+  const [
+    photoPreview,
+    setPhotoPreview
+  ] =
+    useState('');
+
+  const [
+    jobPhotos,
+    setJobPhotos
+  ] =
+    useState<
+      Record<
+        string,
+        string | null | undefined
+      >
+    >(
+      {}
+    );
 
   const [
     bestMatch,
     setBestMatch
   ] =
-    useState<MatchResult | null>(
+    useState<Match | null>(
       null
     );
-
-  const [
-    matchingLoading,
-    setMatchingLoading
-  ] =
-    useState(false);
 
   const [
     authOpen,
@@ -375,14 +451,31 @@ export default function Home() {
     authMode,
     setAuthMode
   ] =
-    useState<'login' | 'signup'>(
+    useState<
+      'login'
+      | 'signup'
+    >(
       'login'
     );
 
-  const [name, setName] =
+  const [
+    signupRole,
+    setSignupRole
+  ] =
+    useState<Role>(
+      'cliente'
+    );
+
+  const [
+    authName,
+    setAuthName
+  ] =
     useState('');
 
-  const [email, setEmail] =
+  const [
+    email,
+    setEmail
+  ] =
     useState('');
 
   const [
@@ -395,7 +488,11 @@ export default function Home() {
     chatJobId,
     setChatJobId
   ] =
-    useState<string | null>(null);
+    useState<
+      string | null
+    >(
+      null
+    );
 
   const [
     chatTitle,
@@ -404,10 +501,12 @@ export default function Home() {
     useState('');
 
   const [
-    chatMessages,
-    setChatMessages
+    messages,
+    setMessages
   ] =
-    useState<ChatMessage[]>([]);
+    useState<Message[]>(
+      []
+    );
 
   const [
     chatText,
@@ -416,30 +515,19 @@ export default function Home() {
     useState('');
 
   const [
-    chatLoading,
-    setChatLoading
-  ] =
-    useState(false);
-
-  const [
-    chatSending,
-    setChatSending
-  ] =
-    useState(false);
-
-  const [
     reviewJobId,
     setReviewJobId
   ] =
-    useState<string | null>(null);
+    useState<
+      string | null
+    >(
+      null
+    );
 
   const [
-    reviewProfessionalName,
-    setReviewProfessionalName
+    rating,
+    setRating
   ] =
-    useState('');
-
-  const [rating, setRating] =
     useState(5);
 
   const [
@@ -448,1543 +536,618 @@ export default function Home() {
   ] =
     useState('');
 
-  const [
-    reviewSending,
-    setReviewSending
-  ] =
-    useState(false);
+  useEffect(
+    () => {
 
-  const [
-    reviewMessage,
-    setReviewMessage
-  ] =
-    useState('');
-
-  // =========================
-  // V35 FOTO
-  // =========================
-
-  const [
-    photoFile,
-    setPhotoFile
-  ] =
-    useState<File | null>(null);
-
-  const [
-    photoPreview,
-    setPhotoPreview
-  ] =
-    useState('');
-
-  const [
-    photoUploading,
-    setPhotoUploading
-  ] =
-    useState(false);
-
-  const [
-    jobPhotos,
-    setJobPhotos
-  ] =
-    useState<
-      Record<
-        string,
-        string | null | undefined
-      >
-    >({});
-
-  const [
-    photoLoadingJobs,
-    setPhotoLoadingJobs
-  ] =
-    useState<
-      Record<string, boolean>
-    >({});
-
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }) => {
-        setUser(data.user);
-
-        if (data.user) {
-          loadProfile(
-            data.user.id
-          );
-        }
-      });
-
-    const { data } =
-      supabase.auth
-        .onAuthStateChange(
-          (
-            _event,
-            session
-          ) => {
-            const currentUser =
-              session?.user ??
-              null;
+      supabase
+        .auth
+        .getUser()
+        .then(
+          ({
+            data
+          }) => {
 
             setUser(
-              currentUser
+              data.user
             );
 
             if (
-              currentUser
+              data.user
             ) {
-              loadProfile(
-                currentUser.id
+              void loadProfile(
+                data.user.id
               );
-            } else {
-              resetSession();
             }
+
           }
         );
 
-    return () => {
-      data.subscription
-        .unsubscribe();
-    };
-  }, []);
+      const {
+        data
+      } =
+        supabase
+          .auth
+          .onAuthStateChange(
+            (
+              _event,
+              session
+            ) => {
 
-  useEffect(() => {
-    if (
-      !user ||
-      !profileRole
-    ) {
-      return;
-    }
+              const currentUser =
+                session
+                  ?.user
+                  ?? null;
 
-    const channel =
-      supabase
-        .channel(
-          `lavorosubito-v35-${user.id}`
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'jobs'
-          },
-          async payload => {
-            if (
-              profileRole ===
-              'professionista'
-            ) {
-              await loadJobs();
-
-              await loadAcceptedJobs();
+              setUser(
+                currentUser
+              );
 
               if (
-                payload.eventType ===
-                'INSERT'
+                currentUser
               ) {
-                setMessage(
-                  '🔔 Nuova richiesta ricevuta.'
+
+                void loadProfile(
+                  currentUser.id
                 );
+
+              } else {
+
+                reset();
+
               }
+
             }
+          );
 
-            if (
-              profileRole ===
-              'cliente'
-            ) {
-              await loadClientJobs();
-            }
-          }
-        )
-        .subscribe(
-          status => {
-            setRealtimeConnected(
-              status ===
-                'SUBSCRIBED'
-            );
-          }
-        );
+      return () => {
 
-    return () => {
-      setRealtimeConnected(
-        false
-      );
+        data
+          .subscription
+          .unsubscribe();
 
-      supabase.removeChannel(
-        channel
-      );
-    };
-  }, [
-    user?.id,
-    profileRole
-  ]);
+      };
 
-  function clearPhotoPreview() {
-    if (photoPreview) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
-    }
+    },
+    []
+  );
 
-    setPhotoPreview('');
-    setPhotoFile(null);
-  }
+  useEffect(
+    () => {
 
-  function clearDownloadedPhotos() {
-    Object.values(
-      jobPhotos
-    ).forEach(value => {
-      if (value) {
-        URL.revokeObjectURL(
-          value
-        );
+      if (
+        !user ||
+        !role
+      ) {
+        return;
       }
-    });
 
-    setJobPhotos({});
-    setPhotoLoadingJobs({});
-  }
+      const channel =
+        supabase
+          .channel(
+            `lavorosubito-mvp-${user.id}`
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'jobs'
+            },
+            async () => {
 
-  function resetSession() {
-    clearPhotoPreview();
-    clearDownloadedPhotos();
+              if (
+                role ===
+                'cliente'
+              ) {
 
-    setProfileRole(null);
-    setFullName('');
-    setAvailabilityStatus(
-      'offline'
+                await loadClientJobs();
+
+              } else {
+
+                await loadMatchingJobs();
+                await loadAcceptedJobs();
+
+              }
+
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'messages'
+            },
+            async payload => {
+
+              const row =
+                payload.new as {
+                  job_id?: string;
+                };
+
+              if (
+                chatJobId &&
+                row.job_id ===
+                  chatJobId
+              ) {
+
+                await loadChat(
+                  chatJobId
+                );
+
+              }
+
+            }
+          )
+          .subscribe(
+            status => {
+
+              setLive(
+                status ===
+                  'SUBSCRIBED'
+              );
+
+            }
+          );
+
+      return () => {
+
+        setLive(
+          false
+        );
+
+        void supabase
+          .removeChannel(
+            channel
+          );
+
+      };
+
+    },
+    [
+      user?.id,
+      role,
+      chatJobId
+    ]
+  );
+
+  function reset() {
+
+    setRole(
+      null
     );
 
-    setJobs([]);
-    setAcceptedJobs([]);
-    setClientJobs([]);
-    setProfessionalReviews(
-      []
-    );
-
-    setSelectedCategoryIds(
-      []
-    );
-
-    setSetupStatus(null);
-    setBusinessName('');
-    setPhone('');
-    setVatNumber('');
-    setTaxCode('');
-
-    setVerificationStatus(
-      'da_verificare'
-    );
-
-    setIdentityVerified(
-      false
-    );
-
-    setBestMatch(null);
-    setChatJobId(null);
-    setChatMessages([]);
-    setReviewJobId(null);
-    setCoordinates(null);
-    setAddress('');
-
-    setProfessionalLocationSet(
-      false
-    );
-
-    setMaxDistance(30);
-
-    setRealtimeConnected(
-      false
-    );
-
-    setClientFilter(
-      'tutti'
-    );
-
-    setProFilter(
-      'tutti'
-    );
-  }
-
-  function scrollToSection(
-    id: string
-  ) {
-    document
-      .getElementById(id)
-      ?.scrollIntoView({
-        behavior:
-          'smooth',
-        block:
-          'start'
-      });
-  }
-
-  // =========================
-  // V35 GESTIONE FOTO
-  // =========================
-
-  function selectPhoto(
-    event:
-      ChangeEvent<HTMLInputElement>
-  ) {
-    const file =
-      event.target
-        .files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (
-      !file.type.startsWith(
-        'image/'
-      )
-    ) {
-      setMessage(
-        'Seleziona un file immagine.'
-      );
-
-      event.target.value =
-        '';
-
-      return;
-    }
-
-    if (
-      file.size >
-      10 * 1024 * 1024
-    ) {
-      setMessage(
-        'La foto supera il limite di 10 MB.'
-      );
-
-      event.target.value =
-        '';
-
-      return;
-    }
-
-    if (photoPreview) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
-    }
-
-    const preview =
-      URL.createObjectURL(
-        file
-      );
-
-    setPhotoFile(file);
-    setPhotoPreview(
-      preview
+    setFullName(
+      ''
     );
 
     setMessage(
-      '📷 Foto selezionata.'
-    );
-  }
-
-  function safeFileName(
-    file: File
-  ) {
-    const original =
-      file.name ||
-      'foto.jpg';
-
-    const extension =
-      original.includes('.')
-        ? original
-            .split('.')
-            .pop()
-            ?.toLowerCase()
-        : '';
-
-    const safeExtension =
-      extension
-        ?.replace(
-          /[^a-z0-9]/g,
-          ''
-        ) ||
-      'jpg';
-
-    return `${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.${safeExtension}`;
-  }
-
-  async function uploadJobPhoto(
-    jobId: string
-  ) {
-    if (
-      !photoFile ||
-      !user
-    ) {
-      return true;
-    }
-
-    setPhotoUploading(
-      true
+      ''
     );
 
-    const path =
-      `${user.id}/${jobId}/${safeFileName(
-        photoFile
-      )}`;
-
-    const {
-      error:
-        uploadError
-    } =
-      await supabase
-        .storage
-        .from(
-          'job-photos'
-        )
-        .upload(
-          path,
-          photoFile,
-          {
-            cacheControl:
-              '3600',
-
-            upsert:
-              false,
-
-            contentType:
-              photoFile.type ||
-              undefined
-          }
-        );
-
-    if (
-      uploadError
-    ) {
-      setMessage(
-        `Richiesta creata, ma la foto non è stata caricata: ${uploadError.message}`
-      );
-
-      setPhotoUploading(
-        false
-      );
-
-      return false;
-    }
-
-    const {
-      data:
-        photoSaved,
-      error:
-        photoSaveError
-    } =
-      await supabase.rpc(
-        'set_my_job_photo',
-        {
-          p_job_id:
-            jobId,
-
-          p_photo_url:
-            path
-        }
-      );
-
-    if (
-      photoSaveError ||
-      photoSaved === false
-    ) {
-      await supabase
-        .storage
-        .from(
-          'job-photos'
-        )
-        .remove([
-          path
-        ]);
-
-      setMessage(
-        `Richiesta creata, ma non è stato possibile collegare la foto: ${
-          photoSaveError
-            ?.message ??
-          'errore sconosciuto'
-        }`
-      );
-
-      setPhotoUploading(
-        false
-      );
-
-      return false;
-    }
-
-    await loadJobPhoto(
-      jobId,
-      true
+    setClientJobs(
+      []
     );
 
-    setPhotoUploading(
-      false
+    setMatchingJobs(
+      []
     );
 
-    return true;
-  }
-
-  async function loadJobPhoto(
-    jobId: string,
-    force = false
-  ) {
-    if (
-      !force &&
-      jobPhotos[
-        jobId
-      ] !== undefined
-    ) {
-      return;
-    }
-
-    if (
-      photoLoadingJobs[
-        jobId
-      ]
-    ) {
-      return;
-    }
-
-    setPhotoLoadingJobs(
-      current => ({
-        ...current,
-        [jobId]: true
-      })
+    setAcceptedJobs(
+      []
     );
 
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'get_job_photo_url',
-        {
-          p_job_id:
-            jobId
-        }
-      );
-
-    if (
-      error ||
-      !data
-    ) {
-      setJobPhotos(
-        current => ({
-          ...current,
-          [jobId]:
-            null
-        })
-      );
-
-      setPhotoLoadingJobs(
-        current => ({
-          ...current,
-          [jobId]:
-            false
-        })
-      );
-
-      return;
-    }
-
-    const photoPath =
-      String(data);
-
-    const {
-      data:
-        photoBlob,
-      error:
-        downloadError
-    } =
-      await supabase
-        .storage
-        .from(
-          'job-photos'
-        )
-        .download(
-          photoPath
-        );
-
-    if (
-      downloadError ||
-      !photoBlob
-    ) {
-      setJobPhotos(
-        current => ({
-          ...current,
-          [jobId]:
-            null
-        })
-      );
-    } else {
-      const localUrl =
-        URL.createObjectURL(
-          photoBlob
-        );
-
-      setJobPhotos(
-        current => {
-          const oldUrl =
-            current[
-              jobId
-            ];
-
-          if (
-            oldUrl
-          ) {
-            URL.revokeObjectURL(
-              oldUrl
-            );
-          }
-
-          return {
-            ...current,
-            [jobId]:
-              localUrl
-          };
-        }
-      );
-    }
-
-    setPhotoLoadingJobs(
-      current => ({
-        ...current,
-        [jobId]:
-          false
-      })
+    setSelectedProCats(
+      []
     );
+
+    setAvailability(
+      'offline'
+    );
+
+    setSetup(
+      null
+    );
+
+    setIdentity(
+      {}
+    );
+
+    setReviews(
+      []
+    );
+
+    setBestMatch(
+      null
+    );
+
+    clearPhoto();
+
+    setJobPhotos(
+      {}
+    );
+
   }
-
-  async function loadPhotos(
-    ids: string[]
-  ) {
-    for (
-      const id of ids
-    ) {
-      await loadJobPhoto(
-        id
-      );
-    }
-  }
-
-  function JobPhoto({
-    jobId
-  }: {
-    jobId: string;
-  }) {
-    const url =
-      jobPhotos[
-        jobId
-      ];
-
-    const loading =
-      photoLoadingJobs[
-        jobId
-      ];
-
-    if (loading) {
-      return (
-        <div
-          className="card"
-          style={{
-            marginTop:
-              12
-          }}
-        >
-          📷 Caricamento
-          foto...
-        </div>
-      );
-    }
-
-    if (url) {
-      return (
-        <div
-          style={{
-            margin:
-              '15px 0'
-          }}
-        >
-          <b>
-            📷 Foto del
-            problema
-          </b>
-
-          <img
-            src={url}
-            alt="Foto del problema"
-            style={{
-              display:
-                'block',
-              width:
-                '100%',
-              maxHeight:
-                420,
-              objectFit:
-                'cover',
-              borderRadius:
-                14,
-              marginTop:
-                10,
-              border:
-                '1px solid #ddd'
-            }}
-          />
-        </div>
-      );
-    }
-
-    return null;
-  }
-
-  // =========================
-  // PROFILO
-  // =========================
 
   async function loadProfile(
-    userId: string
+    id: string
   ) {
+
     const {
-      data,
-      error
+      data
     } =
       await supabase
         .from(
           'profiles'
         )
         .select(
-          'role, full_name'
+          'role,full_name'
         )
         .eq(
           'id',
-          userId
+          id
         )
-        .single();
+        .maybeSingle();
 
-    if (
-      error ||
-      !data
-    ) {
-      setProfileRole(
-        'cliente'
-      );
+    const detected:
+      Role =
+        data?.role ===
+          'professionista'
+          ? 'professionista'
+          : 'cliente';
 
-      await loadClientJobs();
-
-      return;
-    }
-
-    const detectedRole:
-      AppRole =
-      data.role ===
-      'professionista'
-        ? 'professionista'
-        : 'cliente';
-
-    setProfileRole(
-      detectedRole
+    setRole(
+      detected
     );
 
     setFullName(
-      data.full_name ??
-      ''
+      data?.full_name
+        ?? ''
     );
-
-    await loadAllCategories();
-
-    if (
-      detectedRole ===
-      'professionista'
-    ) {
-      await Promise.all([
-        loadAvailability(
-          userId
-        ),
-
-        loadProfessionalSettings(
-          userId
-        ),
-
-        loadProfessionalCategories(),
-
-        loadProfessionalIdentity(),
-
-        loadSetupStatus(),
-
-        loadJobs(),
-
-        loadAcceptedJobs(),
-
-        loadProfessionalReviews()
-      ]);
-    } else {
-      await loadClientJobs();
-    }
-  }
-
-  async function loadProfessionalIdentity() {
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'my_professional_identity'
-      );
-
-    if (error) {
-      setMessage(
-        `Errore dati professionali: ${error.message}`
-      );
-      return;
-    }
-
-    if (
-      !data ||
-      data.length === 0
-    ) {
-      return;
-    }
-
-    const identity =
-      data[0] as ProfessionalIdentity;
-
-    setBusinessName(
-      identity
-        .business_name ??
-      ''
-    );
-
-    setPhone(
-      identity.phone ??
-      ''
-    );
-
-    setVatNumber(
-      identity
-        .vat_number ??
-      ''
-    );
-
-    setTaxCode(
-      identity
-        .tax_code ??
-      ''
-    );
-
-    setVerificationStatus(
-      identity
-        .verification_status ??
-      'da_verificare'
-    );
-
-    setIdentityVerified(
-      identity.verified ===
-        true
-    );
-  }
-
-  async function saveProfessionalIdentity() {
-    if (
-      !businessName.trim()
-    ) {
-      setMessage(
-        'Inserisci il nome della tua attività.'
-      );
-      return;
-    }
-
-    if (
-      !phone.trim()
-    ) {
-      setMessage(
-        'Inserisci un numero di telefono.'
-      );
-      return;
-    }
-
-    setIdentitySaving(
-      true
-    );
-
-    setMessage('');
 
     const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'update_my_professional_identity',
-        {
-          p_business_name:
-            businessName.trim(),
-
-          p_phone:
-            phone.trim(),
-
-          p_vat_number:
-            vatNumber.trim(),
-
-          p_tax_code:
-            taxCode.trim()
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore salvataggio dati: ${error.message}`
-      );
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Non è stato possibile salvare i dati.'
-      );
-    } else {
-      setVerificationStatus(
-        'da_verificare'
-      );
-
-      setIdentityVerified(
-        false
-      );
-
-      setMessage(
-        '✅ Dati professionali salvati. Il profilo è in attesa di verifica.'
-      );
-
-      await loadProfessionalIdentity();
-    }
-
-    setIdentitySaving(
-      false
-    );
-  }
-
-  function verificationLabel() {
-    if (
-      identityVerified ||
-      verificationStatus ===
-        'verificato'
-    ) {
-      return '✅ Professionista verificato';
-    }
-
-    if (
-      verificationStatus ===
-      'rifiutato'
-    ) {
-      return '❌ Verifica rifiutata';
-    }
-
-    return '🟡 Da verificare';
-  }
-
-  function verificationDescription() {
-    if (
-      identityVerified ||
-      verificationStatus ===
-        'verificato'
-    ) {
-      return 'I dati professionali sono stati verificati.';
-    }
-
-    if (
-      verificationStatus ===
-      'rifiutato'
-    ) {
-      return 'I dati inseriti non sono stati approvati. Controllali e inviali nuovamente.';
-    }
-
-    return 'I dati sono in attesa di verifica.';
-  }
-
-  async function loadSetupStatus() {
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'my_professional_setup_status'
-      );
-
-    if (
-      error ||
-      !data ||
-      data.length === 0
-    ) {
-      return;
-    }
-
-    setSetupStatus(
-      data[0] as SetupStatus
-    );
-  }
-
-  function setupPercentage() {
-    if (
-      !setupStatus
-    ) {
-      return 0;
-    }
-
-    let completed =
-      0;
-
-    if (
-      setupStatus
-        .has_categories
-    ) {
-      completed++;
-    }
-
-    if (
-      setupStatus
-        .has_location
-    ) {
-      completed++;
-    }
-
-    if (
-      setupStatus
-        .has_radius
-    ) {
-      completed++;
-    }
-
-    if (
-      setupStatus
-        .has_availability
-    ) {
-      completed++;
-    }
-
-    return (
-      completed *
-      25
-    );
-  }
-
-  async function loadAllCategories() {
-    const {
-      data,
-      error
+      data: categoryRows
     } =
       await supabase
         .from(
           'categories'
         )
         .select(
-          'id, name, slug'
+          'id,name,slug'
         )
         .order(
-          'name',
-          {
-            ascending:
-              true
-          }
+          'name'
         );
 
-    if (!error) {
-      setAllCategories(
-        (data ??
-          []) as Category[]
+    setCategories(
+      (
+        categoryRows
+        ?? []
+      ) as Category[]
+    );
+
+    if (
+      detected ===
+        'cliente'
+    ) {
+
+      await loadClientJobs();
+
+    } else {
+
+      await Promise.all(
+        [
+          loadProfessional(),
+          loadMatchingJobs(),
+          loadAcceptedJobs(),
+          loadReviews()
+        ]
       );
+
     }
+
   }
 
-  async function loadProfessionalCategories() {
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'my_professional_categories'
+  async function loadProfessional() {
+
+    const [
+      identityResponse,
+      categoryResponse,
+      setupResponse
+    ] =
+      await Promise.all(
+        [
+
+          supabase.rpc(
+            'my_professional_identity'
+          ),
+
+          supabase.rpc(
+            'my_professional_categories'
+          ),
+
+          supabase.rpc(
+            'my_professional_setup_status'
+          )
+
+        ]
       );
 
-    if (error) {
-      setMessage(
-        `Errore categorie: ${error.message}`
+    if (
+      identityResponse
+        .data?.[0]
+    ) {
+
+      setIdentity(
+        identityResponse
+          .data[0] as Identity
       );
 
-      return;
     }
 
-    setSelectedCategoryIds(
-      (data ?? []).map(
+    setSelectedProCats(
+      (
+        categoryResponse
+          .data
+        ?? []
+      ).map(
         (
-          row: any
+          row:
+            any
         ) =>
           row.category_id
       )
     );
-  }
-
-  function toggleProfessionalCategory(
-    categoryId:
-      string
-  ) {
-    setSelectedCategoryIds(
-      current =>
-        current.includes(
-          categoryId
-        )
-          ? current.filter(
-              id =>
-                id !==
-                categoryId
-            )
-          : [
-              ...current,
-              categoryId
-            ]
-    );
-  }
-
-  async function saveProfessionalCategories() {
-    if (
-      selectedCategoryIds
-        .length === 0
-    ) {
-      setMessage(
-        'Seleziona almeno una categoria.'
-      );
-
-      return;
-    }
-
-    setCategorySaving(
-      true
-    );
-
-    setMessage('');
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'update_my_categories',
-        {
-          p_category_ids:
-            selectedCategoryIds
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore salvataggio categorie: ${error.message}`
-      );
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Non è stato possibile salvare le categorie.'
-      );
-    } else {
-      setMessage(
-        '✅ Categorie professionali aggiornate.'
-      );
-
-      await loadJobs();
-
-      await loadSetupStatus();
-    }
-
-    setCategorySaving(
-      false
-    );
-  }
-
-  async function loadAvailability(
-    userId: string
-  ) {
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from(
-          'availability'
-        )
-        .select(
-          'status'
-        )
-        .eq(
-          'professional_id',
-          userId
-        )
-        .maybeSingle();
 
     if (
-      error ||
-      !data
+      setupResponse
+        .data?.[0]
     ) {
-      setAvailabilityStatus(
-        'offline'
+
+      setSetup(
+        setupResponse
+          .data[0] as Setup
       );
 
-      return;
     }
-
-    const status =
-      data.status as AvailabilityStatus;
 
     if (
-      status ===
-        'ora' ||
-      status ===
-        '1-2h' ||
-      status ===
-        'oggi' ||
-      status ===
-        'offline'
+      user
     ) {
-      setAvailabilityStatus(
-        status
-      );
-    } else {
-      setAvailabilityStatus(
-        'offline'
-      );
-    }
-  }
 
-  async function updateAvailability(
-    status:
-      AvailabilityStatus
-  ) {
-    setAvailabilitySaving(
-      true
-    );
+      const {
+        data: availabilityRow
+      } =
+        await supabase
+          .from(
+            'availability'
+          )
+          .select(
+            'status'
+          )
+          .eq(
+            'professional_id',
+            user.id
+          )
+          .maybeSingle();
 
-    setMessage('');
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'update_my_availability',
-        {
-          p_status:
-            status
-        }
+      setAvailability(
+        (
+          availabilityRow
+            ?.status
+          ?? 'offline'
+        ) as Availability
       );
 
-    if (error) {
-      setMessage(
-        `Errore disponibilità: ${error.message}`
-      );
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Non è stato possibile aggiornare la disponibilità.'
-      );
-    } else {
-      setAvailabilityStatus(
-        status
+      const {
+        data: professionalRow
+      } =
+        await supabase
+          .from(
+            'professionals'
+          )
+          .select(
+            'max_distance_km'
+          )
+          .eq(
+            'id',
+            user.id
+          )
+          .maybeSingle();
+
+      setMaxDistance(
+        professionalRow
+          ?.max_distance_km
+        ?? 30
       );
 
-      setMessage(
-        `✅ Disponibilità aggiornata: ${availabilityLabel(
-          status
-        )}`
-      );
-
-      await loadSetupStatus();
-
-      await loadJobs();
     }
 
-    setAvailabilitySaving(
-      false
-    );
-  }
-
-  async function loadProfessionalSettings(
-    userId: string
-  ) {
-    const {
-      data
-    } =
-      await supabase
-        .from(
-          'professionals'
-        )
-        .select(
-          'latitude, longitude, max_distance_km'
-        )
-        .eq(
-          'id',
-          userId
-        )
-        .maybeSingle();
-
-    setProfessionalLocationSet(
-      data?.latitude !=
-        null &&
-      data?.longitude !=
-        null
-    );
-
-    setMaxDistance(
-      data
-        ?.max_distance_km ??
-      30
-    );
-  }
-
-  async function loadJobs() {
-    setJobsLoading(
-      true
-    );
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'my_matching_jobs'
-      );
-
-    if (error) {
-      setJobs([]);
-    } else {
-      const mapped =
-        (data ?? []).map(
-          (
-            job: any
-          ) => ({
-            id:
-              job.id,
-
-            description:
-              job.description,
-
-            urgency:
-              job.urgency,
-
-            status:
-              job.status,
-
-            created_at:
-              job.created_at,
-
-            category_name:
-              job.category_name,
-
-            distance_km:
-              job.distance_km,
-
-            eta_minutes:
-              job.eta_minutes
-          })
-        ) as Job[];
-
-      setJobs(
-        mapped
-      );
-
-      void loadPhotos(
-        mapped.map(
-          item =>
-            item.id
-        )
-      );
-    }
-
-    setJobsLoading(
-      false
-    );
-  }
-
-  async function loadAcceptedJobs() {
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'my_accepted_jobs'
-      );
-
-    if (error) {
-      setAcceptedJobs(
-        []
-      );
-    } else {
-      const mapped =
-        (data ??
-          []) as AcceptedJob[];
-
-      setAcceptedJobs(
-        mapped
-      );
-
-      void loadPhotos(
-        mapped.map(
-          item =>
-            item.id
-        )
-      );
-    }
-  }
-
-  async function loadProfessionalReviews() {
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'my_professional_reviews'
-      );
-
-    if (error) {
-      setProfessionalReviews(
-        []
-      );
-    } else {
-      setProfessionalReviews(
-        (data ??
-          []) as ProfessionalReview[]
-      );
-    }
   }
 
   async function loadClientJobs() {
-    setClientJobsLoading(
-      true
-    );
 
     const {
       data,
       error
     } =
-      await supabase.rpc(
-        'my_client_jobs'
-      );
-
-    if (error) {
-      setMessage(
-        `Errore richieste cliente: ${error.message}`
-      );
-
-      setClientJobs(
-        []
-      );
-    } else {
-      const mapped =
-        (data ??
-          []) as ClientJob[];
-
-      setClientJobs(
-        mapped
-      );
-
-      void loadPhotos(
-        mapped.map(
-          item =>
-            item.id
-        )
-      );
-    }
-
-    setClientJobsLoading(
-      false
-    );
-  }
-
-  async function cancelJob(
-    jobId: string
-  ) {
-    const confirmation =
-      window.confirm(
-        'Vuoi davvero annullare questa richiesta?'
-      );
+      await supabase
+        .rpc(
+          'my_client_jobs'
+        );
 
     if (
-      !confirmation
+      error
     ) {
+
+      setMessage(
+        `Errore richieste: ${error.message}`
+      );
+
       return;
+
     }
 
-    setBusy(true);
-    setMessage('');
+    const rows =
+      (
+        data
+        ?? []
+      ) as Job[];
+
+    setClientJobs(
+      rows
+    );
+
+    void loadPhotos(
+      rows.map(
+        row =>
+          row.id
+      )
+    );
+
+  }
+
+  async function loadMatchingJobs() {
 
     const {
       data,
       error
     } =
-      await supabase.rpc(
-        'cancel_my_job',
-        {
-          p_job_id:
-            jobId
-        }
-      );
+      await supabase
+        .rpc(
+          'my_matching_jobs'
+        );
 
-    if (error) {
-      setMessage(
-        `Errore annullamento: ${error.message}`
-      );
-    } else if (
-      data === false
+    if (
+      error
     ) {
-      setMessage(
-        'La richiesta non può più essere annullata.'
-      );
-    } else {
-      setBestMatch(
-        null
+
+      setMatchingJobs(
+        []
       );
 
-      setMessage(
-        '✅ Richiesta annullata correttamente.'
-      );
+      return;
 
-      await loadClientJobs();
     }
 
-    setBusy(false);
+    const rows =
+      (
+        data
+        ?? []
+      ) as Job[];
+
+    setMatchingJobs(
+      rows
+    );
+
+    void loadPhotos(
+      rows.map(
+        row =>
+          row.id
+      )
+    );
+
   }
 
-  function getCurrentPosition():
-    Promise<Coordinates | null> {
-    return new Promise(
+  async function loadAcceptedJobs() {
+
+    const {
+      data
+    } =
+      await supabase
+        .rpc(
+          'my_accepted_jobs'
+        );
+
+    const rows =
+      (
+        data
+        ?? []
+      ) as Job[];
+
+    setAcceptedJobs(
+      rows
+    );
+
+    void loadPhotos(
+      rows.map(
+        row =>
+          row.id
+      )
+    );
+
+  }
+
+  async function loadReviews() {
+
+    const {
+      data
+    } =
+      await supabase
+        .rpc(
+          'my_professional_reviews'
+        );
+
+    setReviews(
+      (
+        data
+        ?? []
+      ) as Review[]
+    );
+
+  }
+
+  async function getPosition() {
+
+    return new Promise<
+      {
+        latitude: number;
+        longitude: number;
+      } | null
+    >(
       resolve => {
+
         if (
-          !navigator.geolocation
+          !navigator
+            .geolocation
         ) {
+
           resolve(
             null
           );
 
           return;
+
         }
 
         navigator
           .geolocation
           .getCurrentPosition(
             position => {
-              resolve({
-                latitude:
-                  position
-                    .coords
-                    .latitude,
 
-                longitude:
-                  position
-                    .coords
-                    .longitude
-              });
+              resolve(
+                {
+                  latitude:
+                    position
+                      .coords
+                      .latitude,
+
+                  longitude:
+                    position
+                      .coords
+                      .longitude
+                }
+              );
+
             },
 
-            () =>
+            () => {
+
               resolve(
                 null
-              ),
+              );
+
+            },
 
             {
               enableHighAccuracy:
@@ -1997,353 +1160,335 @@ export default function Home() {
                 60000
             }
           );
+
       }
     );
+
   }
 
-  async function detectLocation() {
-    setLocationLoading(
-      true
-    );
-
-    setMessage('');
-
-    const position =
-      await getCurrentPosition();
-
-    if (!position) {
-      setMessage(
-        'Non è stato possibile ottenere la posizione.'
-      );
-
-      setLocationLoading(
-        false
-      );
-
-      return;
-    }
-
-    setCoordinates(
-      position
-    );
-
-    setMessage(
-      '📍 Posizione GPS rilevata correttamente.'
-    );
-
-    setLocationLoading(
-      false
-    );
-  }
-
-  async function updateProfessionalLocation() {
-    setProfessionalLocationLoading(
-      true
-    );
-
-    setMessage('');
-
-    const position =
-      await getCurrentPosition();
-
-    if (!position) {
-      setMessage(
-        'Non è stato possibile ottenere la posizione.'
-      );
-
-      setProfessionalLocationLoading(
-        false
-      );
-
-      return;
-    }
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'update_my_professional_location',
-        {
-          p_latitude:
-            position.latitude,
-
-          p_longitude:
-            position.longitude
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore posizione: ${error.message}`
-      );
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Posizione non aggiornata.'
-      );
-    } else {
-      setProfessionalLocationSet(
-        true
-      );
-
-      setMessage(
-        '📍 Posizione professionale aggiornata.'
-      );
-
-      await loadJobs();
-
-      await loadSetupStatus();
-    }
-
-    setProfessionalLocationLoading(
-      false
-    );
-  }
-
-  async function saveMaxDistance(
-    distance: number
+  function choosePhoto(
+    event:
+      ChangeEvent<HTMLInputElement>
   ) {
-    setDistanceSaving(
-      true
-    );
 
-    setMessage('');
+    const file =
+      event
+        .target
+        .files?.[0];
 
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'update_my_max_distance',
-        {
-          p_max_distance:
-            distance
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore raggio: ${error.message}`
-      );
-    } else if (
-      data === false
+    if (
+      !file
     ) {
-      setMessage(
-        'Raggio non aggiornato.'
-      );
-    } else {
-      setMaxDistance(
-        distance
-      );
-
-      setMessage(
-        `📍 Raggio impostato a ${distance} km.`
-      );
-
-      await loadJobs();
-
-      await loadSetupStatus();
+      return;
     }
 
-    setDistanceSaving(
-      false
+    if (
+      !file.type
+        .startsWith(
+          'image/'
+        )
+    ) {
+
+      setMessage(
+        'Seleziona un’immagine.'
+      );
+
+      return;
+
+    }
+
+    if (
+      file.size >
+        10 *
+        1024 *
+        1024
+    ) {
+
+      setMessage(
+        'La foto supera 10 MB.'
+      );
+
+      return;
+
+    }
+
+    if (
+      photoPreview
+    ) {
+
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
+
+    }
+
+    setPhotoFile(
+      file
     );
+
+    setPhotoPreview(
+      URL.createObjectURL(
+        file
+      )
+    );
+
   }
 
-  async function acceptJob(
+  function clearPhoto() {
+
+    if (
+      photoPreview
+    ) {
+
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
+
+    }
+
+    setPhotoFile(
+      null
+    );
+
+    setPhotoPreview(
+      ''
+    );
+
+  }
+
+  async function uploadPhoto(
     jobId: string
   ) {
-    setBusy(true);
-    setMessage('');
 
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'accept_verified_job',
-        {
-          p_job_id:
-            jobId
-        }
+    if (
+      !photoFile ||
+      !user
+    ) {
+
+      return true;
+
+    }
+
+    const extension =
+      (
+        photoFile
+          .name
+          .split('.')
+          .pop()
+        ?? 'jpg'
+      )
+        .replace(
+          /[^a-zA-Z0-9]/g,
+          ''
+        )
+        .toLowerCase();
+
+    const path =
+      `${user.id}/${jobId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+
+    const upload =
+      await supabase
+        .storage
+        .from(
+          'job-photos'
+        )
+        .upload(
+          path,
+          photoFile,
+          {
+            contentType:
+              photoFile.type,
+
+            upsert:
+              false
+          }
+        );
+
+    if (
+      upload.error
+    ) {
+
+      setMessage(
+        `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
 
-    if (error) {
-      if (
-        error.message
-          .toLowerCase()
-          .includes(
-            'non verificato'
+      return false;
+
+    }
+
+    const save =
+      await supabase
+        .rpc(
+          'set_my_job_photo',
+          {
+            p_job_id:
+              jobId,
+
+            p_photo_url:
+              path
+          }
+        );
+
+    if (
+      save.error ||
+      save.data ===
+        false
+    ) {
+
+      await supabase
+        .storage
+        .from(
+          'job-photos'
+        )
+        .remove(
+          [
+            path
+          ]
+        );
+
+      setMessage(
+        `Richiesta creata, foto non collegata: ${save.error?.message ?? 'errore'}`
+      );
+
+      return false;
+
+    }
+
+    return true;
+
+  }
+
+  async function loadPhoto(
+    jobId: string
+  ) {
+
+    if (
+      jobPhotos[
+        jobId
+      ] !==
+        undefined
+    ) {
+
+      return;
+
+    }
+
+    const {
+      data
+    } =
+      await supabase
+        .rpc(
+          'get_job_photo_url',
+          {
+            p_job_id:
+              jobId
+          }
+        );
+
+    if (
+      !data
+    ) {
+
+      setJobPhotos(
+        current => (
+          {
+            ...current,
+            [jobId]:
+              null
+          }
+        )
+      );
+
+      return;
+
+    }
+
+    const download =
+      await supabase
+        .storage
+        .from(
+          'job-photos'
+        )
+        .download(
+          String(
+            data
           )
-      ) {
-        setMessage(
-          '🔒 Il tuo profilo deve essere verificato prima di poter accettare lavori.'
         );
-      } else {
-        setMessage(
-          `Errore accettazione: ${error.message}`
-        );
-      }
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Questo lavoro è già stato accettato.'
-      );
-    } else {
-      setMessage(
-        '✅ Lavoro accettato.'
-      );
-    }
-
-    await loadJobs();
-
-    await loadAcceptedJobs();
-
-    setBusy(false);
-  }
-
-  async function completeJob(
-    jobId: string
-  ) {
-    const confirmation =
-      window.confirm(
-        'Confermi che l’intervento è stato completato?'
-      );
 
     if (
-      !confirmation
+      download.error ||
+      !download.data
     ) {
-      return;
-    }
 
-    setBusy(true);
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'complete_job',
-        {
-          p_job_id:
-            jobId
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Errore: ${error.message}`
-      );
-    } else if (
-      data === false
-    ) {
-      setMessage(
-        'Non è stato possibile completare il lavoro.'
-      );
-    } else {
-      setMessage(
-        '✅ Intervento completato.'
-      );
-
-      if (
-        profileRole ===
-        'professionista'
-      ) {
-        await loadAcceptedJobs();
-      } else {
-        await loadClientJobs();
-      }
-    }
-
-    setBusy(false);
-  }
-
-  async function findBestMatch(
-    jobId: string
-  ) {
-    setMatchingLoading(
-      true
-    );
-
-    setBestMatch(null);
-
-    const {
-      data,
-      error
-    } =
-      await supabase.rpc(
-        'find_verified_professionals_for_job',
-        {
-          p_job_id:
-            jobId
-        }
-      );
-
-    if (error) {
-      setMessage(
-        `Richiesta creata, ma errore matching: ${error.message}`
-      );
-
-      setMatchingLoading(
-        false
+      setJobPhotos(
+        current => (
+          {
+            ...current,
+            [jobId]:
+              null
+          }
+        )
       );
 
       return;
+
     }
 
-    const results =
-      (data ??
-        []) as MatchResult[];
+    setJobPhotos(
+      current => (
+        {
+          ...current,
 
-    if (
-      results.length >
-      0
-    ) {
-      setBestMatch(
-        results[0]
-      );
-
-      setMessage(
-        '✅ Professionista verificato compatibile trovato.'
-      );
-    } else {
-      setMessage(
-        '✅ Richiesta creata. Nessun professionista verificato compatibile disponibile al momento.'
-      );
-    }
-
-    setMatchingLoading(
-      false
+          [jobId]:
+            URL.createObjectURL(
+              download.data
+            )
+        }
+      )
     );
+
+  }
+
+  async function loadPhotos(
+    ids: string[]
+  ) {
+
+    for (
+      const id
+      of ids
+    ) {
+
+      await loadPhoto(
+        id
+      );
+
+    }
+
   }
 
   async function submitJob() {
+
     if (
       !cat ||
-      !description.trim()
+      !description.trim() ||
+      !address.trim()
     ) {
+
       setMessage(
-        'Scegli una categoria e descrivi il problema.'
+        'Completa categoria, descrizione e indirizzo.'
       );
 
       return;
+
     }
 
     if (
-      !address.trim()
+      !user
     ) {
-      setMessage(
-        'Inserisci l’indirizzo dell’intervento.'
-      );
 
-      return;
-    }
-
-    if (!user) {
-      setRole(
+      setSignupRole(
         'cliente'
       );
 
@@ -2355,40 +1500,47 @@ export default function Home() {
         true
       );
 
-      setMessage(
-        'Registrati o accedi per inviare la richiesta.'
-      );
-
       return;
+
     }
 
-    setBusy(true);
-    setMessage('');
-    setBestMatch(null);
+    setBusy(
+      true
+    );
 
-    let currentCoordinates =
-      coordinates;
+    setMessage(
+      ''
+    );
+
+    setBestMatch(
+      null
+    );
+
+    let position =
+      coords;
 
     if (
-      !currentCoordinates
+      !position
     ) {
-      currentCoordinates =
-        await getCurrentPosition();
+
+      position =
+        await getPosition();
 
       if (
-        currentCoordinates
+        position
       ) {
-        setCoordinates(
-          currentCoordinates
+
+        setCoords(
+          position
         );
+
       }
+
     }
 
     const {
       data:
-        category,
-      error:
-        categoryError
+        category
     } =
       await supabase
         .from(
@@ -2399,135 +1551,348 @@ export default function Home() {
         )
         .eq(
           'slug',
-          slug(cat)
+          slugify(
+            cat
+          )
         )
-        .single();
+        .maybeSingle();
 
     if (
-      categoryError ||
       !category
     ) {
+
+      setBusy(
+        false
+      );
+
       setMessage(
         'Categoria non trovata.'
       );
 
-      setBusy(false);
-
       return;
+
     }
 
-    const {
-      data:
-        newJob,
-      error
-    } =
+    const insert =
       await supabase
-        .from('jobs')
-        .insert({
-          client_id:
-            user.id,
+        .from(
+          'jobs'
+        )
+        .insert(
+          {
 
-          category_id:
-            category.id,
+            client_id:
+              user.id,
 
-          urgency:
-            urg.toLowerCase(),
+            category_id:
+              category.id,
 
-          description:
-            description.trim(),
+            urgency:
+              urgency
+                .toLowerCase(),
 
-          address:
-            address.trim(),
+            description:
+              description
+                .trim(),
 
-          latitude:
-            currentCoordinates
-              ?.latitude ??
-            null,
+            address:
+              address
+                .trim(),
 
-          longitude:
-            currentCoordinates
-              ?.longitude ??
-            null
-        })
+            latitude:
+              position
+                ?.latitude
+              ?? null,
+
+            longitude:
+              position
+                ?.longitude
+              ?? null
+
+          }
+        )
         .select(
           'id'
         )
         .single();
 
     if (
-      error ||
-      !newJob
+      insert.error ||
+      !insert.data
     ) {
-      setMessage(
-        `Errore: ${
-          error?.message ??
-          'Impossibile creare la richiesta'
-        }`
+
+      setBusy(
+        false
       );
 
-      setBusy(false);
+      setMessage(
+        `Errore: ${insert.error?.message ?? 'creazione richiesta'}`
+      );
 
       return;
+
     }
 
-    let photoOk =
-      true;
+    const jobId =
+      insert
+        .data
+        .id as string;
 
-    if (photoFile) {
-      photoOk =
-        await uploadJobPhoto(
-          newJob.id
-        );
-    }
+    await uploadPhoto(
+      jobId
+    );
 
-    setDescription('');
-    setAddress('');
+    clearPhoto();
 
-    clearPhotoPreview();
+    setDescription(
+      ''
+    );
+
+    setAddress(
+      ''
+    );
 
     await loadClientJobs();
 
-    await findBestMatch(
-      newJob.id
+    const matching =
+      await supabase
+        .rpc(
+          'find_verified_professionals_for_job',
+          {
+            p_job_id:
+              jobId
+          }
+        );
+
+    const first =
+      (
+        matching
+          .data
+        ?? []
+      )[0] as
+        | Match
+        | undefined;
+
+    setBestMatch(
+      first
+      ?? null
+    );
+
+    try {
+
+      const {
+        data: {
+          session
+        }
+      } =
+        await supabase
+          .auth
+          .getSession();
+
+      if (
+        session
+          ?.access_token
+      ) {
+
+        await fetch(
+          '/api/push/send',
+          {
+
+            method:
+              'POST',
+
+            headers:
+              {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${session.access_token}`
+              },
+
+            body:
+              JSON.stringify(
+                {
+                  jobId
+                }
+              )
+
+          }
+        );
+
+      }
+
+    } catch {
+    }
+
+    setMessage(
+      first
+        ? '✅ Professionista compatibile trovato.'
+        : '✅ Richiesta creata. Nessun professionista compatibile al momento.'
+    );
+
+    setBusy(
+      false
+    );
+
+  }
+
+  async function cancelJob(
+    id: string
+  ) {
+
+    if (
+      !confirm(
+        'Vuoi annullare la richiesta?'
+      )
+    ) {
+      return;
+    }
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .rpc(
+          'cancel_my_job',
+          {
+            p_job_id:
+              id
+          }
+        );
+
+    setMessage(
+      error
+        ? error.message
+
+        : data
+          ? '✅ Richiesta annullata.'
+          : 'Richiesta non annullabile.'
+    );
+
+    await loadClientJobs();
+
+  }
+
+  async function acceptJob(
+    id: string
+  ) {
+
+    setBusy(
+      true
+    );
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .rpc(
+          'accept_verified_job',
+          {
+            p_job_id:
+              id
+          }
+        );
+
+    setMessage(
+      error
+        ? `Errore: ${error.message}`
+
+        : data
+          ? '✅ Lavoro accettato.'
+          : 'Lavoro già accettato.'
+    );
+
+    await Promise.all(
+      [
+        loadMatchingJobs(),
+        loadAcceptedJobs()
+      ]
+    );
+
+    setBusy(
+      false
+    );
+
+  }
+
+  async function completeJob(
+    id: string
+  ) {
+
+    if (
+      !confirm(
+        'Confermi intervento completato?'
+      )
+    ) {
+      return;
+    }
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .rpc(
+          'complete_job',
+          {
+            p_job_id:
+              id
+          }
+        );
+
+    setMessage(
+      error
+        ? error.message
+
+        : data
+          ? '✅ Intervento completato.'
+          : 'Operazione non riuscita.'
     );
 
     if (
-      photoFile &&
-      !photoOk
+      role ===
+        'cliente'
     ) {
-      setMessage(
-        '⚠️ La richiesta è stata creata, ma c’è stato un problema con la foto.'
-      );
+
+      await loadClientJobs();
+
+    } else {
+
+      await loadAcceptedJobs();
+
     }
 
-    setBusy(false);
   }
 
   async function openChat(
-    jobId: string,
+    id: string,
     title: string
   ) {
+
     setChatJobId(
-      jobId
+      id
     );
 
     setChatTitle(
       title
     );
 
-    setChatText('');
+    setChatText(
+      ''
+    );
 
     await loadChat(
-      jobId
+      id
     );
+
   }
 
   async function loadChat(
-    jobId: string
+    id: string
   ) {
-    setChatLoading(
-      true
-    );
 
     const {
       data,
@@ -2538,53 +1903,54 @@ export default function Home() {
           'messages'
         )
         .select(
-          'id, job_id, sender_id, message, created_at'
+          'id,job_id,sender_id,message,created_at'
         )
         .eq(
           'job_id',
-          jobId
+          id
         )
         .order(
-          'created_at',
-          {
-            ascending:
-              true
-          }
+          'created_at'
         );
 
-    if (error) {
+    if (
+      error
+    ) {
+
       setMessage(
-        `Errore chat: ${error.message}`
+        error.message
       );
+
     } else {
-      setChatMessages(
-        (data ??
-          []) as ChatMessage[]
+
+      setMessages(
+        (
+          data
+          ?? []
+        ) as Message[]
       );
+
     }
 
-    setChatLoading(
-      false
-    );
   }
 
-  async function sendChatMessage(
+  async function sendMessage(
     event:
       FormEvent
   ) {
-    event.preventDefault();
+
+    event
+      .preventDefault();
 
     if (
       !user ||
       !chatJobId ||
       !chatText.trim()
     ) {
-      return;
-    }
 
-    setChatSending(
-      true
-    );
+      return;
+
+    }
 
     const {
       error
@@ -2593,76 +1959,51 @@ export default function Home() {
         .from(
           'messages'
         )
-        .insert({
-          job_id:
-            chatJobId,
+        .insert(
+          {
 
-          sender_id:
-            user.id,
+            job_id:
+              chatJobId,
 
-          message:
-            chatText.trim()
-        });
+            sender_id:
+              user.id,
 
-    if (error) {
+            message:
+              chatText
+                .trim()
+
+          }
+        );
+
+    if (
+      error
+    ) {
+
       setMessage(
-        `Errore messaggio: ${error.message}`
+        error.message
       );
+
     } else {
-      setChatText('');
+
+      setChatText(
+        ''
+      );
 
       await loadChat(
         chatJobId
       );
+
     }
 
-    setChatSending(
-      false
-    );
-  }
-
-  function closeChat() {
-    setChatJobId(null);
-    setChatTitle('');
-    setChatMessages([]);
-    setChatText('');
-  }
-
-  function openReview(
-    jobId: string,
-    professionalName:
-      string
-  ) {
-    setReviewJobId(
-      jobId
-    );
-
-    setReviewProfessionalName(
-      professionalName
-    );
-
-    setRating(5);
-    setReviewComment('');
-    setReviewMessage('');
-  }
-
-  function closeReview() {
-    setReviewJobId(null);
-
-    setReviewProfessionalName(
-      ''
-    );
-
-    setRating(5);
-    setReviewComment('');
-    setReviewMessage('');
   }
 
   async function submitReview(
     event:
       FormEvent
   ) {
-    event.preventDefault();
+
+    event
+      .preventDefault();
 
     if (
       !reviewJobId
@@ -2670,101 +2011,119 @@ export default function Home() {
       return;
     }
 
-    setReviewSending(
-      true
-    );
-
     const {
       data,
       error
     } =
-      await supabase.rpc(
-        'create_review',
-        {
-          p_job_id:
-            reviewJobId,
+      await supabase
+        .rpc(
+          'create_review',
+          {
 
-          p_rating:
-            rating,
+            p_job_id:
+              reviewJobId,
 
-          p_comment:
-            reviewComment
-              .trim() ||
-            null
-        }
-      );
+            p_rating:
+              rating,
 
-    if (error) {
-      setReviewMessage(
-        error.message
-      );
-    } else if (
-      data === false
-    ) {
-      setReviewMessage(
-        'Recensione non inviata.'
-      );
-    } else {
-      setMessage(
-        '⭐ Recensione inviata.'
-      );
+            p_comment:
+              reviewComment
+                .trim()
+              || null
 
-      await loadClientJobs();
+          }
+        );
 
-      closeReview();
-    }
+    setMessage(
+      error
+        ? error.message
 
-    setReviewSending(
-      false
+        : data
+          ? '⭐ Recensione inviata.'
+          : 'Recensione non inviata.'
     );
+
+    setReviewJobId(
+      null
+    );
+
+    setReviewComment(
+      ''
+    );
+
+    await loadClientJobs();
+
   }
 
   async function authSubmit(
     event:
       FormEvent
   ) {
-    event.preventDefault();
 
-    setBusy(true);
-    setMessage('');
+    event
+      .preventDefault();
+
+    setBusy(
+      true
+    );
+
+    setMessage(
+      ''
+    );
 
     if (
       authMode ===
-      'signup'
+        'signup'
     ) {
+
       const {
         error
       } =
         await supabase
           .auth
-          .signUp({
-            email,
-            password,
+          .signUp(
+            {
 
-            options: {
-              data: {
-                full_name:
-                  name,
+              email,
+              password,
 
-                role
-              }
+              options:
+                {
+
+                  data:
+                    {
+
+                      full_name:
+                        authName,
+
+                      role:
+                        signupRole
+
+                    }
+
+                }
+
             }
-          });
+          );
 
-      if (error) {
-        setMessage(
-          error.message
-        );
-      } else {
-        setMessage(
-          '✅ Registrazione completata. Controlla la tua email per confermare l’account.'
-        );
+      setMessage(
+        error
+          ? error.message
+          : '✅ Registrazione completata. Controlla la tua email.'
+      );
+
+      if (
+        !error
+      ) {
 
         setAuthMode(
           'login'
         );
+
       }
+
     } else {
+
       const {
         data,
         error
@@ -2778,11 +2137,16 @@ export default function Home() {
             }
           );
 
-      if (error) {
+      if (
+        error
+      ) {
+
         setMessage(
           error.message
         );
+
       } else {
+
         setAuthOpen(
           false
         );
@@ -2790,490 +2154,504 @@ export default function Home() {
         if (
           data.user
         ) {
+
           await loadProfile(
             data.user.id
           );
+
         }
+
       }
+
     }
 
-    setBusy(false);
+    setBusy(
+      false
+    );
+
   }
 
   async function logout() {
-    await supabase.auth
+
+    await supabase
+      .auth
       .signOut();
 
-    resetSession();
+    reset();
 
-    setMessage('');
   }
 
-  function etaLabel(
-    eta:
-      | number
-      | null
-      | undefined
-  ) {
-    if (
-      eta == null
-    ) {
-      return 'Tempo non disponibile';
-    }
+  async function saveIdentity() {
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .rpc(
+          'update_my_professional_identity',
+          {
+
+            p_business_name:
+              identity
+                .business_name
+                ?.trim()
+              || '',
+
+            p_phone:
+              identity
+                .phone
+                ?.trim()
+              || '',
+
+            p_vat_number:
+              identity
+                .vat_number
+                ?.trim()
+              || '',
+
+            p_tax_code:
+              identity
+                .tax_code
+                ?.trim()
+              || ''
+
+          }
+        );
+
+    setMessage(
+      error
+        ? error.message
+
+        : data
+          ? '✅ Dati salvati. Il profilo torna in verifica.'
+          : 'Salvataggio non riuscito.'
+    );
+
+    await loadProfessional();
+
+  }
+
+  async function saveCategories() {
 
     if (
-      eta < 60
+      !selectedProCats
+        .length
     ) {
-      return `Circa ${eta} min`;
-    }
 
-    const hours =
-      Math.floor(
-        eta / 60
+      setMessage(
+        'Seleziona almeno una categoria.'
       );
 
-    const minutes =
-      eta % 60;
+      return;
 
-    if (
-      minutes ===
-      0
-    ) {
-      return `Circa ${hours} h`;
     }
 
-    return `Circa ${hours} h ${minutes} min`;
+    const {
+      error
+    } =
+      await supabase
+        .rpc(
+          'update_my_categories',
+          {
+            p_category_ids:
+              selectedProCats
+          }
+        );
+
+    setMessage(
+      error
+        ? error.message
+        : '✅ Categorie aggiornate.'
+    );
+
+    await loadProfessional();
+
+    await loadMatchingJobs();
+
   }
 
-  function availabilityLabel(
-    status:
-      string
+  async function setProLocation() {
+
+    const position =
+      await getPosition();
+
+    if (
+      !position
+    ) {
+
+      setMessage(
+        'Posizione non disponibile.'
+      );
+
+      return;
+
+    }
+
+    const {
+      error
+    } =
+      await supabase
+        .rpc(
+          'update_my_professional_location',
+          {
+
+            p_latitude:
+              position.latitude,
+
+            p_longitude:
+              position.longitude
+
+          }
+        );
+
+    setMessage(
+      error
+        ? error.message
+        : '✅ Posizione aggiornata.'
+    );
+
+    await loadProfessional();
+
+    await loadMatchingJobs();
+
+  }
+
+  async function setRadius(
+    value: number
   ) {
-    if (
-      status ===
-      'ora'
-    ) {
-      return '🟢 Disponibile ora';
-    }
 
-    if (
-      status ===
-      '1-2h'
-    ) {
-      return '🟡 Disponibile entro 1–2 ore';
-    }
+    const {
+      error
+    } =
+      await supabase
+        .rpc(
+          'update_my_max_distance',
+          {
+            p_max_distance:
+              value
+          }
+        );
 
-    if (
-      status ===
-      'oggi'
-    ) {
-      return '🟠 Disponibile oggi';
-    }
+    setMaxDistance(
+      value
+    );
 
-    return '⚫ Offline';
+    setMessage(
+      error
+        ? error.message
+        : `✅ Raggio impostato a ${value} km.`
+    );
+
+    await loadMatchingJobs();
+
   }
+
+  async function setAvail(
+    value:
+      Availability
+  ) {
+
+    const {
+      error
+    } =
+      await supabase
+        .rpc(
+          'update_my_availability',
+          {
+            p_status:
+              value
+          }
+        );
+
+    setAvailability(
+      value
+    );
+
+    setMessage(
+      error
+        ? error.message
+        : `✅ ${availabilityLabel(value)}`
+    );
+
+    await loadMatchingJobs();
+
+    await loadProfessional();
+
+  }
+
+  const filteredClient =
+    useMemo(
+      () => {
+
+        if (
+          clientFilter ===
+            'tutti'
+        ) {
+
+          return clientJobs;
+
+        }
+
+        return clientJobs
+          .filter(
+            job =>
+              job.status ===
+                clientFilter
+          );
+
+      },
+
+      [
+        clientJobs,
+        clientFilter
+      ]
+    );
+
+  const openProfessionalJobs =
+
+    (
+      proFilter ===
+        'tutti'
+
+      ||
+
+      proFilter ===
+        'aperta'
+    )
+
+      ? matchingJobs
+      : [];
+
+  const filteredAcceptedJobs =
+
+    proFilter ===
+      'tutti'
+
+      ? acceptedJobs
+
+      : acceptedJobs
+          .filter(
+            job =>
+              job.status ===
+                proFilter
+          );
+
+  const verified =
+
+    identity
+      .verified ===
+        true
+
+    &&
+
+    identity
+      .verification_status ===
+        'verificato';
+
+  const setupPercentage =
+
+    setup
+      ? [
+          setup.has_categories,
+          setup.has_location,
+          setup.has_radius,
+          setup.has_availability
+        ]
+          .filter(
+            Boolean
+          )
+          .length
+          * 25
+
+      : 0;
 
   const averageRating =
-    professionalReviews
-      .length > 0
-      ? professionalReviews
+
+    reviews.length
+
+      ? reviews
           .reduce(
             (
               total,
               review
             ) =>
-              total +
+              total
+              +
               Number(
                 review.rating
               ),
+
             0
-          ) /
-        professionalReviews
-          .length
+          )
+          /
+          reviews.length
+
       : 0;
 
-  const percentage =
-    setupPercentage();
+  function Photo(
+    {
+      id
+    }: {
+      id: string;
+    }
+  ) {
 
-  const setupComplete =
-    setupStatus
-      ?.setup_complete ===
-    true;
+    const src =
+      jobPhotos[
+        id
+      ];
 
-  const verifiedForMatching =
-    identityVerified ===
-      true &&
-    verificationStatus ===
-      'verificato';
+    if (
+      !src
+    ) {
+      return null;
+    }
 
-  const canUseMatching =
-    setupComplete &&
-    verifiedForMatching;
+    return (
+      <img
+        className="photo"
+        src={src}
+        alt="Foto del problema"
+      />
+    );
 
-  const availableForJobs =
-    availabilityStatus !==
-    'offline';
+  }
 
-  const filteredClientJobs =
-    clientFilter ===
-    'tutti'
-      ? clientJobs
-      : clientJobs.filter(
-          job =>
-            job.status ===
-            clientFilter
-        );
+  function ChatModal() {
 
-  const proOpenJobs =
-    proFilter ===
-      'tutti' ||
-    proFilter ===
-      'aperta'
-      ? jobs
-      : [];
+    return (
 
-  const proAcceptedJobs =
-    proFilter ===
-    'tutti'
-      ? acceptedJobs
-      : acceptedJobs.filter(
-          job =>
-            job.status ===
-            proFilter
-        );
+      <div className="modal">
 
-  const clientCounts = {
-    tutti:
-      clientJobs.length,
+        <div className="modalBox">
 
-    aperta:
-      clientJobs.filter(
-        job =>
-          job.status ===
-          'aperta'
-      ).length,
-
-    accettata:
-      clientJobs.filter(
-        job =>
-          job.status ===
-          'accettata'
-      ).length,
-
-    completata:
-      clientJobs.filter(
-        job =>
-          job.status ===
-          'completata'
-      ).length,
-
-    annullata:
-      clientJobs.filter(
-        job =>
-          job.status ===
-          'annullata'
-      ).length
-  };
-
-  const proCounts = {
-    tutti:
-      jobs.length +
-      acceptedJobs.length,
-
-    aperta:
-      jobs.length,
-
-    accettata:
-      acceptedJobs.filter(
-        job =>
-          job.status ===
-          'accettata'
-      ).length,
-
-    completata:
-      acceptedJobs.filter(
-        job =>
-          job.status ===
-          'completata'
-      ).length
-  };
-
-  const ChatModal =
-    () =>
-      chatJobId ? (
-        <div className="modal">
-          <div className="modalBox">
-            <button
-              type="button"
-              className="x"
-              onClick={
-                closeChat
-              }
-            >
-              ×
-            </button>
-
-            <label className="tag">
-              CHAT INTERVENTO
-            </label>
-
-            <h2>
-              {chatTitle}
-            </h2>
-
-            <div
-              style={{
-                maxHeight:
-                  330,
-
-                overflowY:
-                  'auto',
-
-                marginTop:
-                  20,
-
-                marginBottom:
-                  20,
-
-                display:
-                  'grid',
-
-                gap:
-                  10
-              }}
-            >
-              {chatLoading && (
-                <p>
-                  Caricamento...
-                </p>
-              )}
-
-              {chatMessages.map(
-                item => {
-                  const mine =
-                    item
-                      .sender_id ===
-                    user?.id;
-
-                  return (
-                    <div
-                      key={
-                        item.id
-                      }
-                      style={{
-                        padding:
-                          12,
-
-                        borderRadius:
-                          12,
-
-                        border:
-                          '1px solid #ddd',
-
-                        marginLeft:
-                          mine
-                            ? 35
-                            : 0,
-
-                        marginRight:
-                          mine
-                            ? 0
-                            : 35
-                      }}
-                    >
-                      <b>
-                        {mine
-                          ? 'Tu'
-                          : 'Interlocutore'}
-                      </b>
-
-                      <p>
-                        {
-                          item.message
-                        }
-                      </p>
-                    </div>
-                  );
-                }
-              )}
-            </div>
-
-            <form
-              onSubmit={
-                sendChatMessage
-              }
-            >
-              <input
-                value={
-                  chatText
-                }
-                onChange={
-                  e =>
-                    setChatText(
-                      e
-                        .target
-                        .value
-                    )
-                }
-                placeholder="Scrivi un messaggio..."
-              />
-
-              <button
-                className="full"
-                disabled={
-                  chatSending
-                }
-              >
-                💬 Invia
-              </button>
-            </form>
-          </div>
-        </div>
-      ) : null;
-
-  const ReviewModal =
-    () =>
-      reviewJobId ? (
-        <div className="modal">
-          <form
-            className="modalBox"
-            onSubmit={
-              submitReview
+          <button
+            className="x"
+            onClick={
+              () =>
+                setChatJobId(
+                  null
+                )
             }
           >
-            <button
-              type="button"
-              className="x"
-              onClick={
-                closeReview
-              }
-            >
-              ×
-            </button>
+            ×
+          </button>
 
-            <label className="tag">
-              RECENSIONE
-            </label>
+          <span className="tag">
+            Chat intervento
+          </span>
 
-            <h2>
-              Come è andato
-              l'intervento?
-            </h2>
+          <h2>
+            {chatTitle}
+          </h2>
 
-            <p>
-              Valuta{' '}
-              <b>
-                {
-                  reviewProfessionalName
-                }
-              </b>
-            </p>
+          <div className="chat-list">
 
-            <div
-              style={{
-                display:
-                  'flex',
+            {
+              messages.map(
+                item => (
 
-                gap:
-                  5,
-
-                margin:
-                  '20px 0'
-              }}
-            >
-              {[
-                1,
-                2,
-                3,
-                4,
-                5
-              ].map(
-                star => (
-                  <button
+                  <div
                     key={
-                      star
+                      item.id
                     }
-                    type="button"
-                    onClick={() =>
-                      setRating(
-                        star
-                      )
+                    className={
+                      `bubble ${
+                        item.sender_id ===
+                          user?.id
+                          ? 'mine'
+                          : 'theirs'
+                      }`
                     }
-                    style={{
-                      border:
-                        'none',
-
-                      background:
-                        'transparent',
-
-                      fontSize:
-                        32
-                    }}
                   >
-                    {star <=
-                    rating
-                      ? '⭐'
-                      : '☆'}
-                  </button>
-                )
-              )}
-            </div>
 
-            <textarea
+                    <b>
+                      {
+                        item.sender_id ===
+                          user?.id
+                          ? 'Tu'
+                          : 'Interlocutore'
+                      }
+                    </b>
+
+                    <div>
+                      {
+                        item.message
+                      }
+                    </div>
+
+                  </div>
+
+                )
+              )
+            }
+
+          </div>
+
+          <form
+            onSubmit={
+              sendMessage
+            }
+          >
+
+            <input
               value={
-                reviewComment
+                chatText
               }
               onChange={
-                e =>
-                  setReviewComment(
-                    e
-                      .target
+                event =>
+                  setChatText(
+                    event.target
                       .value
                   )
               }
-              placeholder="Commento..."
-              rows={5}
+              placeholder="Scrivi un messaggio..."
             />
-
-            {reviewMessage && (
-              <div className="success">
-                {
-                  reviewMessage
-                }
-              </div>
-            )}
 
             <button
               className="full"
-              disabled={
-                reviewSending
-              }
+              style={{
+                marginTop:
+                  10
+              }}
             >
-              ⭐ Invia
-              recensione
+              Invia
             </button>
-          </form>
-        </div>
-      ) : null;
 
-  // =========================
-  // AREA PROFESSIONISTA
-  // =========================
+          </form>
+
+        </div>
+
+      </div>
+
+    );
+
+  }
 
   if (
     user &&
-    profileRole ===
+    role ===
       'professionista'
   ) {
+
     return (
+
       <main>
+
         <header>
+
           <div className="logo">
-            <b>L</b>{' '}
+
+            <b>
+              L
+            </b>
+
             Lavoro
             <span>
               Subito
             </span>
+
           </div>
 
           <button
@@ -3284,820 +2662,1359 @@ export default function Home() {
           >
             Esci
           </button>
+
         </header>
 
-        <section
-          className="section"
-          style={{
-            paddingTop:
-              70
-          }}
-        >
-          <label className="tag">
-            AREA
-            PROFESSIONISTA
-          </label>
+        <div className="container">
 
-          <h2>
-            Ciao{' '}
-            {fullName ||
-              'Professionista'}
-            .
-          </h2>
+          <section className="section">
 
-          <div
-            style={{
-              display:
-                'inline-block',
+            <span className="tag">
+              Area professionista · MVP 1.0
+            </span>
 
-              marginTop:
-                15,
+            <h2>
+              Ciao {
+                fullName
+                || 'Professionista'
+              }
+            </h2>
 
-              padding:
-                '8px 14px',
+            <div
+              className={
+                live
+                  ? 'success'
+                  : 'notice'
+              }
+            >
+              {
+                live
+                  ? '🟢 Aggiornamento LIVE attivo'
+                  : '🟡 Connessione LIVE...'
+              }
+            </div>
 
-              border:
-                '1px solid #ddd',
+            {
+              message
+              &&
+              (
+                <div className="notice">
+                  {message}
+                </div>
+              )
+            }
 
-              borderRadius:
-                999,
+            <div className="kpi">
 
-              fontWeight:
-                700
-            }}
-          >
-            {realtimeConnected
-              ? '🟢 Aggiornamento LIVE attivo'
-              : '🟡 Connessione LIVE...'}
-          </div>
+              <div className="card">
 
-          {!setupComplete && (
+                <span className="muted">
+                  Profilo
+                </span>
+
+                <strong>
+                  {
+                    setupPercentage
+                  }%
+                </strong>
+
+              </div>
+
+              <div className="card">
+
+                <span className="muted">
+                  Stato
+                </span>
+
+                <strong>
+                  {
+                    verified
+                      ? '✅'
+                      : '🟡'
+                  }
+                </strong>
+
+              </div>
+
+              <div className="card">
+
+                <span className="muted">
+                  Nuovi
+                </span>
+
+                <strong>
+                  {
+                    matchingJobs
+                      .length
+                  }
+                </strong>
+
+              </div>
+
+              <div className="card">
+
+                <span className="muted">
+                  Recensioni
+                </span>
+
+                <strong>
+
+                  {
+                    reviews.length
+                      ? averageRating
+                          .toFixed(1)
+                      : '—'
+                  }
+
+                </strong>
+
+              </div>
+
+            </div>
+
             <div
               className="card"
               style={{
                 marginTop:
-                  25,
-
-                border:
-                  '2px solid #e4b23c'
+                  16
               }}
             >
-              <label className="tag">
-                V35 · PRIMO
-                ACCESSO
-              </label>
 
-              <h2>
-                👋 Configuriamo
-                il tuo profilo
-              </h2>
+              <span className="tag">
+                Dati e verifica
+              </span>
 
               <h3>
-                {percentage}%
-                completato
+
+                {
+                  verified
+
+                    ? '✅ Professionista verificato'
+
+                    : identity
+                        .verification_status ===
+                          'rifiutato'
+
+                      ? '❌ Verifica rifiutata'
+
+                      : '🟡 In attesa di verifica'
+                }
+
               </h3>
 
+              <label>
+                Nome attività
+              </label>
+
+              <input
+                value={
+                  identity
+                    .business_name
+                  ?? ''
+                }
+                onChange={
+                  event =>
+                    setIdentity(
+                      current => (
+                        {
+                          ...current,
+                          business_name:
+                            event
+                              .target
+                              .value
+                        }
+                      )
+                    )
+                }
+              />
+
+              <label>
+                Telefono
+              </label>
+
+              <input
+                value={
+                  identity
+                    .phone
+                  ?? ''
+                }
+                onChange={
+                  event =>
+                    setIdentity(
+                      current => (
+                        {
+                          ...current,
+                          phone:
+                            event
+                              .target
+                              .value
+                        }
+                      )
+                    )
+                }
+              />
+
+              <label>
+                Partita IVA
+              </label>
+
+              <input
+                value={
+                  identity
+                    .vat_number
+                  ?? ''
+                }
+                onChange={
+                  event =>
+                    setIdentity(
+                      current => (
+                        {
+                          ...current,
+                          vat_number:
+                            event
+                              .target
+                              .value
+                        }
+                      )
+                    )
+                }
+              />
+
+              <label>
+                Codice fiscale
+              </label>
+
+              <input
+                value={
+                  identity
+                    .tax_code
+                  ?? ''
+                }
+                onChange={
+                  event =>
+                    setIdentity(
+                      current => (
+                        {
+                          ...current,
+                          tax_code:
+                            event
+                              .target
+                              .value
+                        }
+                      )
+                    )
+                }
+              />
+
+              <div className="actions">
+
+                <button
+                  className="full"
+                  onClick={
+                    saveIdentity
+                  }
+                >
+                  Salva dati
+                </button>
+
+              </div>
+
+            </div>
+
+            <div
+              className="card"
+              style={{
+                marginTop:
+                  16
+              }}
+            >
+
+              <span className="tag">
+                Disponibilità
+              </span>
+
+              <h3>
+                {
+                  availabilityLabel(
+                    availability
+                  )
+                }
+              </h3>
+
+              <div className="actions">
+
+                {
+                  (
+                    [
+                      'ora',
+                      '1-2h',
+                      'oggi',
+                      'offline'
+                    ] as Availability[]
+                  ).map(
+                    value => (
+
+                      <button
+                        key={
+                          value
+                        }
+                        className={
+                          availability ===
+                            value
+                            ? 'full'
+                            : 'outline'
+                        }
+                        onClick={
+                          () =>
+                            setAvail(
+                              value
+                            )
+                        }
+                      >
+                        {
+                          availabilityLabel(
+                            value
+                          )
+                        }
+                      </button>
+
+                    )
+                  )
+                }
+
+              </div>
+
+            </div>
+
+            <div
+              className="card"
+              style={{
+                marginTop:
+                  16
+              }}
+            >
+
+              <span className="tag">
+                Categorie
+              </span>
+
               <div
+                className="grid"
                 style={{
-                  width:
-                    '100%',
-
-                  height:
-                    14,
-
-                  background:
-                    '#ededed',
-
-                  borderRadius:
-                    999,
-
-                  overflow:
-                    'hidden',
-
-                  margin:
-                    '15px 0 25px'
+                  marginTop:
+                    12
                 }}
               >
-                <div
-                  style={{
-                    width:
-                      `${percentage}%`,
 
-                    height:
-                      '100%',
+                {
+                  categories.map(
+                    category => (
 
-                    background:
-                      '#f0b93a'
-                  }}
-                />
+                      <button
+                        key={
+                          category.id
+                        }
+                        className={
+                          selectedProCats
+                            .includes(
+                              category.id
+                            )
+                            ? 'cat selected'
+                            : 'cat'
+                        }
+                        onClick={
+                          () =>
+                            setSelectedProCats(
+                              current =>
+                                current
+                                  .includes(
+                                    category.id
+                                  )
+
+                                  ? current
+                                      .filter(
+                                        id =>
+                                          id !==
+                                            category.id
+                                      )
+
+                                  : [
+                                      ...current,
+                                      category.id
+                                    ]
+                            )
+                        }
+                      >
+
+                        {
+                          selectedProCats
+                            .includes(
+                              category.id
+                            )
+                            ? '✓ '
+                            : ''
+                        }
+
+                        {
+                          category.name
+                        }
+
+                      </button>
+
+                    )
+                  )
+                }
+
               </div>
+
+              <div className="actions">
+
+                <button
+                  className="full"
+                  onClick={
+                    saveCategories
+                  }
+                >
+                  Salva categorie
+                </button>
+
+              </div>
+
+            </div>
+
+            <div
+              className="card"
+              style={{
+                marginTop:
+                  16
+              }}
+            >
+
+              <span className="tag">
+                Posizione e raggio
+              </span>
+
+              <h3>
+                Raggio massimo: {
+                  maxDistance
+                } km
+              </h3>
+
+              <div className="actions">
+
+                <button
+                  className="full"
+                  onClick={
+                    setProLocation
+                  }
+                >
+                  📍 Aggiorna posizione
+                </button>
+
+                {
+                  distances.map(
+                    value => (
+
+                      <button
+                        key={
+                          value
+                        }
+                        className={
+                          maxDistance ===
+                            value
+                            ? 'full'
+                            : 'outline'
+                        }
+                        onClick={
+                          () =>
+                            setRadius(
+                              value
+                            )
+                        }
+                      >
+                        {
+                          value
+                        } km
+                      </button>
+
+                    )
+                  )
+                }
+
+              </div>
+
+            </div>
+
+            <div
+              style={{
+                marginTop:
+                  34
+              }}
+            >
+
+              <span className="tag">
+                Lavori
+              </span>
+
+              <h2>
+                Lavori e storico
+              </h2>
+
+              {
+                !verified
+                &&
+                (
+                  <div className="notice">
+                    🔒 Il matching è visibile solo dopo la verifica amministratore.
+                  </div>
+                )
+              }
+
+              <div className="filter">
+
+                {
+                  (
+                    [
+                      'tutti',
+                      'aperta',
+                      'accettata',
+                      'completata'
+                    ] as ProFilter[]
+                  ).map(
+                    filter => (
+
+                      <button
+                        key={
+                          filter
+                        }
+                        className={
+                          proFilter ===
+                            filter
+                            ? 'selected'
+                            : ''
+                        }
+                        onClick={
+                          () =>
+                            setProFilter(
+                              filter
+                            )
+                        }
+                      >
+                        {
+                          filter ===
+                            'tutti'
+
+                            ? 'Tutti'
+
+                            : filter ===
+                                'aperta'
+
+                              ? 'Da accettare'
+
+                              : filter ===
+                                  'accettata'
+
+                                ? 'Accettati'
+
+                                : 'Completati'
+                        }
+                      </button>
+
+                    )
+                  )
+                }
+
+              </div>
+
+              {
+                verified
+                &&
+                openProfessionalJobs
+                  .map(
+                    job => (
+
+                      <article
+                        className="card job"
+                        key={
+                          `matching-${job.id}`
+                        }
+                      >
+
+                        <div className="job-top">
+
+                          <div>
+
+                            <span className="status">
+                              🔴 DA ACCETTARE
+                            </span>
+
+                            <h3>
+                              {
+                                job.category_name
+                                || 'Intervento'
+                              }
+                            </h3>
+
+                          </div>
+
+                          <b>
+                            {
+                              job.urgency
+                                ?.toUpperCase()
+                            }
+                          </b>
+
+                        </div>
+
+                        <p>
+                          {
+                            job.description
+                          }
+                        </p>
+
+                        <Photo
+                          id={
+                            job.id
+                          }
+                        />
+
+                        <p className="muted">
+                          🔒 Indirizzo completo dopo l’accettazione
+                        </p>
+
+                        {
+                          job.distance_km
+                            != null
+                          &&
+                          (
+                            <p>
+
+                              📍 {
+                                Number(
+                                  job.distance_km
+                                )
+                                  .toFixed(1)
+                              } km
+
+                              {' · '}
+
+                              ⏱ {
+                                etaLabel(
+                                  job.eta_minutes
+                                )
+                              }
+
+                            </p>
+                          )
+                        }
+
+                        <button
+                          className="full"
+                          disabled={
+                            busy
+                            ||
+                            availability ===
+                              'offline'
+                          }
+                          onClick={
+                            () =>
+                              acceptJob(
+                                job.id
+                              )
+                          }
+                        >
+                          {
+                            availability ===
+                              'offline'
+                              ? 'Sei offline'
+                              : 'Accetta lavoro →'
+                          }
+                        </button>
+
+                      </article>
+
+                    )
+                  )
+              }
+
+              {
+                verified
+                &&
+                filteredAcceptedJobs
+                  .map(
+                    job => (
+
+                      <article
+                        className="card job"
+                        key={
+                          `accepted-${job.id}`
+                        }
+                      >
+
+                        <span className="status">
+                          {
+                            statusLabel(
+                              job.status
+                            )
+                          }
+                        </span>
+
+                        <h3>
+                          {
+                            job.category_name
+                            || 'Intervento'
+                          }
+                        </h3>
+
+                        <p>
+                          {
+                            job.description
+                          }
+                        </p>
+
+                        <Photo
+                          id={
+                            job.id
+                          }
+                        />
+
+                        {
+                          job.address
+                          &&
+                          (
+                            <div className="success">
+
+                              📍 <b>
+                                Indirizzo intervento
+                              </b>
+
+                              <br />
+
+                              {
+                                job.address
+                              }
+
+                            </div>
+                          )
+                        }
+
+                        <div className="actions">
+
+                          <button
+                            className="full"
+                            onClick={
+                              () =>
+                                openChat(
+                                  job.id,
+                                  job.category_name
+                                  || 'Intervento'
+                                )
+                            }
+                          >
+                            💬 Chat
+                          </button>
+
+                          {
+                            job.status !==
+                              'completata'
+                            &&
+                            (
+                              <button
+                                className="outline"
+                                onClick={
+                                  () =>
+                                    completeJob(
+                                      job.id
+                                    )
+                                }
+                              >
+                                ✓ Completa
+                              </button>
+                            )
+                          }
+
+                        </div>
+
+                      </article>
+
+                    )
+                  )
+              }
+
+            </div>
+
+            <div
+              style={{
+                marginTop:
+                  34
+              }}
+            >
+
+              <span className="tag">
+                Recensioni
+              </span>
+
+              <h2>
+                Le mie recensioni
+              </h2>
+
+              {
+                reviews.map(
+                  review => (
+
+                    <div
+                      className="card job"
+                      key={
+                        review.review_id
+                      }
+                    >
+
+                      <b>
+                        {
+                          '⭐'.repeat(
+                            Number(
+                              review.rating
+                            )
+                          )
+                        }
+                      </b>
+
+                      <h3>
+                        {
+                          review.client_name
+                          || 'Cliente'
+                        }
+                      </h3>
+
+                      <p>
+                        {
+                          review.comment
+                          || 'Nessun commento.'
+                        }
+                      </p>
+
+                    </div>
+
+                  )
+                )
+              }
+
+            </div>
+
+          </section>
+
+        </div>
+
+        <footer>
+          © 2026 LavoroSubito · MVP 1.0
+        </footer>
+
+        {
+          chatJobId
+          &&
+          <ChatModal />
+        }
+
+      </main>
+
+    );
+
+  }
+
+  return (
+
+    <main>
+
+      <header>
+
+        <div className="logo">
+
+          <b>
+            L
+          </b>
+
+          Lavoro
+          <span>
+            Subito
+          </span>
+
+        </div>
+
+        {
+          user
+
+            ? (
+              <button
+                className="outline"
+                onClick={
+                  logout
+                }
+              >
+                Esci
+              </button>
+            )
+
+            : (
+              <button
+                className="outline"
+                onClick={
+                  () => {
+
+                    setAuthMode(
+                      'login'
+                    );
+
+                    setAuthOpen(
+                      true
+                    );
+
+                  }
+                }
+              >
+                Accedi / Registrati
+              </button>
+            )
+        }
+
+      </header>
+
+      <div className="container">
+
+        <section className="hero">
+
+          <div>
+
+            <span className="tag">
+              ● Interventi urgenti
+            </span>
+
+            <h1>
+              Un problema?
+              <br />
+              <span>
+                Risolviamolo subito.
+              </span>
+            </h1>
+
+            <p>
+              Trova un professionista verificato, disponibile e vicino a te.
+            </p>
+
+          </div>
+
+          <div className="card">
+
+            <span className="tag">
+              MVP 1.0
+            </span>
+
+            <h2>
+              Di cosa hai bisogno?
+            </h2>
+
+            <div className="grid">
+
+              {
+                cats.map(
+                  (
+                    [
+                      name,
+                      icon
+                    ]
+                  ) => (
+
+                    <button
+                      key={
+                        name
+                      }
+                      className={
+                        cat ===
+                          name
+                          ? 'cat selected'
+                          : 'cat'
+                      }
+                      onClick={
+                        () =>
+                          setCat(
+                            name
+                          )
+                      }
+                    >
+
+                      <strong>
+                        {icon}
+                      </strong>
+
+                      {name}
+
+                    </button>
+
+                  )
+                )
+              }
+
+            </div>
+
+            <div className="urg">
+
+              {
+                [
+                  'SUBITO',
+                  'OGGI',
+                  '48H'
+                ].map(
+                  value => (
+
+                    <button
+                      key={
+                        value
+                      }
+                      className={
+                        urgency ===
+                          value
+                          ? 'selected'
+                          : ''
+                      }
+                      onClick={
+                        () =>
+                          setUrgency(
+                            value
+                          )
+                      }
+                    >
+                      {value}
+                    </button>
+
+                  )
+                )
+              }
+
+            </div>
+
+            <label>
+              Descrivi il problema
+            </label>
+
+            <textarea
+              rows={4}
+              value={
+                description
+              }
+              onChange={
+                event =>
+                  setDescription(
+                    event.target
+                      .value
+                  )
+              }
+              placeholder="Es. Perdita d’acqua sotto il lavandino..."
+            />
+
+            <label>
+              📷 Foto del problema
+            </label>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={
+                choosePhoto
+              }
+            />
+
+            <div className="small muted">
+              Facoltativa · massimo 10 MB
+            </div>
+
+            {
+              photoPreview
+              &&
+              (
+                <>
+
+                  <img
+                    className="photo"
+                    src={
+                      photoPreview
+                    }
+                    alt="Anteprima"
+                  />
+
+                  <button
+                    className="danger"
+                    onClick={
+                      clearPhoto
+                    }
+                  >
+                    Rimuovi foto
+                  </button>
+
+                </>
+              )
+            }
+
+            <label>
+              📍 Indirizzo intervento
+            </label>
+
+            <input
+              value={
+                address
+              }
+              onChange={
+                event =>
+                  setAddress(
+                    event.target
+                      .value
+                  )
+              }
+              placeholder="Es. Via Roma 15, Urbino"
+            />
+
+            <div className="actions">
+
+              <button
+                className="outline"
+                onClick={
+                  async () => {
+
+                    const position =
+                      await getPosition();
+
+                    setCoords(
+                      position
+                    );
+
+                    setMessage(
+                      position
+                        ? '📍 Posizione GPS rilevata.'
+                        : 'Posizione non disponibile.'
+                    );
+
+                  }
+                }
+              >
+                {
+                  coords
+                    ? '✅ GPS rilevato'
+                    : '📍 Usa posizione GPS'
+                }
+              </button>
 
               <button
                 className="full"
-                onClick={() =>
-                  scrollToSection(
-                    'setup-categories'
-                  )
+                disabled={
+                  busy
+                }
+                onClick={
+                  submitJob
                 }
               >
-                🛠 Configura
-                profilo
-              </button>
-            </div>
-          )}
-
-          {setupComplete &&
-            verifiedForMatching && (
-              <div
-                className="success"
-                style={{
-                  marginTop:
-                    25
-                }}
-              >
-                ✅ Profilo
-                operativo e
-                verificato.
-              </div>
-            )}
-
-          {setupComplete &&
-            !verifiedForMatching && (
-              <div
-                className="card"
-                style={{
-                  marginTop:
-                    25
-                }}
-              >
-                <h2>
-                  🔒 Matching in
-                  attesa di
-                  verifica
-                </h2>
-
-                <b>
-                  {
-                    verificationLabel()
-                  }
-                </b>
-              </div>
-            )}
-
-          <div
-            className="card"
-            style={{
-              marginTop:
-                20
-            }}
-          >
-            <label className="tag">
-              VERIFICA
-              PROFESSIONISTA
-            </label>
-
-            <h2>
-              🪪 Dati
-              professionali
-            </h2>
-
-            <p>
-              <b>
                 {
-                  verificationLabel()
+                  busy
+                    ? 'Invio...'
+                    : 'Trova chi è disponibile →'
                 }
-              </b>
-            </p>
-
-            <p>
-              {
-                verificationDescription()
-              }
-            </p>
-
-            <label>
-              Nome attività
-            </label>
-
-            <input
-              value={
-                businessName
-              }
-              onChange={
-                e =>
-                  setBusinessName(
-                    e
-                      .target
-                      .value
-                  )
-              }
-            />
-
-            <label>
-              Telefono
-            </label>
-
-            <input
-              value={
-                phone
-              }
-              onChange={
-                e =>
-                  setPhone(
-                    e
-                      .target
-                      .value
-                  )
-              }
-            />
-
-            <label>
-              Partita IVA
-            </label>
-
-            <input
-              value={
-                vatNumber
-              }
-              onChange={
-                e =>
-                  setVatNumber(
-                    e
-                      .target
-                      .value
-                  )
-              }
-            />
-
-            <label>
-              Codice fiscale
-            </label>
-
-            <input
-              value={
-                taxCode
-              }
-              onChange={
-                e =>
-                  setTaxCode(
-                    e
-                      .target
-                      .value
-                  )
-              }
-            />
-
-            <button
-              className="full"
-              disabled={
-                identitySaving
-              }
-              onClick={
-                saveProfessionalIdentity
-              }
-            >
-              💾 Salva dati
-              professionali
-            </button>
-          </div>
-
-          <div
-            id="setup-availability"
-            className="card"
-            style={{
-              marginTop:
-                20
-            }}
-          >
-            <label className="tag">
-              DISPONIBILITÀ
-            </label>
-
-            <h2>
-              ⏱ Quando sei
-              disponibile?
-            </h2>
-
-            <p>
-              Stato attuale:{' '}
-              <b>
-                {
-                  availabilityLabel(
-                    availabilityStatus
-                  )
-                }
-              </b>
-            </p>
-
-            <div
-              style={{
-                display:
-                  'grid',
-
-                gridTemplateColumns:
-                  '1fr 1fr',
-
-                gap:
-                  10
-              }}
-            >
-              <button
-                className={
-                  availabilityStatus ===
-                  'ora'
-                    ? 'full'
-                    : 'outline'
-                }
-                disabled={
-                  availabilitySaving
-                }
-                onClick={() =>
-                  updateAvailability(
-                    'ora'
-                  )
-                }
-              >
-                🟢 Ora
               </button>
 
-              <button
-                className={
-                  availabilityStatus ===
-                  '1-2h'
-                    ? 'full'
-                    : 'outline'
-                }
-                disabled={
-                  availabilitySaving
-                }
-                onClick={() =>
-                  updateAvailability(
-                    '1-2h'
-                  )
-                }
-              >
-                🟡 1–2 ore
-              </button>
-
-              <button
-                className={
-                  availabilityStatus ===
-                  'oggi'
-                    ? 'full'
-                    : 'outline'
-                }
-                disabled={
-                  availabilitySaving
-                }
-                onClick={() =>
-                  updateAvailability(
-                    'oggi'
-                  )
-                }
-              >
-                🟠 Oggi
-              </button>
-
-              <button
-                className={
-                  availabilityStatus ===
-                  'offline'
-                    ? 'full'
-                    : 'outline'
-                }
-                disabled={
-                  availabilitySaving
-                }
-                onClick={() =>
-                  updateAvailability(
-                    'offline'
-                  )
-                }
-              >
-                ⚫ Offline
-              </button>
-            </div>
-          </div>
-
-          <div
-            id="setup-categories"
-            className="card"
-            style={{
-              marginTop:
-                20
-            }}
-          >
-            <h2>
-              🛠 Le mie
-              categorie
-            </h2>
-
-            <div
-              style={{
-                display:
-                  'grid',
-
-                gridTemplateColumns:
-                  '1fr 1fr',
-
-                gap:
-                  10
-              }}
-            >
-              {allCategories.map(
-                category => {
-                  const selected =
-                    selectedCategoryIds
-                      .includes(
-                        category.id
-                      );
-
-                  return (
-                    <button
-                      key={
-                        category.id
-                      }
-                      className={
-                        selected
-                          ? 'full'
-                          : 'outline'
-                      }
-                      onClick={() =>
-                        toggleProfessionalCategory(
-                          category.id
-                        )
-                      }
-                    >
-                      {selected
-                        ? '✓ '
-                        : ''}
-                      {
-                        category.name
-                      }
-                    </button>
-                  );
-                }
-              )}
             </div>
 
-            <button
-              className="full"
-              onClick={
-                saveProfessionalCategories
-              }
-              disabled={
-                categorySaving
-              }
-            >
-              💾 Salva
-              categorie
-            </button>
-          </div>
+            {
+              message
+              &&
+              (
+                <div className="success">
+                  {message}
+                </div>
+              )
+            }
 
-          <div
-            id="setup-location"
-            className="card"
-            style={{
-              marginTop:
-                20
-            }}
-          >
-            <h2>
-              📍 Posizione e
-              raggio
-            </h2>
+            {
+              bestMatch
+              &&
+              (
+                <div
+                  className="card"
+                  style={{
+                    marginTop:
+                      16,
 
-            <p>
-              {professionalLocationSet
-                ? '✅ Posizione configurata'
-                : '⚠️ Posizione da configurare'}
-            </p>
+                    borderColor:
+                      '#48b779'
+                  }}
+                >
 
-            <button
-              className="full"
-              disabled={
-                professionalLocationLoading
-              }
-              onClick={
-                updateProfessionalLocation
-              }
-            >
-              📍 Usa la mia
-              posizione
-            </button>
+                  <span className="tag">
+                    Professionista compatibile
+                  </span>
 
-            <h3>
-              Raggio massimo:{' '}
-              {maxDistance} km
-            </h3>
-
-            <div
-              style={{
-                display:
-                  'grid',
-
-                gridTemplateColumns:
-                  'repeat(3,1fr)',
-
-                gap:
-                  10
-              }}
-            >
-              {distances.map(
-                distance => (
-                  <button
-                    key={
-                      distance
+                  <h3>
+                    {
+                      bestMatch
+                        .professional_name
                     }
-                    className={
-                      maxDistance ===
-                      distance
-                        ? 'full'
-                        : 'outline'
+                  </h3>
+
+                  <p>
+
+                    🎯 {
+                      bestMatch
+                        .match_score
+                    }/100
+
+                    {' · '}
+
+                    ⭐ {
+                      Number(
+                        bestMatch
+                          .average_rating
+                      )
+                        .toFixed(1)
                     }
-                    disabled={
-                      distanceSaving
-                    }
-                    onClick={() =>
-                      saveMaxDistance(
-                        distance
+
+                    {' · '}
+
+                    {
+                      bestMatch
+                        .review_count
+                    } recensioni
+
+                  </p>
+
+                  <p>
+
+                    {
+                      availabilityLabel(
+                        bestMatch
+                          .availability_status
                       )
                     }
-                  >
-                    {distance} km
-                  </button>
-                )
-              )}
-            </div>
+
+                    {' · '}
+
+                    📍 {
+                      bestMatch
+                        .distance_km
+                        ?.toFixed?.(1)
+                      ?? '—'
+                    } km
+
+                  </p>
+
+                </div>
+              )
+            }
+
           </div>
 
-          {message && (
-            <div
-              className="success"
-              style={{
-                marginTop:
-                  20
-              }}
-            >
-              {message}
-            </div>
-          )}
+        </section>
 
-          {canUseMatching && (
-            <>
-              <div
-                style={{
-                  marginTop:
-                    50
-                }}
-              >
-                <label className="tag">
-                  V35 · LAVORI
-                </label>
+        {
+          user
+          &&
+          role ===
+            'cliente'
+          &&
+          (
+            <section className="section">
 
-                <h2>
-                  Lavori e
-                  storico
-                </h2>
+              <span className="tag">
+                Storico cliente
+              </span>
 
-                <p>
-                  {
-                    availabilityLabel(
-                      availabilityStatus
-                    )
-                  }
-                </p>
-
-                <button
-                  className="outline"
-                  onClick={
-                    loadJobs
-                  }
-                >
-                  ↻ Aggiorna
-                </button>
-              </div>
+              <h2>
+                Le mie richieste
+              </h2>
 
               <div
-                style={{
-                  display:
-                    'flex',
-
-                  gap:
-                    8,
-
-                  flexWrap:
-                    'wrap',
-
-                  margin:
-                    '20px 0'
-                }}
+                className={
+                  live
+                    ? 'success'
+                    : 'notice'
+                }
               >
-                <button
-                  className={
-                    proFilter ===
-                    'tutti'
-                      ? 'full'
-                      : 'outline'
-                  }
-                  onClick={() =>
-                    setProFilter(
-                      'tutti'
-                    )
-                  }
-                >
-                  Tutti (
-                  {
-                    proCounts.tutti
-                  }
-                  )
-                </button>
 
-                <button
-                  className={
-                    proFilter ===
-                    'aperta'
-                      ? 'full'
-                      : 'outline'
-                  }
-                  onClick={() =>
-                    setProFilter(
-                      'aperta'
-                    )
-                  }
-                >
-                  🔴 Da
-                  accettare (
-                  {
-                    proCounts.aperta
-                  }
-                  )
-                </button>
+                {
+                  live
+                    ? '🟢 Stato LIVE'
+                    : '🟡 Connessione LIVE...'
+                }
 
-                <button
-                  className={
-                    proFilter ===
-                    'accettata'
-                      ? 'full'
-                      : 'outline'
-                  }
-                  onClick={() =>
-                    setProFilter(
-                      'accettata'
-                    )
-                  }
-                >
-                  🟢 Accettati (
-                  {
-                    proCounts.accettata
-                  }
-                  )
-                </button>
-
-                <button
-                  className={
-                    proFilter ===
-                    'completata'
-                      ? 'full'
-                      : 'outline'
-                  }
-                  onClick={() =>
-                    setProFilter(
-                      'completata'
-                    )
-                  }
-                >
-                  ✅ Completati (
-                  {
-                    proCounts.completata
-                  }
-                  )
-                </button>
               </div>
 
-              {jobsLoading && (
-                <p>
-                  Caricamento...
-                </p>
-              )}
+              <div className="filter">
 
-              {proOpenJobs.map(
-                job => (
-                  <article
-                    key={
-                      `open-${job.id}`
-                    }
-                    className="card"
-                    style={{
-                      marginTop:
-                        18
-                    }}
-                  >
-                    <div className="live">
-                      🔴 DA
-                      ACCETTARE
-                    </div>
+                {
+                  (
+                    [
+                      'tutti',
+                      'aperta',
+                      'accettata',
+                      'completata',
+                      'annullata'
+                    ] as ClientFilter[]
+                  ).map(
+                    filter => (
 
-                    <h3>
-                      {job.category_name ||
-                        'Intervento'}
-                    </h3>
+                      <button
+                        key={
+                          filter
+                        }
+                        className={
+                          clientFilter ===
+                            filter
+                            ? 'selected'
+                            : ''
+                        }
+                        onClick={
+                          () =>
+                            setClientFilter(
+                              filter
+                            )
+                        }
+                      >
 
-                    <p>
-                      {
-                        job.description
-                      }
-                    </p>
+                        {
+                          filter ===
+                            'tutti'
+                            ? 'Tutti'
+                            : filter
+                        }
 
-                    <JobPhoto
-                      jobId={
+                      </button>
+
+                    )
+                  )
+                }
+
+              </div>
+
+              {
+                filteredClient.map(
+                  job => (
+
+                    <article
+                      className="card job"
+                      key={
                         job.id
                       }
-                    />
-
-                    <p>
-                      <b>
-                        Urgenza:
-                      </b>{' '}
-                      {job.urgency
-                        .toUpperCase()}
-                    </p>
-
-                    <p>
-                      🔒 Indirizzo
-                      visibile dopo
-                      l'accettazione.
-                    </p>
-
-                    {job.distance_km !=
-                      null && (
-                      <p>
-                        📍{' '}
-                        {Number(
-                          job.distance_km
-                        ).toFixed(
-                          1
-                        )}{' '}
-                        km
-                      </p>
-                    )}
-
-                    {job.eta_minutes !=
-                      null && (
-                      <p>
-                        ⏱{' '}
-                        {etaLabel(
-                          job.eta_minutes
-                        )}
-                      </p>
-                    )}
-
-                    <button
-                      className="full"
-                      disabled={
-                        busy ||
-                        !availableForJobs
-                      }
-                      onClick={() =>
-                        acceptJob(
-                          job.id
-                        )
-                      }
                     >
-                      {availableForJobs
-                        ? 'Accetta lavoro →'
-                        : 'Sei offline'}
-                    </button>
-                  </article>
-                )
-              )}
 
-              {proAcceptedJobs.map(
-                job => {
-                  const completed =
-                    job.status ===
-                    'completata';
+                      <span className="status">
 
-                  return (
-                    <article
-                      key={
-                        `accepted-${job.id}`
-                      }
-                      className="card"
-                      style={{
-                        marginTop:
-                          18
-                      }}
-                    >
-                      <div className="live">
-                        {completed
-                          ? '✅ COMPLETATO'
-                          : '🟢 ACCETTATO'}
-                      </div>
+                        {
+                          statusLabel(
+                            job.status
+                          )
+                        }
+
+                      </span>
 
                       <h3>
-                        {job.category_name ||
-                          'Intervento'}
+                        {
+                          job.category_name
+                          || 'Intervento'
+                        }
                       </h3>
 
                       <p>
@@ -4106,1164 +4023,496 @@ export default function Home() {
                         }
                       </p>
 
-                      <JobPhoto
-                        jobId={
+                      <Photo
+                        id={
                           job.id
                         }
                       />
 
-                      {job.address && (
-                        <div
-                          className="success"
-                          style={{
-                            margin:
-                              '15px 0'
-                          }}
-                        >
-                          <b>
-                            📍 Indirizzo
-                            intervento
-                          </b>
+                      {
+                        job.address
+                        &&
+                        (
+                          <div className="notice">
 
-                          <p>
+                            📍 <b>
+                              Indirizzo intervento
+                            </b>
+
+                            <br />
+
                             {
                               job.address
                             }
-                          </p>
-                        </div>
-                      )}
 
-                      <button
-                        className="full"
-                        onClick={() =>
-                          openChat(
-                            job.id,
-                            job.category_name ||
-                              'Intervento'
+                          </div>
+                        )
+                      }
+
+                      <p>
+
+                        <b>
+                          Urgenza:
+                        </b>
+
+                        {' '}
+
+                        {
+                          job.urgency
+                            ?.toUpperCase()
+                        }
+
+                      </p>
+
+                      {
+                        job.professional_name
+                        &&
+                        (
+                          <div className="success">
+
+                            ✅ {
+                              job.professional_name
+                            }
+
+                          </div>
+                        )
+                      }
+
+                      <div className="actions">
+
+                        {
+                          job.status ===
+                            'aperta'
+                          &&
+                          (
+                            <button
+                              className="danger"
+                              onClick={
+                                () =>
+                                  cancelJob(
+                                    job.id
+                                  )
+                              }
+                            >
+                              ❌ Annulla richiesta
+                            </button>
                           )
                         }
-                      >
-                        💬 Apri chat
-                      </button>
 
-                      {!completed && (
-                        <button
-                          className="outline"
-                          style={{
-                            marginTop:
-                              10
-                          }}
-                          onClick={() =>
-                            completeJob(
-                              job.id
-                            )
-                          }
-                        >
-                          ✓ Intervento
-                          completato
-                        </button>
-                      )}
+                        {
+                          (
+                            job.status ===
+                              'accettata'
+
+                            ||
+
+                            job.status ===
+                              'completata'
+                          )
+                          &&
+                          (
+                            <button
+                              className="full"
+                              onClick={
+                                () =>
+                                  openChat(
+                                    job.id,
+
+                                    job.professional_name
+                                    || 'Intervento'
+                                  )
+                              }
+                            >
+                              💬 Chat
+                            </button>
+                          )
+                        }
+
+                        {
+                          job.status ===
+                            'accettata'
+                          &&
+                          (
+                            <button
+                              className="outline"
+                              onClick={
+                                () =>
+                                  completeJob(
+                                    job.id
+                                  )
+                              }
+                            >
+                              ✓ Completa
+                            </button>
+                          )
+                        }
+
+                        {
+                          job.status ===
+                            'completata'
+
+                          &&
+
+                          !job.reviewed
+
+                          &&
+                          (
+                            <button
+                              className="outline"
+                              onClick={
+                                () => {
+
+                                  setReviewJobId(
+                                    job.id
+                                  );
+
+                                  setRating(
+                                    5
+                                  );
+
+                                }
+                              }
+                            >
+                              ⭐ Recensisci
+                            </button>
+                          )
+                        }
+
+                      </div>
+
                     </article>
-                  );
-                }
-              )}
 
-              {!jobsLoading &&
-                proOpenJobs.length ===
-                  0 &&
-                proAcceptedJobs.length ===
-                  0 && (
-                  <div
-                    className="card"
-                    style={{
-                      marginTop:
-                        20
-                    }}
-                  >
-                    Nessun lavoro
-                    in questa
-                    categoria.
-                  </div>
-                )}
-            </>
-          )}
-
-          <div
-            style={{
-              marginTop:
-                60
-            }}
-          >
-            <label className="tag">
-              RECENSIONI
-            </label>
-
-            <h2>
-              ⭐ Le mie
-              recensioni
-            </h2>
-
-            <p>
-              Media:{' '}
-              <b>
-                {professionalReviews
-                  .length
-                  ? averageRating
-                      .toFixed(
-                        1
-                      )
-                  : '—'}
-              </b>
-            </p>
-          </div>
-
-          {professionalReviews.map(
-            review => (
-              <article
-                key={
-                  review.review_id
-                }
-                className="card"
-                style={{
-                  marginTop:
-                    18
-                }}
-              >
-                <div>
-                  {'⭐'.repeat(
-                    Number(
-                      review.rating
-                    )
-                  )}
-                </div>
-
-                <h3>
-                  {review.client_name ||
-                    'Cliente'}
-                </h3>
-
-                <p>
-                  {review.comment ||
-                    'Nessun commento.'}
-                </p>
-              </article>
-            )
-          )}
-        </section>
-
-        <footer>
-          <small>
-            © 2026
-            LavoroSubito ·
-            V35
-          </small>
-        </footer>
-
-        <ChatModal />
-      </main>
-    );
-  }
-
-  // =========================
-  // AREA CLIENTE
-  // =========================
-
-  return (
-    <main>
-      <header>
-        <div className="logo">
-          <b>L</b>{' '}
-          Lavoro
-          <span>
-            Subito
-          </span>
-        </div>
-
-        {user ? (
-          <button
-            className="outline"
-            onClick={
-              logout
-            }
-          >
-            Esci
-          </button>
-        ) : (
-          <button
-            className="outline"
-            onClick={() => {
-              setAuthMode(
-                'login'
-              );
-
-              setAuthOpen(
-                true
-              );
-            }}
-          >
-            Accedi /
-            Registrati
-          </button>
-        )}
-      </header>
-
-      <section className="hero">
-        <div>
-          <label className="tag">
-            ● INTERVENTI
-            URGENTI
-          </label>
-
-          <h1>
-            Un problema?
-            <br />
-
-            <span>
-              Risolviamolo
-              subito.
-            </span>
-          </h1>
-
-          <p>
-            Trova un
-            professionista
-            verificato,
-            disponibile e
-            vicino a te.
-          </p>
-        </div>
-
-        <div className="card">
-          <label className="tag">
-            V35
-          </label>
-
-          <h2>
-            Di cosa hai
-            bisogno?
-          </h2>
-
-          <div className="grid">
-            {cats.map(
-              (
-                category,
-                index
-              ) => (
-                <button
-                  key={
-                    category
-                  }
-                  className={
-                    cat ===
-                    category
-                      ? 'cat selected'
-                      : 'cat'
-                  }
-                  onClick={() =>
-                    setCat(
-                      category
-                    )
-                  }
-                >
-                  <strong>
-                    {
-                      icons[
-                        index
-                      ]
-                    }
-                  </strong>
-
-                  {category}
-                </button>
-              )
-            )}
-          </div>
-
-          <div className="urg">
-            {[
-              'SUBITO',
-              'OGGI',
-              '48H'
-            ].map(
-              urgency => (
-                <button
-                  key={
-                    urgency
-                  }
-                  className={
-                    urg ===
-                    urgency
-                      ? 'selUrg'
-                      : ''
-                  }
-                  onClick={() =>
-                    setUrg(
-                      urgency
-                    )
-                  }
-                >
-                  {urgency}
-                </button>
-              )
-            )}
-          </div>
-
-          <label>
-            Descrivi il
-            problema
-          </label>
-
-          <textarea
-            value={
-              description
-            }
-            onChange={
-              e =>
-                setDescription(
-                  e.target
-                    .value
+                  )
                 )
-            }
-            placeholder="Es. Perdita d'acqua sotto il lavandino..."
-            rows={4}
-          />
+              }
 
-          <label>
-            📷 Foto del
-            problema
-          </label>
+            </section>
+          )
+        }
 
-          <input
-            type="file"
-            accept="image/*"
-            onChange={
-              selectPhoto
-            }
-          />
+      </div>
 
-          <small
-            style={{
-              display:
-                'block',
+      <footer>
+        © 2026 LavoroSubito · MVP 1.0
+      </footer>
 
-              marginBottom:
-                12
-            }}
-          >
-            Facoltativa ·
-            massimo 10 MB
-          </small>
+      {
+        authOpen
+        &&
+        (
+          <div className="modal">
 
-          {photoPreview && (
-            <div
-              style={{
-                marginBottom:
-                  18
-              }}
+            <form
+              className="modalBox"
+              onSubmit={
+                authSubmit
+              }
             >
-              <img
-                src={
-                  photoPreview
-                }
-                alt="Anteprima foto"
-                style={{
-                  width:
-                    '100%',
-
-                  maxHeight:
-                    420,
-
-                  objectFit:
-                    'cover',
-
-                  borderRadius:
-                    14,
-
-                  border:
-                    '1px solid #ddd'
-                }}
-              />
 
               <button
                 type="button"
-                className="outline"
-                style={{
-                  marginTop:
-                    10
-                }}
+                className="x"
                 onClick={
-                  clearPhotoPreview
+                  () =>
+                    setAuthOpen(
+                      false
+                    )
                 }
               >
-                ❌ Rimuovi foto
+                ×
               </button>
-            </div>
-          )}
-
-          <label>
-            📍 Indirizzo
-            intervento
-          </label>
-
-          <input
-            value={
-              address
-            }
-            onChange={
-              e =>
-                setAddress(
-                  e.target
-                    .value
-                )
-            }
-            placeholder="Es. Via Roma 15, Urbino"
-          />
-
-          <small
-            style={{
-              display:
-                'block',
-
-              marginBottom:
-                15
-            }}
-          >
-            L'indirizzo
-            completo verrà
-            mostrato al
-            professionista
-            solo dopo
-            l'accettazione.
-          </small>
-
-          <button
-            type="button"
-            className="outline"
-            disabled={
-              locationLoading
-            }
-            onClick={
-              detectLocation
-            }
-          >
-            {locationLoading
-              ? '📍 Rilevamento...'
-              : coordinates
-                ? '✅ Posizione GPS rilevata'
-                : '📍 Usa anche la mia posizione GPS'}
-          </button>
-
-          <button
-            className="full"
-            disabled={
-              busy ||
-              photoUploading
-            }
-            onClick={
-              submitJob
-            }
-          >
-            {photoUploading
-              ? '📷 Caricamento foto...'
-              : busy
-                ? 'Ricerca...'
-                : 'Trova chi è disponibile →'}
-          </button>
-
-          {message && (
-            <div className="success">
-              {message}
-            </div>
-          )}
-
-          {matchingLoading && (
-            <div className="card">
-              🔎 Matching in
-              corso...
-            </div>
-          )}
-
-          {bestMatch && (
-            <div
-              className="card"
-              style={{
-                marginTop:
-                  20,
-
-                border:
-                  '2px solid #48b779'
-              }}
-            >
-              <label className="tag">
-                ✅ PROFESSIONISTA
-                VERIFICATO
-              </label>
 
               <h2>
                 {
-                  bestMatch
-                    .professional_name
+                  authMode ===
+                    'signup'
+                    ? 'Crea account'
+                    : 'Bentornato'
                 }
               </h2>
 
-              <h3>
-                🎯{' '}
-                {
-                  bestMatch
-                    .match_score
-                }
-                /100
-              </h3>
+              <div className="actions">
 
-              {bestMatch
-                .distance_km !=
-                null && (
-                <p>
-                  📍{' '}
-                  {Number(
-                    bestMatch
-                      .distance_km
-                  ).toFixed(
-                    1
-                  )}{' '}
-                  km
-                </p>
-              )}
-
-              {bestMatch
-                .eta_minutes !=
-                null && (
-                <p>
-                  ⏱{' '}
-                  {etaLabel(
-                    bestMatch
-                      .eta_minutes
-                  )}
-                </p>
-              )}
-
-              <p>
-                {availabilityLabel(
-                  bestMatch
-                    .availability_status
-                )}
-              </p>
-
-              <p>
-                ⭐{' '}
-                {Number(
-                  bestMatch
-                    .average_rating
-                ).toFixed(
-                  1
-                )}{' '}
-                ·{' '}
-                {
-                  bestMatch
-                    .review_count
-                }{' '}
-                recensioni
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {user &&
-        profileRole ===
-          'cliente' && (
-          <section className="section">
-            <label className="tag">
-              V35 · STORICO
-            </label>
-
-            <h2>
-              Le mie richieste
-            </h2>
-
-            <div
-              style={{
-                marginBottom:
-                  20,
-
-                fontWeight:
-                  700
-              }}
-            >
-              {realtimeConnected
-                ? '🟢 Stato LIVE'
-                : '🟡 Connessione LIVE...'}
-            </div>
-
-            <button
-              className="outline"
-              onClick={
-                loadClientJobs
-              }
-            >
-              ↻ Aggiorna
-            </button>
-
-            <div
-              style={{
-                display:
-                  'flex',
-
-                gap:
-                  8,
-
-                flexWrap:
-                  'wrap',
-
-                margin:
-                  '20px 0'
-              }}
-            >
-              <button
-                className={
-                  clientFilter ===
-                  'tutti'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setClientFilter(
-                    'tutti'
-                  )
-                }
-              >
-                Tutti (
-                {
-                  clientCounts.tutti
-                }
-                )
-              </button>
-
-              <button
-                className={
-                  clientFilter ===
-                  'aperta'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setClientFilter(
-                    'aperta'
-                  )
-                }
-              >
-                🔴 Aperti (
-                {
-                  clientCounts.aperta
-                }
-                )
-              </button>
-
-              <button
-                className={
-                  clientFilter ===
-                  'accettata'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setClientFilter(
-                    'accettata'
-                  )
-                }
-              >
-                🟢 Accettati (
-                {
-                  clientCounts.accettata
-                }
-                )
-              </button>
-
-              <button
-                className={
-                  clientFilter ===
-                  'completata'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setClientFilter(
-                    'completata'
-                  )
-                }
-              >
-                ✅ Completati (
-                {
-                  clientCounts.completata
-                }
-                )
-              </button>
-
-              <button
-                className={
-                  clientFilter ===
-                  'annullata'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setClientFilter(
-                    'annullata'
-                  )
-                }
-              >
-                ⚫ Annullati (
-                {
-                  clientCounts.annullata
-                }
-                )
-              </button>
-            </div>
-
-            {clientJobsLoading && (
-              <p>
-                Caricamento...
-              </p>
-            )}
-
-            {!clientJobsLoading &&
-              filteredClientJobs
-                .length ===
-                0 && (
-                <div className="card">
-                  Nessuna
-                  richiesta in
-                  questa
-                  categoria.
-                </div>
-              )}
-
-            {filteredClientJobs.map(
-              job => {
-                const accepted =
-                  job.status ===
-                    'accettata' ||
-                  job.status ===
-                    'completata';
-
-                const completed =
-                  job.status ===
-                  'completata';
-
-                const cancelled =
-                  job.status ===
-                  'annullata';
-
-                const open =
-                  job.status ===
-                  'aperta';
-
-                return (
-                  <article
-                    key={
-                      job.id
-                    }
-                    className="card"
-                    style={{
-                      marginTop:
-                        18,
-
-                      opacity:
-                        cancelled
-                          ? 0.65
-                          : 1
-                    }}
-                  >
-                    <div className="live">
-                      {cancelled
-                        ? '⚫ ANNULLATA'
-                        : completed
-                          ? '✅ COMPLETATO'
-                          : accepted
-                            ? '🟢 PROFESSIONISTA TROVATO'
-                            : '🔴 RICERCA IN CORSO'}
-                    </div>
-
-                    <h3>
-                      {job.category_name ||
-                        'Intervento'}
-                    </h3>
-
-                    <p>
-                      {
-                        job.description
-                      }
-                    </p>
-
-                    <JobPhoto
-                      jobId={
-                        job.id
-                      }
-                    />
-
-                    {job.address && (
-                      <div
-                        style={{
-                          margin:
-                            '12px 0',
-
-                          padding:
-                            12,
-
-                          border:
-                            '1px solid #ddd',
-
-                          borderRadius:
-                            10
-                        }}
-                      >
-                        <b>
-                          📍 Indirizzo
-                          intervento
-                        </b>
-
-                        <p>
-                          {
-                            job.address
-                          }
-                        </p>
-                      </div>
-                    )}
-
-                    <p>
-                      <b>
-                        Urgenza:
-                      </b>{' '}
-                      {job.urgency
-                        ?.toUpperCase()}
-                    </p>
-
-                    {open && (
-                      <button
-                        className="outline"
-                        disabled={
-                          busy
-                        }
-                        style={{
-                          borderColor:
-                            '#d9534f'
-                        }}
-                        onClick={() =>
-                          cancelJob(
-                            job.id
-                          )
-                        }
-                      >
-                        ❌ Annulla
-                        richiesta
-                      </button>
-                    )}
-
-                    {cancelled && (
-                      <p>
-                        <b>
-                          Questa
-                          richiesta è
-                          stata
-                          annullata.
-                        </b>
-                      </p>
-                    )}
-
-                    {accepted &&
-                      job
-                        .professional_name && (
-                        <>
-                          <div className="success">
-                            ✅{' '}
-                            {
-                              job
-                                .professional_name
-                            }
-                          </div>
-
-                          <button
-                            className="full"
-                            onClick={() =>
-                              openChat(
-                                job.id,
-
-                                job
-                                  .professional_name ||
-                                  'Intervento'
-                              )
-                            }
-                          >
-                            💬 Apri chat
-                          </button>
-
-                          {!completed && (
-                            <button
-                              className="outline"
-                              style={{
-                                marginTop:
-                                  10
-                              }}
-                              onClick={() =>
-                                completeJob(
-                                  job.id
-                                )
-                              }
-                            >
-                              ✓ Intervento
-                              completato
-                            </button>
-                          )}
-
-                          {completed &&
-                            !job.reviewed && (
-                              <button
-                                className="outline"
-                                style={{
-                                  marginTop:
-                                    10
-                                }}
-                                onClick={() =>
-                                  openReview(
-                                    job.id,
-
-                                    job
-                                      .professional_name ||
-                                      'Professionista'
-                                  )
-                                }
-                              >
-                                ⭐ Lascia
-                                recensione
-                              </button>
-                            )}
-
-                          {completed &&
-                            job.reviewed && (
-                              <div
-                                className="success"
-                                style={{
-                                  marginTop:
-                                    10
-                                }}
-                              >
-                                ⭐ Recensione
-                                inviata
-                              </div>
-                            )}
-                        </>
-                      )}
-                  </article>
-                );
-              }
-            )}
-          </section>
-        )}
-
-      <section className="section">
-        <label className="tag">
-          LAVOROSUBITO
-        </label>
-
-        <h2>
-          Il professionista
-          giusto, quando
-          serve.
-        </h2>
-
-        <p>
-          Matching basato su
-          specializzazione,
-          disponibilità,
-          distanza, urgenza,
-          reputazione e
-          verifica del
-          professionista.
-        </p>
-      </section>
-
-      <footer>
-        <small>
-          © 2026
-          LavoroSubito · V35
-        </small>
-      </footer>
-
-      {authOpen && (
-        <div className="modal">
-          <form
-            className="modalBox"
-            onSubmit={
-              authSubmit
-            }
-          >
-            <button
-              type="button"
-              className="x"
-              onClick={() =>
-                setAuthOpen(
-                  false
-                )
-              }
-            >
-              ×
-            </button>
-
-            <h2>
-              {authMode ===
-              'signup'
-                ? 'Crea il tuo account'
-                : 'Bentornato'}
-            </h2>
-
-            <div
-              style={{
-                display:
-                  'grid',
-
-                gridTemplateColumns:
-                  '1fr 1fr',
-
-                gap:
-                  10
-              }}
-            >
-              <button
-                type="button"
-                className={
-                  authMode ===
-                  'login'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setAuthMode(
-                    'login'
-                  )
-                }
-              >
-                Accedi
-              </button>
-
-              <button
-                type="button"
-                className={
-                  authMode ===
-                  'signup'
-                    ? 'full'
-                    : 'outline'
-                }
-                onClick={() =>
-                  setAuthMode(
-                    'signup'
-                  )
-                }
-              >
-                Registrati
-              </button>
-            </div>
-
-            {authMode ===
-              'signup' && (
-              <>
-                <input
-                  required
-                  placeholder="Nome e cognome"
-                  value={
-                    name
+                <button
+                  type="button"
+                  className={
+                    authMode ===
+                      'login'
+                      ? 'full'
+                      : 'outline'
                   }
-                  onChange={
-                    e =>
-                      setName(
-                        e
-                          .target
-                          .value
-                      )
-                  }
-                />
-
-                <select
-                  value={
-                    role
-                  }
-                  onChange={
-                    e =>
-                      setRole(
-                        e
-                          .target
-                          .value as AppRole
+                  onClick={
+                    () =>
+                      setAuthMode(
+                        'login'
                       )
                   }
                 >
-                  <option value="cliente">
-                    👤 Cliente
-                  </option>
+                  Accedi
+                </button>
 
-                  <option value="professionista">
-                    🛠
-                    Professionista
-                  </option>
-                </select>
-              </>
-            )}
+                <button
+                  type="button"
+                  className={
+                    authMode ===
+                      'signup'
+                      ? 'full'
+                      : 'outline'
+                  }
+                  onClick={
+                    () =>
+                      setAuthMode(
+                        'signup'
+                      )
+                  }
+                >
+                  Registrati
+                </button>
 
-            <input
-              required
-              type="email"
-              placeholder="Email"
-              value={
-                email
-              }
-              onChange={
-                e =>
-                  setEmail(
-                    e
-                      .target
-                      .value
-                  )
-              }
-            />
+              </div>
 
-            <input
-              required
-              minLength={
-                6
-              }
-              type="password"
-              placeholder="Password"
-              value={
-                password
-              }
-              onChange={
-                e =>
-                  setPassword(
-                    e
-                      .target
-                      .value
-                  )
-              }
-            />
+              {
+                authMode ===
+                  'signup'
+                &&
+                (
+                  <>
 
-            <button
-              className="full"
-              disabled={
-                busy
+                    <label>
+                      Nome e cognome
+                    </label>
+
+                    <input
+                      required
+                      value={
+                        authName
+                      }
+                      onChange={
+                        event =>
+                          setAuthName(
+                            event.target
+                              .value
+                          )
+                      }
+                    />
+
+                    <label>
+                      Tipo account
+                    </label>
+
+                    <select
+                      value={
+                        signupRole
+                      }
+                      onChange={
+                        event =>
+                          setSignupRole(
+                            event.target
+                              .value as Role
+                          )
+                      }
+                    >
+
+                      <option value="cliente">
+                        Cliente
+                      </option>
+
+                      <option value="professionista">
+                        Professionista
+                      </option>
+
+                    </select>
+
+                  </>
+                )
+              }
+
+              <label>
+                Email
+              </label>
+
+              <input
+                type="email"
+                required
+                value={
+                  email
+                }
+                onChange={
+                  event =>
+                    setEmail(
+                      event.target
+                        .value
+                    )
+                }
+              />
+
+              <label>
+                Password
+              </label>
+
+              <input
+                type="password"
+                minLength={6}
+                required
+                value={
+                  password
+                }
+                onChange={
+                  event =>
+                    setPassword(
+                      event.target
+                        .value
+                    )
+                }
+              />
+
+              <button
+                className="full"
+                style={{
+                  marginTop:
+                    14
+                }}
+                disabled={
+                  busy
+                }
+              >
+                {
+                  busy
+
+                    ? 'Attendi...'
+
+                    : authMode ===
+                        'signup'
+
+                      ? 'Crea account'
+
+                      : 'Accedi'
+                }
+              </button>
+
+            </form>
+
+          </div>
+        )
+      }
+
+      {
+        chatJobId
+        &&
+        <ChatModal />
+      }
+
+      {
+        reviewJobId
+        &&
+        (
+          <div className="modal">
+
+            <form
+              className="modalBox"
+              onSubmit={
+                submitReview
               }
             >
-              {busy
-                ? 'Attendi...'
-                : authMode ===
-                    'signup'
-                  ? 'Crea account'
-                  : 'Accedi'}
-            </button>
-          </form>
-        </div>
-      )}
 
-      <ChatModal />
+              <button
+                type="button"
+                className="x"
+                onClick={
+                  () =>
+                    setReviewJobId(
+                      null
+                    )
+                }
+              >
+                ×
+              </button>
 
-      <ReviewModal />
+              <span className="tag">
+                Recensione
+              </span>
+
+              <h2>
+                Valuta l’intervento
+              </h2>
+
+              <div className="actions">
+
+                {
+                  [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ].map(
+                    stars => (
+
+                      <button
+                        type="button"
+                        key={
+                          stars
+                        }
+                        className={
+                          rating ===
+                            stars
+                            ? 'full'
+                            : 'outline'
+                        }
+                        onClick={
+                          () =>
+                            setRating(
+                              stars
+                            )
+                        }
+                      >
+                        {
+                          stars
+                        } ⭐
+                      </button>
+
+                    )
+                  )
+                }
+
+              </div>
+
+              <label>
+                Commento
+              </label>
+
+              <textarea
+                rows={4}
+                value={
+                  reviewComment
+                }
+                onChange={
+                  event =>
+                    setReviewComment(
+                      event.target
+                        .value
+                    )
+                }
+              />
+
+              <button
+                className="full"
+                style={{
+                  marginTop:
+                    12
+                }}
+              >
+                Invia recensione
+              </button>
+
+            </form>
+
+          </div>
+        )
+      }
+
     </main>
+
   );
+
 }
