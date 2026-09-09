@@ -1,4 +1,4 @@
-'use 'use client';
+'use client';
 
 import {
   ChangeEvent,
