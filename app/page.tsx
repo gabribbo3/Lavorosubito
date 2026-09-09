@@ -12,93 +12,7 @@ import {
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-type Role = 'cliente' | 'professionista';
-
-type Availability =
-  | 'ora'
-  | '1-2h'
-  | 'oggi'
-  | 'offline';
-
-type ClientFilter =
-  | 'tutti'
-  | 'aperta'
-  | 'accettata'
-  | 'completata'
-  | 'annullata';
-
-type ProFilter =
-  | 'tutti'
-  | 'aperta'
-  | 'accettata'
-  | 'completata';
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-};
-
-type Job = {
-  id: string;
-  description: string;
-  urgency: string;
-  status: string;
-  created_at?: string;
-  category_name?: string | null;
-  distance_km?: number | null;
-  eta_minutes?: number | null;
-  address?: string | null;
-  professional_name?: string | null;
-  reviewed?: boolean;
-};
-
-type Review = {
-  review_id: string;
-  rating: number;
-  comment?: string | null;
-  created_at?: string;
-  client_name?: string | null;
-};
-
-type Match = {
-  professional_id: string;
-  professional_name: string;
-  availability_status: string;
-  average_rating: number;
-  review_count: number;
-  distance_km: number | null;
-  eta_minutes: number | null;
-  match_score: number;
-};
-
-type Message = {
-  id: string;
-  job_id: string;
-  sender_id: string;
-  message: string;
-  created_at: string;
-};
-
-type Identity = {
-  business_name?: string | null;
-  phone?: string | null;
-  vat_number?: string | null;
-  tax_code?: string | null;
-  verification_status?: string | null;
-  verified?: boolean | null;
-};
-
-type Setup = {
-  categories_count: number;
-  has_categories: boolean;
-  has_location: boolean;
-  has_radius: boolean;
-  has_availability: boolean;
-  setup_complete: boolean;
-};
-
-const cats = [
+const CATEGORIES = [
   ['Idraulico', '🔧'],
   ['Elettricista', '⚡'],
   ['Fabbro', '🔑'],
@@ -107,14 +21,12 @@ const cats = [
   ['Serramenti', '🪟'],
   ['Meccanico', '🚗'],
   ['Altro', '🏠']
-] as const;
+];
 
-const distances = [10, 20, 30, 50, 100];
+const DISTANCES = [10, 20, 30, 50, 100];
 
 function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replaceAll(' ', '-');
+  return value.toLowerCase().replaceAll(' ', '-');
 }
 
 function availabilityLabel(value: string) {
@@ -125,7 +37,18 @@ function availabilityLabel(value: string) {
   return '⚫ Offline';
 }
 
-function etaLabel(value?: number | null) {
+function statusLabel(value: string) {
+  if (value === 'aperta') return '🔴 RICERCA IN CORSO';
+  if (value === 'accettata') return '🟢 ACCETTATA';
+  if (value === 'completata') return '✅ COMPLETATA';
+  if (value === 'annullata') return '⚫ ANNULLATA';
+
+  return value.toUpperCase();
+}
+
+function etaLabel(
+  value: number | null | undefined
+) {
   if (value == null) {
     return 'Tempo non disponibile';
   }
@@ -134,187 +57,284 @@ function etaLabel(value?: number | null) {
     return `Circa ${value} min`;
   }
 
-  const hours = Math.floor(value / 60);
-  const minutes = value % 60;
+  const h =
+    Math.floor(value / 60);
 
-  return minutes
-    ? `Circa ${hours} h ${minutes} min`
-    : `Circa ${hours} h`;
-}
+  const m =
+    value % 60;
 
-function statusLabel(status: string) {
-  if (status === 'aperta') {
-    return '🔴 RICERCA IN CORSO';
-  }
-
-  if (status === 'accettata') {
-    return '🟢 ACCETTATA';
-  }
-
-  if (status === 'completata') {
-    return '✅ COMPLETATA';
-  }
-
-  if (status === 'annullata') {
-    return '⚫ ANNULLATA';
-  }
-
-  return status.toUpperCase();
+  return m
+    ? `Circa ${h} h ${m} min`
+    : `Circa ${h} h`;
 }
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<Role | null>(null);
-  const [fullName, setFullName] = useState('');
-  const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [live, setLive] = useState(false);
+  const [user, setUser] =
+    useState<User | null>(null);
 
-  const [categories, setCategories] =
-    useState<Category[]>([]);
-
-  const [selectedProCats, setSelectedProCats] =
-    useState<string[]>([]);
-
-  const [availability, setAvailability] =
-    useState<Availability>('offline');
-
-  const [maxDistance, setMaxDistance] =
-    useState(30);
-
-  const [setup, setSetup] =
-    useState<Setup | null>(null);
-
-  const [identity, setIdentity] =
-    useState<Identity>({});
-
-  const [reviews, setReviews] =
-    useState<Review[]>([]);
-
-  const [clientJobs, setClientJobs] =
-    useState<Job[]>([]);
-
-  const [matchingJobs, setMatchingJobs] =
-    useState<Job[]>([]);
-
-  const [acceptedJobs, setAcceptedJobs] =
-    useState<Job[]>([]);
-
-  const [clientFilter, setClientFilter] =
-    useState<ClientFilter>('tutti');
-
-  const [proFilter, setProFilter] =
-    useState<ProFilter>('tutti');
-
-  const [cat, setCat] = useState('');
-  const [urgency, setUrgency] = useState('SUBITO');
-  const [description, setDescription] = useState('');
-  const [address, setAddress] = useState('');
-
-  const [coords, setCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-
-  const [photoFile, setPhotoFile] =
-    useState<File | null>(null);
-
-  const [photoPreview, setPhotoPreview] =
+  const [role, setRole] =
     useState('');
 
-  const [jobPhotos, setJobPhotos] =
+  const [fullName, setFullName] =
+    useState('');
+
+  const [message, setMessage] =
+    useState('');
+
+  const [busy, setBusy] =
+    useState(false);
+
+  const [live, setLive] =
+    useState(false);
+
+  const [categories, setCategories] =
+    useState<any[]>([]);
+
+  const [
+    selectedProCats,
+    setSelectedProCats
+  ] =
+    useState<string[]>([]);
+
+  const [
+    availability,
+    setAvailability
+  ] =
+    useState('offline');
+
+  const [
+    maxDistance,
+    setMaxDistance
+  ] =
+    useState(30);
+
+  const [
+    identity,
+    setIdentity
+  ] =
+    useState<any>({});
+
+  const [setup, setSetup] =
+    useState<any>(null);
+
+  const [reviews, setReviews] =
+    useState<any[]>([]);
+
+  const [
+    clientJobs,
+    setClientJobs
+  ] =
+    useState<any[]>([]);
+
+  const [
+    matchingJobs,
+    setMatchingJobs
+  ] =
+    useState<any[]>([]);
+
+  const [
+    acceptedJobs,
+    setAcceptedJobs
+  ] =
+    useState<any[]>([]);
+
+  const [
+    clientFilter,
+    setClientFilter
+  ] =
+    useState('tutti');
+
+  const [
+    proFilter,
+    setProFilter
+  ] =
+    useState('tutti');
+
+  const [cat, setCat] =
+    useState('');
+
+  const [urgency, setUrgency] =
+    useState('SUBITO');
+
+  const [
+    description,
+    setDescription
+  ] =
+    useState('');
+
+  const [
+    address,
+    setAddress
+  ] =
+    useState('');
+
+  const [coords, setCoords] =
+    useState<{
+      latitude: number;
+      longitude: number;
+    } | null>(null);
+
+  const [
+    photoFile,
+    setPhotoFile
+  ] =
+    useState<File | null>(null);
+
+  const [
+    photoPreview,
+    setPhotoPreview
+  ] =
+    useState('');
+
+  const [
+    jobPhotos,
+    setJobPhotos
+  ] =
     useState<
       Record<
         string,
-        string | null | undefined
+        string | null
       >
     >({});
 
-  const [bestMatch, setBestMatch] =
-    useState<Match | null>(null);
+  const [
+    bestMatch,
+    setBestMatch
+  ] =
+    useState<any>(null);
 
-  const [authOpen, setAuthOpen] =
+  const [
+    authOpen,
+    setAuthOpen
+  ] =
     useState(false);
 
-  const [authMode, setAuthMode] =
-    useState<'login' | 'signup'>('login');
+  const [
+    authMode,
+    setAuthMode
+  ] =
+    useState('login');
 
-  const [signupRole, setSignupRole] =
-    useState<Role>('cliente');
+  const [
+    signupRole,
+    setSignupRole
+  ] =
+    useState('cliente');
 
-  const [authName, setAuthName] =
+  const [
+    authName,
+    setAuthName
+  ] =
     useState('');
 
   const [email, setEmail] =
     useState('');
 
-  const [password, setPassword] =
+  const [
+    password,
+    setPassword
+  ] =
     useState('');
 
-  const [chatJobId, setChatJobId] =
+  const [
+    chatJobId,
+    setChatJobId
+  ] =
     useState<string | null>(null);
 
-  const [chatTitle, setChatTitle] =
+  const [
+    chatTitle,
+    setChatTitle
+  ] =
     useState('');
 
-  const [messages, setMessages] =
-    useState<Message[]>([]);
+  const [
+    messages,
+    setMessages
+  ] =
+    useState<any[]>([]);
 
   const chatInputRef =
     useRef<HTMLInputElement | null>(null);
 
-  const [reviewJobId, setReviewJobId] =
+  const [
+    reviewJobId,
+    setReviewJobId
+  ] =
     useState<string | null>(null);
 
-  const [rating, setRating] =
+  const [
+    rating,
+    setRating
+  ] =
     useState(5);
 
-  const [reviewComment, setReviewComment] =
+  const [
+    reviewComment,
+    setReviewComment
+  ] =
     useState('');
 
   useEffect(() => {
     supabase.auth
       .getUser()
       .then(({ data }) => {
-        setUser(data.user);
+        setUser(
+          data.user
+        );
 
         if (data.user) {
-          void loadProfile(data.user.id);
+          void loadProfile(
+            data.user.id
+          );
         }
       });
 
     const { data } =
-      supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          const currentUser =
-            session?.user ?? null;
+      supabase.auth
+        .onAuthStateChange(
+          (
+            _event,
+            session
+          ) => {
+            const currentUser =
+              session?.user
+              ?? null;
 
-          setUser(currentUser);
-
-          if (currentUser) {
-            void loadProfile(
-              currentUser.id
+            setUser(
+              currentUser
             );
-          } else {
-            reset();
-          }
-        }
-      );
 
-    return () => {
-      data.subscription.unsubscribe();
-    };
+            if (
+              currentUser
+            ) {
+              void loadProfile(
+                currentUser.id
+              );
+            } else {
+              resetState();
+            }
+          }
+        );
+
+    return () =>
+      data.subscription
+        .unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!user || !role) {
+    if (
+      !user
+      ||
+      !role
+    ) {
       return;
     }
 
     const channel =
       supabase
         .channel(
-          `lavorosubito-mvp-${user.id}`
+          `lavorosubito-${user.id}`
         )
         .on(
           'postgres_changes',
@@ -324,7 +344,9 @@ export default function Home() {
             table: 'jobs'
           },
           async () => {
-            if (role === 'cliente') {
+            if (
+              role === 'cliente'
+            ) {
               await loadClientJobs();
             } else {
               await loadMatchingJobs();
@@ -340,30 +362,36 @@ export default function Home() {
             table: 'messages'
           },
           async payload => {
-            const row =
-              payload.new as {
-                job_id?: string;
-              };
+            const row: any =
+              payload.new;
 
             if (
-              chatJobId &&
-              row.job_id === chatJobId
+              chatJobId
+              &&
+              row?.job_id ===
+                chatJobId
             ) {
-              await loadChat(chatJobId);
+              await loadChat(
+                chatJobId
+              );
             }
           }
         )
-        .subscribe(status => {
-          setLive(
-            status === 'SUBSCRIBED'
-          );
-        });
+        .subscribe(
+          status =>
+            setLive(
+              status ===
+                'SUBSCRIBED'
+            )
+        );
 
     return () => {
       setLive(false);
 
       void supabase
-        .removeChannel(channel);
+        .removeChannel(
+          channel
+        );
     };
   }, [
     user?.id,
@@ -371,8 +399,8 @@ export default function Home() {
     chatJobId
   ]);
 
-  function reset() {
-    setRole(null);
+  function resetState() {
+    setRole('');
     setFullName('');
     setMessage('');
     setClientJobs([]);
@@ -380,52 +408,61 @@ export default function Home() {
     setAcceptedJobs([]);
     setSelectedProCats([]);
     setAvailability('offline');
-    setSetup(null);
     setIdentity({});
+    setSetup(null);
     setReviews([]);
     setBestMatch(null);
     setChatJobId(null);
     setMessages([]);
-    clearPhoto();
-    setJobPhotos({});
   }
 
   async function loadProfile(
     id: string
   ) {
-    const { data } =
+    const profile =
       await supabase
         .from('profiles')
         .select(
           'role,full_name'
         )
-        .eq('id', id)
+        .eq(
+          'id',
+          id
+        )
         .maybeSingle();
 
-    const detected: Role =
-      data?.role ===
+    const detected =
+      profile.data?.role ===
         'professionista'
         ? 'professionista'
         : 'cliente';
 
-    setRole(detected);
-    setFullName(
-      data?.full_name ?? ''
+    setRole(
+      detected
     );
 
-    const {
-      data: categoryRows
-    } =
+    setFullName(
+      profile.data
+        ?.full_name
+      ?? ''
+    );
+
+    const catResponse =
       await supabase
         .from('categories')
         .select(
           'id,name,slug'
         )
-        .order('name');
+        .order(
+          'name'
+        );
 
     setCategories(
-      (categoryRows ?? [])
-      as Category[]
+      Array.isArray(
+        catResponse.data
+      )
+        ? catResponse.data
+        : []
     );
 
     if (
@@ -445,10 +482,10 @@ export default function Home() {
 
   async function loadProfessional() {
     const [
-      identityResponse,
-      categoryResponse,
-      setupResponse,
-      availabilityResponse
+      idRes,
+      catRes,
+      setupRes,
+      availRes
     ] =
       await Promise.all([
         supabase.rpc(
@@ -469,55 +506,61 @@ export default function Home() {
       ]);
 
     if (
-      identityResponse
-        .data?.[0]
+      Array.isArray(
+        idRes.data
+      )
+      &&
+      idRes.data[0]
     ) {
       setIdentity(
-        identityResponse.data[0] as Identity
+        idRes.data[0]
       );
     }
 
-    setSelectedProCats(
-      (
-        categoryResponse.data
-        ?? []
-      ).map(
-        (row: any) =>
-          row.category_id
+    if (
+      Array.isArray(
+        catRes.data
       )
-    );
+    ) {
+      setSelectedProCats(
+        catRes.data.map(
+          (row: any) =>
+            row.category_id
+        )
+      );
+    }
 
     if (
-      setupResponse
-        .data?.[0]
+      Array.isArray(
+        setupRes.data
+      )
+      &&
+      setupRes.data[0]
     ) {
       setSetup(
-        setupResponse.data[0] as Setup
+        setupRes.data[0]
       );
     }
 
     if (
-      availabilityResponse.data
+      typeof availRes.data ===
+      'string'
     ) {
       setAvailability(
-        availabilityResponse.data as Availability
+        availRes.data
       );
     }
 
     const {
-      data: {
-        user: currentUser
-      }
+      data: authData
     } =
       await supabase.auth
         .getUser();
 
     if (
-      currentUser
+      authData.user
     ) {
-      const {
-        data: professionalRow
-      } =
+      const pro =
         await supabase
           .from(
             'professionals'
@@ -527,18 +570,20 @@ export default function Home() {
           )
           .eq(
             'id',
-            currentUser.id
+            authData.user.id
           )
           .maybeSingle();
 
       if (
-        professionalRow
+        pro.data
           ?.max_distance_km
         != null
       ) {
         setMaxDistance(
-          professionalRow
-            .max_distance_km
+          Number(
+            pro.data
+              .max_distance_km
+          )
         );
       }
     }
@@ -553,7 +598,9 @@ export default function Home() {
         'my_client_jobs'
       );
 
-    if (error) {
+    if (
+      error
+    ) {
       setMessage(
         `Errore richieste: ${error.message}`
       );
@@ -562,13 +609,18 @@ export default function Home() {
     }
 
     const rows =
-      (data ?? []) as Job[];
+      Array.isArray(data)
+        ? data
+        : [];
 
-    setClientJobs(rows);
+    setClientJobs(
+      rows
+    );
 
     void loadPhotos(
       rows.map(
-        row => row.id
+        (row: any) =>
+          row.id
       )
     );
   }
@@ -582,19 +634,26 @@ export default function Home() {
         'my_matching_jobs'
       );
 
-    if (error) {
+    if (
+      error
+    ) {
       setMatchingJobs([]);
       return;
     }
 
     const rows =
-      (data ?? []) as Job[];
+      Array.isArray(data)
+        ? data
+        : [];
 
-    setMatchingJobs(rows);
+    setMatchingJobs(
+      rows
+    );
 
     void loadPhotos(
       rows.map(
-        row => row.id
+        (row: any) =>
+          row.id
       )
     );
   }
@@ -608,13 +667,18 @@ export default function Home() {
       );
 
     const rows =
-      (data ?? []) as Job[];
+      Array.isArray(data)
+        ? data
+        : [];
 
-    setAcceptedJobs(rows);
+    setAcceptedJobs(
+      rows
+    );
 
     void loadPhotos(
       rows.map(
-        row => row.id
+        (row: any) =>
+          row.id
       )
     );
   }
@@ -628,51 +692,52 @@ export default function Home() {
       );
 
     setReviews(
-      (data ?? [])
-      as Review[]
+      Array.isArray(data)
+        ? data
+        : []
     );
   }
 
   async function getPosition() {
-    return new Promise<
-      {
-        latitude: number;
-        longitude: number;
-      } | null
-    >(resolve => {
-      if (
-        !navigator.geolocation
-      ) {
-        resolve(null);
-        return;
+    return new Promise<{
+      latitude: number;
+      longitude: number;
+    } | null>(
+      resolve => {
+        if (
+          !navigator
+            .geolocation
+        ) {
+          resolve(null);
+          return;
+        }
+
+        navigator
+          .geolocation
+          .getCurrentPosition(
+            p =>
+              resolve({
+                latitude:
+                  p.coords.latitude,
+
+                longitude:
+                  p.coords.longitude
+              }),
+            () =>
+              resolve(null),
+            {
+              enableHighAccuracy:
+                true,
+
+              timeout:
+                12000,
+
+              maximumAge:
+                60000
+            }
+          );
       }
-
-      navigator.geolocation
-        .getCurrentPosition(
-          position => {
-            resolve({
-              latitude:
-                position.coords.latitude,
-
-              longitude:
-                position.coords.longitude
-            });
-          },
-          () => {
-            resolve(null);
-          },
-          {
-            enableHighAccuracy:
-              true,
-
-            timeout:
-              12000,
-
-            maximumAge:
-              60000
-          }
-        );
-    });
+    );
   }
 
   function choosePhoto(
@@ -680,9 +745,12 @@ export default function Home() {
       ChangeEvent<HTMLInputElement>
   ) {
     const file =
-      event.target.files?.[0];
+      event.target
+        .files?.[0];
 
-    if (!file) {
+    if (
+      !file
+    ) {
       return;
     }
 
@@ -701,7 +769,9 @@ export default function Home() {
 
     if (
       file.size >
-      10 * 1024 * 1024
+      10
+      * 1024
+      * 1024
     ) {
       setMessage(
         'La foto supera 10 MB.'
@@ -713,17 +783,21 @@ export default function Home() {
     if (
       photoPreview
     ) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
     }
 
-    setPhotoFile(file);
+    setPhotoFile(
+      file
+    );
 
     setPhotoPreview(
-      URL.createObjectURL(
-        file
-      )
+      URL
+        .createObjectURL(
+          file
+        )
     );
   }
 
@@ -731,31 +805,39 @@ export default function Home() {
     if (
       photoPreview
     ) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
     }
 
-    setPhotoFile(null);
-    setPhotoPreview('');
+    setPhotoFile(
+      null
+    );
+
+    setPhotoPreview(
+      ''
+    );
   }
 
   async function uploadPhoto(
     jobId: string
   ) {
     if (
-      !photoFile ||
+      !photoFile
+      ||
       !user
     ) {
-      return true;
+      return;
     }
 
-    const extension =
+    const ext =
       (
         photoFile.name
           .split('.')
           .pop()
-        ?? 'jpg'
+        ||
+        'jpg'
       )
         .replace(
           /[^a-zA-Z0-9]/g,
@@ -764,10 +846,11 @@ export default function Home() {
         .toLowerCase();
 
     const path =
-      `${user.id}/${jobId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+      `${user.id}/${jobId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
     const upload =
-      await supabase.storage
+      await supabase
+        .storage
         .from(
           'job-photos'
         )
@@ -790,7 +873,7 @@ export default function Home() {
         `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
 
-      return false;
+      return;
     }
 
     const save =
@@ -806,10 +889,12 @@ export default function Home() {
       );
 
     if (
-      save.error ||
+      save.error
+      ||
       save.data === false
     ) {
-      await supabase.storage
+      await supabase
+        .storage
         .from(
           'job-photos'
         )
@@ -820,20 +905,19 @@ export default function Home() {
       setMessage(
         `Richiesta creata, foto non collegata: ${save.error?.message ?? 'errore'}`
       );
-
-      return false;
     }
-
-    return true;
   }
 
   async function loadPhoto(
     jobId: string
   ) {
     if (
-      jobPhotos[
-        jobId
-      ] !== undefined
+      Object.prototype
+        .hasOwnProperty
+        .call(
+          jobPhotos,
+          jobId
+        )
     ) {
       return;
     }
@@ -849,7 +933,9 @@ export default function Home() {
         }
       );
 
-    if (!data) {
+    if (
+      !data
+    ) {
       setJobPhotos(
         current => ({
           ...current,
@@ -863,7 +949,8 @@ export default function Home() {
     }
 
     const download =
-      await supabase.storage
+      await supabase
+        .storage
         .from(
           'job-photos'
         )
@@ -872,7 +959,8 @@ export default function Home() {
         );
 
     if (
-      download.error ||
+      download.error
+      ||
       !download.data
     ) {
       setJobPhotos(
@@ -892,9 +980,10 @@ export default function Home() {
         ...current,
 
         [jobId]:
-          URL.createObjectURL(
-            download.data
-          )
+          URL
+            .createObjectURL(
+              download.data
+            )
       })
     );
   }
@@ -903,7 +992,8 @@ export default function Home() {
     ids: string[]
   ) {
     for (
-      const id of ids
+      const id
+      of ids
     ) {
       await loadPhoto(
         id
@@ -913,8 +1003,10 @@ export default function Home() {
 
   async function submitJob() {
     if (
-      !cat ||
-      !description.trim() ||
+      !cat
+      ||
+      !description.trim()
+      ||
       !address.trim()
     ) {
       setMessage(
@@ -924,7 +1016,9 @@ export default function Home() {
       return;
     }
 
-    if (!user) {
+    if (
+      !user
+    ) {
       setSignupRole(
         'cliente'
       );
@@ -962,9 +1056,7 @@ export default function Home() {
       }
     }
 
-    const {
-      data: category
-    } =
+    const category =
       await supabase
         .from(
           'categories'
@@ -979,7 +1071,7 @@ export default function Home() {
         .maybeSingle();
 
     if (
-      !category
+      !category.data
     ) {
       setBusy(false);
 
@@ -1000,7 +1092,7 @@ export default function Home() {
             user.id,
 
           category_id:
-            category.id,
+            category.data.id,
 
           urgency:
             urgency
@@ -1030,7 +1122,8 @@ export default function Home() {
         .single();
 
     if (
-      insert.error ||
+      insert.error
+      ||
       !insert.data
     ) {
       setBusy(false);
@@ -1043,8 +1136,9 @@ export default function Home() {
     }
 
     const jobId =
-      insert.data.id
-      as string;
+      String(
+        insert.data.id
+      );
 
     await uploadPhoto(
       jobId
@@ -1067,23 +1161,28 @@ export default function Home() {
       );
 
     const first =
-      (matching.data?.[0] ?? undefined) as Match | undefined;
+      Array.isArray(
+        matching.data
+      )
+      &&
+      matching.data.length
+        ? matching.data[0]
+        : null;
 
     setBestMatch(
-      first ?? null
+      first
     );
 
     try {
       const {
-        data: {
-          session
-        }
+        data: sessionData
       } =
         await supabase.auth
           .getSession();
 
       if (
-        session
+        sessionData
+          .session
           ?.access_token
       ) {
         await fetch(
@@ -1097,7 +1196,7 @@ export default function Home() {
                 'application/json',
 
               Authorization:
-                `Bearer ${session.access_token}`
+                `Bearer ${sessionData.session.access_token}`
             },
 
             body:
@@ -1244,10 +1343,9 @@ export default function Home() {
     );
 
     setTimeout(
-      () => {
+      () =>
         chatInputRef.current
-          ?.focus();
-      },
+          ?.focus(),
       100
     );
   }
@@ -1282,8 +1380,9 @@ export default function Home() {
       );
     } else {
       setMessages(
-        (data ?? [])
-        as Message[]
+        Array.isArray(data)
+          ? data
+          : []
       );
     }
   }
@@ -1295,14 +1394,16 @@ export default function Home() {
     event.preventDefault();
 
     if (
-      !user ||
+      !user
+      ||
       !chatJobId
     ) {
       return;
     }
 
     const text =
-      chatInputRef.current
+      chatInputRef
+        .current
         ?.value
         .trim()
       ?? '';
@@ -1344,7 +1445,9 @@ export default function Home() {
     if (
       chatInputRef.current
     ) {
-      chatInputRef.current.value =
+      chatInputRef
+        .current
+        .value =
         '';
     }
 
@@ -1353,10 +1456,9 @@ export default function Home() {
     );
 
     setTimeout(
-      () => {
+      () =>
         chatInputRef.current
-          ?.focus();
-      },
+          ?.focus(),
       50
     );
   }
@@ -1387,8 +1489,7 @@ export default function Home() {
             rating,
 
           p_comment:
-            reviewComment
-              .trim()
+            reviewComment.trim()
             || null
         }
       );
@@ -1496,7 +1597,7 @@ export default function Home() {
     await supabase.auth
       .signOut();
 
-    reset();
+    resetState();
   }
 
   async function saveIdentity() {
@@ -1508,26 +1609,22 @@ export default function Home() {
         'update_my_professional_identity',
         {
           p_business_name:
-            identity
-              .business_name
+            identity.business_name
               ?.trim()
             || '',
 
           p_phone:
-            identity
-              .phone
+            identity.phone
               ?.trim()
             || '',
 
           p_vat_number:
-            identity
-              .vat_number
+            identity.vat_number
               ?.trim()
             || '',
 
           p_tax_code:
-            identity
-              .tax_code
+            identity.tax_code
               ?.trim()
             || ''
         }
@@ -1546,8 +1643,7 @@ export default function Home() {
 
   async function saveCategories() {
     if (
-      !selectedProCats
-        .length
+      !selectedProCats.length
     ) {
       setMessage(
         'Seleziona almeno una categoria.'
@@ -1578,11 +1674,11 @@ export default function Home() {
   }
 
   async function setProLocation() {
-    const position =
+    const p =
       await getPosition();
 
     if (
-      !position
+      !p
     ) {
       setMessage(
         'Posizione non disponibile.'
@@ -1598,10 +1694,10 @@ export default function Home() {
         'update_my_professional_location',
         {
           p_latitude:
-            position.latitude,
+            p.latitude,
 
           p_longitude:
-            position.longitude
+            p.longitude
         }
       );
 
@@ -1651,8 +1747,7 @@ export default function Home() {
   }
 
   async function setAvail(
-    value:
-      Availability
+    value: string
   ) {
     const {
       error
@@ -1696,11 +1791,12 @@ export default function Home() {
           return clientJobs;
         }
 
-        return clientJobs.filter(
-          job =>
-            job.status ===
-            clientFilter
-        );
+        return clientJobs
+          .filter(
+            job =>
+              job.status ===
+              clientFilter
+          );
       },
       [
         clientJobs,
@@ -1708,26 +1804,29 @@ export default function Home() {
       ]
     );
 
-  const openProfessionalJobs =
-    (
-      proFilter === 'tutti'
-      ||
-      proFilter === 'aperta'
-    )
+  const visibleMatching =
+    proFilter ===
+      'tutti'
+    ||
+    proFilter ===
+      'aperta'
       ? matchingJobs
       : [];
 
-  const filteredAcceptedJobs =
-    proFilter === 'tutti'
+  const visibleAccepted =
+    proFilter ===
+      'tutti'
       ? acceptedJobs
-      : acceptedJobs.filter(
-          job =>
-            job.status ===
-            proFilter
-        );
+      : acceptedJobs
+          .filter(
+            job =>
+              job.status ===
+              proFilter
+          );
 
   const verified =
-    identity.verified === true
+    identity.verified ===
+      true
     &&
     identity.verification_status ===
       'verificato';
@@ -1749,13 +1848,13 @@ export default function Home() {
     reviews.length
       ? reviews.reduce(
           (
-            total,
-            review
+            sum,
+            r
           ) =>
-            total
+            sum
             +
             Number(
-              review.rating
+              r.rating || 0
             ),
           0
         )
@@ -1773,28 +1872,30 @@ export default function Home() {
     const src =
       jobPhotos[id];
 
+    return src
+      ? (
+        <img
+          className="photo"
+          src={src}
+          alt="Foto del problema"
+        />
+      )
+      : null;
+  }
+
+  function ChatModal() {
     if (
-      !src
+      !chatJobId
     ) {
       return null;
     }
 
     return (
-      <img
-        className="photo"
-        src={src}
-        alt="Foto del problema"
-      />
-    );
-  }
-
-  function renderChatModal() {
-    return (
       <div className="modal">
         <div className="modalBox">
           <button
-            className="x"
             type="button"
+            className="x"
             onClick={() =>
               setChatJobId(
                 null
@@ -1950,9 +2051,7 @@ export default function Home() {
                 </span>
 
                 <strong>
-                  {
-                    setupPercentage
-                  }%
+                  {setupPercentage}%
                 </strong>
               </div>
 
@@ -1990,7 +2089,8 @@ export default function Home() {
                 <strong>
                   {
                     reviews.length
-                      ? averageRating.toFixed(1)
+                      ? averageRating
+                          .toFixed(1)
                       : '—'
                   }
                 </strong>
@@ -2029,13 +2129,13 @@ export default function Home() {
                   ?? ''
                 }
                 onChange={
-                  event =>
+                  e =>
                     setIdentity(
-                      current => ({
-                        ...current,
+                      (x: any) => ({
+                        ...x,
 
                         business_name:
-                          event.target.value
+                          e.target.value
                       })
                     )
                 }
@@ -2051,13 +2151,13 @@ export default function Home() {
                   ?? ''
                 }
                 onChange={
-                  event =>
+                  e =>
                     setIdentity(
-                      current => ({
-                        ...current,
+                      (x: any) => ({
+                        ...x,
 
                         phone:
-                          event.target.value
+                          e.target.value
                       })
                     )
                 }
@@ -2073,13 +2173,13 @@ export default function Home() {
                   ?? ''
                 }
                 onChange={
-                  event =>
+                  e =>
                     setIdentity(
-                      current => ({
-                        ...current,
+                      (x: any) => ({
+                        ...x,
 
                         vat_number:
-                          event.target.value
+                          e.target.value
                       })
                     )
                 }
@@ -2095,13 +2195,13 @@ export default function Home() {
                   ?? ''
                 }
                 onChange={
-                  event =>
+                  e =>
                     setIdentity(
-                      current => ({
-                        ...current,
+                      (x: any) => ({
+                        ...x,
 
                         tax_code:
-                          event.target.value
+                          e.target.value
                       })
                     )
                 }
@@ -2140,15 +2240,12 @@ export default function Home() {
 
               <div className="actions">
                 {
-                  (
-                    [
-                      'ora',
-                      '1-2h',
-                      'oggi',
-                      'offline'
-                    ]
-                    as Availability[]
-                  ).map(
+                  [
+                    'ora',
+                    '1-2h',
+                    'oggi',
+                    'offline'
+                  ].map(
                     value => (
                       <button
                         key={
@@ -2274,9 +2371,7 @@ export default function Home() {
 
               <h3>
                 Raggio massimo:{' '}
-                {
-                  maxDistance
-                } km
+                {maxDistance} km
               </h3>
 
               <div className="actions">
@@ -2290,7 +2385,7 @@ export default function Home() {
                 </button>
 
                 {
-                  distances.map(
+                  DISTANCES.map(
                     value => (
                       <button
                         key={
@@ -2345,15 +2440,12 @@ export default function Home() {
 
               <div className="filter">
                 {
-                  (
-                    [
-                      'tutti',
-                      'aperta',
-                      'accettata',
-                      'completata'
-                    ]
-                    as ProFilter[]
-                  ).map(
+                  [
+                    'tutti',
+                    'aperta',
+                    'accettata',
+                    'completata'
+                  ].map(
                     filter => (
                       <button
                         key={
@@ -2393,12 +2485,12 @@ export default function Home() {
               {
                 verified
                 &&
-                openProfessionalJobs.map(
+                visibleMatching.map(
                   job => (
                     <article
                       className="card job"
                       key={
-                        `matching-${job.id}`
+                        `m-${job.id}`
                       }
                     >
                       <div className="job-top">
@@ -2494,12 +2586,12 @@ export default function Home() {
               {
                 verified
                 &&
-                filteredAcceptedJobs.map(
+                visibleAccepted.map(
                   job => (
                     <article
                       className="card job"
                       key={
-                        `accepted-${job.id}`
+                        `a-${job.id}`
                       }
                     >
                       <span className="status">
@@ -2616,6 +2708,7 @@ export default function Home() {
                           '⭐'.repeat(
                             Number(
                               review.rating
+                              || 0
                             )
                           )
                         }
@@ -2648,11 +2741,7 @@ export default function Home() {
           © 2026 LavoroSubito · MVP 1.0
         </footer>
 
-        {
-          chatJobId
-          &&
-          renderChatModal()
-        }
+        <ChatModal />
       </main>
     );
   }
@@ -2732,7 +2821,7 @@ export default function Home() {
 
             <div className="grid">
               {
-                cats.map(
+                CATEGORIES.map(
                   (
                     [
                       name,
@@ -2815,9 +2904,9 @@ export default function Home() {
                 description
               }
               onChange={
-                event =>
+                e =>
                   setDescription(
-                    event.target.value
+                    e.target.value
                   )
               }
               placeholder="Es. Perdita d’acqua sotto il lavandino..."
@@ -2873,9 +2962,9 @@ export default function Home() {
                 address
               }
               onChange={
-                event =>
+                e =>
                   setAddress(
-                    event.target.value
+                    e.target.value
                   )
               }
               placeholder="Es. Via Roma 15, Urbino"
@@ -2886,15 +2975,15 @@ export default function Home() {
                 className="outline"
                 onClick={
                   async () => {
-                    const position =
+                    const p =
                       await getPosition();
 
                     setCoords(
-                      position
+                      p
                     );
 
                     setMessage(
-                      position
+                      p
                         ? '📍 Posizione GPS rilevata.'
                         : 'Posizione non disponibile.'
                     );
@@ -2971,12 +3060,14 @@ export default function Home() {
                     {
                       Number(
                         bestMatch.average_rating
+                        || 0
                       )
                         .toFixed(1)
                     }
                     {' · '}
                     {
                       bestMatch.review_count
+                      || 0
                     } recensioni
                   </p>
 
@@ -2990,8 +3081,12 @@ export default function Home() {
                     📍{' '}
                     {
                       bestMatch.distance_km
-                        ?.toFixed?.(1)
-                      ?? '—'
+                      != null
+                        ? Number(
+                            bestMatch.distance_km
+                          )
+                            .toFixed(1)
+                        : '—'
                     } km
                   </p>
                 </div>
@@ -3032,16 +3127,13 @@ export default function Home() {
 
               <div className="filter">
                 {
-                  (
-                    [
-                      'tutti',
-                      'aperta',
-                      'accettata',
-                      'completata',
-                      'annullata'
-                    ]
-                    as ClientFilter[]
-                  ).map(
+                  [
+                    'tutti',
+                    'aperta',
+                    'accettata',
+                    'completata',
+                    'annullata'
+                  ].map(
                     filter => (
                       <button
                         key={
@@ -3341,9 +3433,9 @@ export default function Home() {
                         authName
                       }
                       onChange={
-                        event =>
+                        e =>
                           setAuthName(
-                            event.target.value
+                            e.target.value
                           )
                       }
                     />
@@ -3357,10 +3449,9 @@ export default function Home() {
                         signupRole
                       }
                       onChange={
-                        event =>
+                        e =>
                           setSignupRole(
-                            event.target.value
-                            as Role
+                            e.target.value
                           )
                       }
                     >
@@ -3387,9 +3478,9 @@ export default function Home() {
                   email
                 }
                 onChange={
-                  event =>
+                  e =>
                     setEmail(
-                      event.target.value
+                      e.target.value
                     )
                 }
               />
@@ -3408,9 +3499,9 @@ export default function Home() {
                   password
                 }
                 onChange={
-                  event =>
+                  e =>
                     setPassword(
-                      event.target.value
+                      e.target.value
                     )
                 }
               />
@@ -3439,11 +3530,7 @@ export default function Home() {
         )
       }
 
-      {
-        chatJobId
-        &&
-        renderChatModal()
-      }
+      <ChatModal />
 
       {
         reviewJobId
@@ -3524,9 +3611,9 @@ export default function Home() {
                   reviewComment
                 }
                 onChange={
-                  event =>
+                  e =>
                     setReviewComment(
-                      event.target.value
+                      e.target.value
                     )
                 }
               />
