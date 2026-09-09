@@ -316,6 +316,12 @@ export default function Home() {
     useState('');
 
   const [
+    acceptedLegal,
+    setAcceptedLegal
+  ] =
+    useState(false);
+
+  const [
     chatJobId,
     setChatJobId
   ] =
@@ -473,18 +479,31 @@ export default function Home() {
     setRole('');
     setFullName('');
     setMessage('');
+
     setClientJobs([]);
     setMatchingJobs([]);
     setAcceptedJobs([]);
+
     setSelectedProCats([]);
-    setAvailability('offline');
+
+    setAvailability(
+      'offline'
+    );
+
     setIdentity({});
     setSetup(null);
+
     setProCity('');
     setProPostalCode('');
+
     setLocationBusy(false);
+
     setReviews([]);
+
     setBestMatch(null);
+
+    setAcceptedLegal(false);
+
     setChatJobId(null);
     setMessages([]);
   }
@@ -562,12 +581,15 @@ export default function Home() {
         supabase.rpc(
           'my_professional_identity'
         ),
+
         supabase.rpc(
           'my_professional_categories'
         ),
+
         supabase.rpc(
           'my_professional_setup_status'
         ),
+
         supabase.rpc(
           'my_professional_availability'
         )
@@ -617,7 +639,9 @@ export default function Home() {
       await supabase.auth
         .getUser();
 
-    if (authData.user) {
+    if (
+      authData.user
+    ) {
       const pro =
         await supabase
           .from(
@@ -634,7 +658,8 @@ export default function Home() {
 
       if (
         pro.data
-          ?.max_distance_km != null
+          ?.max_distance_km
+        != null
       ) {
         setMaxDistance(
           Number(
@@ -775,8 +800,10 @@ export default function Home() {
             {
               enableHighAccuracy:
                 true,
+
               timeout:
                 12000,
+
               maximumAge:
                 60000
             }
@@ -823,7 +850,9 @@ export default function Home() {
       return;
     }
 
-    if (photoPreview) {
+    if (
+      photoPreview
+    ) {
       URL
         .revokeObjectURL(
           photoPreview
@@ -833,17 +862,21 @@ export default function Home() {
     setPhotoFile(file);
 
     setPhotoPreview(
-      URL.createObjectURL(
-        file
-      )
+      URL
+        .createObjectURL(
+          file
+        )
     );
   }
 
   function clearPhoto() {
-    if (photoPreview) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
+    if (
+      photoPreview
+    ) {
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
     }
 
     setPhotoFile(null);
@@ -865,7 +898,8 @@ export default function Home() {
         photoFile.name
           .split('.')
           .pop()
-        || 'jpg'
+        ||
+        'jpg'
       )
         .replace(
           /[^a-zA-Z0-9]/g,
@@ -888,11 +922,15 @@ export default function Home() {
           {
             contentType:
               photoFile.type,
-            upsert: false
+
+            upsert:
+              false
           }
         );
 
-    if (upload.error) {
+    if (
+      upload.error
+    ) {
       setMessage(
         `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
@@ -906,6 +944,7 @@ export default function Home() {
         {
           p_job_id:
             jobId,
+
           p_photo_url:
             path
         }
@@ -955,10 +994,13 @@ export default function Home() {
         }
       );
 
-    if (!data) {
+    if (
+      !data
+    ) {
       setJobPhotos(
         current => ({
           ...current,
+
           [jobId]:
             null
         })
@@ -984,6 +1026,7 @@ export default function Home() {
       setJobPhotos(
         current => ({
           ...current,
+
           [jobId]:
             null
         })
@@ -995,10 +1038,12 @@ export default function Home() {
     setJobPhotos(
       current => ({
         ...current,
+
         [jobId]:
-          URL.createObjectURL(
-            download.data
-          )
+          URL
+            .createObjectURL(
+              download.data
+            )
       })
     );
   }
@@ -1010,7 +1055,9 @@ export default function Home() {
       const id
       of ids
     ) {
-      await loadPhoto(id);
+      await loadPhoto(
+        id
+      );
     }
   }
 
@@ -1027,7 +1074,9 @@ export default function Home() {
       return;
     }
 
-    if (!user) {
+    if (
+      !user
+    ) {
       setSignupRole(
         'cliente'
       );
@@ -1036,7 +1085,13 @@ export default function Home() {
         'signup'
       );
 
-      setAuthOpen(true);
+      setAcceptedLegal(
+        false
+      );
+
+      setAuthOpen(
+        true
+      );
 
       return;
     }
@@ -1048,11 +1103,15 @@ export default function Home() {
     let position =
       coords;
 
-    if (!position) {
+    if (
+      !position
+    ) {
       position =
         await getPosition();
 
-      if (position) {
+      if (
+        position
+      ) {
         setCoords(
           position
         );
@@ -1098,13 +1157,16 @@ export default function Home() {
             category.data.id,
 
           urgency:
-            urgency.toLowerCase(),
+            urgency
+              .toLowerCase(),
 
           description:
-            description.trim(),
+            description
+              .trim(),
 
           address:
-            address.trim(),
+            address
+              .trim(),
 
           latitude:
             position
@@ -1116,7 +1178,9 @@ export default function Home() {
               ?.longitude
             ?? null
         })
-        .select('id')
+        .select(
+          'id'
+        )
         .single();
 
     if (
@@ -1311,7 +1375,8 @@ export default function Home() {
     );
 
     if (
-      role === 'cliente'
+      role ===
+      'cliente'
     ) {
       await loadClientJobs();
     } else {
@@ -1323,10 +1388,17 @@ export default function Home() {
     id: string,
     title: string
   ) {
-    setChatJobId(id);
-    setChatTitle(title);
+    setChatJobId(
+      id
+    );
 
-    await loadChat(id);
+    setChatTitle(
+      title
+    );
+
+    await loadChat(
+      id
+    );
 
     setTimeout(
       () =>
@@ -1344,7 +1416,9 @@ export default function Home() {
       error
     } =
       await supabase
-        .from('messages')
+        .from(
+          'messages'
+        )
         .select(
           'id,job_id,sender_id,message,created_at'
         )
@@ -1356,7 +1430,9 @@ export default function Home() {
           'created_at'
         );
 
-    if (error) {
+    if (
+      error
+    ) {
       setMessage(
         error.message
       );
@@ -1389,7 +1465,9 @@ export default function Home() {
         .trim()
       ?? '';
 
-    if (!text) {
+    if (
+      !text
+    ) {
       return;
     }
 
@@ -1397,7 +1475,9 @@ export default function Home() {
       error
     } =
       await supabase
-        .from('messages')
+        .from(
+          'messages'
+        )
         .insert({
           job_id:
             chatJobId,
@@ -1409,7 +1489,9 @@ export default function Home() {
             text
         });
 
-    if (error) {
+    if (
+      error
+    ) {
       setMessage(
         error.message
       );
@@ -1444,7 +1526,9 @@ export default function Home() {
   ) {
     event.preventDefault();
 
-    if (!reviewJobId) {
+    if (
+      !reviewJobId
+    ) {
       return;
     }
 
@@ -1476,9 +1560,13 @@ export default function Home() {
           : 'Recensione non inviata.'
     );
 
-    setReviewJobId(null);
+    setReviewJobId(
+      null
+    );
 
-    setReviewComment('');
+    setReviewComment(
+      ''
+    );
 
     await loadClientJobs();
   }
@@ -1488,6 +1576,18 @@ export default function Home() {
       FormEvent
   ) {
     event.preventDefault();
+
+    if (
+      authMode ===
+        'signup' &&
+      !acceptedLegal
+    ) {
+      setMessage(
+        'Per registrarti devi accettare la Privacy Policy e i Termini e condizioni.'
+      );
+
+      return;
+    }
 
     setBusy(true);
     setMessage('');
@@ -1521,7 +1621,13 @@ export default function Home() {
           : '✅ Registrazione completata. Controlla la tua email.'
       );
 
-      if (!error) {
+      if (
+        !error
+      ) {
+        setAcceptedLegal(
+          false
+        );
+
         setAuthMode(
           'login'
         );
@@ -1537,14 +1643,20 @@ export default function Home() {
             password
           });
 
-      if (error) {
+      if (
+        error
+      ) {
         setMessage(
           error.message
         );
       } else {
-        setAuthOpen(false);
+        setAuthOpen(
+          false
+        );
 
-        if (data.user) {
+        if (
+          data.user
+        ) {
           await loadProfile(
             data.user.id
           );
@@ -1655,7 +1767,9 @@ export default function Home() {
         }
       );
 
-    if (error) {
+    if (
+      error
+    ) {
       setMessage(
         error.message
       );
@@ -1675,14 +1789,18 @@ export default function Home() {
   }
 
   async function setProLocation() {
-    setLocationBusy(true);
+    setLocationBusy(
+      true
+    );
 
     setMessage('');
 
     const p =
       await getPosition();
 
-    if (!p) {
+    if (
+      !p
+    ) {
       setMessage(
         'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
       );
@@ -1700,7 +1818,9 @@ export default function Home() {
       '✅ Posizione GPS aggiornata.'
     );
 
-    setLocationBusy(false);
+    setLocationBusy(
+      false
+    );
   }
 
   async function setProLocationManual() {
@@ -1721,21 +1841,28 @@ export default function Home() {
       return;
     }
 
-    setLocationBusy(true);
+    setLocationBusy(
+      true
+    );
+
     setMessage('');
 
     try {
       const params =
         new URLSearchParams();
 
-      if (city) {
+      if (
+        city
+      ) {
         params.set(
           'city',
           city
         );
       }
 
-      if (postalCode) {
+      if (
+        postalCode
+      ) {
         params.set(
           'postalCode',
           postalCode
@@ -1750,13 +1877,17 @@ export default function Home() {
       const result =
         await response.json();
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         setMessage(
           result.error ||
           'Località non trovata.'
         );
 
-        setLocationBusy(false);
+        setLocationBusy(
+          false
+        );
 
         return;
       }
@@ -1783,7 +1914,9 @@ export default function Home() {
           'Coordinate della località non valide.'
         );
 
-        setLocationBusy(false);
+        setLocationBusy(
+          false
+        );
 
         return;
       }
@@ -1808,7 +1941,9 @@ export default function Home() {
       );
     }
 
-    setLocationBusy(false);
+    setLocationBusy(
+      false
+    );
   }
 
   async function setRadius(
@@ -1825,7 +1960,9 @@ export default function Home() {
         }
       );
 
-    if (error) {
+    if (
+      error
+    ) {
       setMessage(
         error.message
       );
@@ -1833,7 +1970,9 @@ export default function Home() {
       return;
     }
 
-    setMaxDistance(value);
+    setMaxDistance(
+      value
+    );
 
     setMessage(
       `✅ Raggio impostato a ${value} km.`
@@ -1856,7 +1995,9 @@ export default function Home() {
         }
       );
 
-    if (error) {
+    if (
+      error
+    ) {
       setMessage(
         error.message
       );
@@ -1864,7 +2005,9 @@ export default function Home() {
       return;
     }
 
-    setAvailability(value);
+    setAvailability(
+      value
+    );
 
     setMessage(
       `✅ ${availabilityLabel(value)}`
@@ -1974,7 +2117,9 @@ export default function Home() {
   }
 
   function ChatModal() {
-    if (!chatJobId) {
+    if (
+      !chatJobId
+    ) {
       return null;
     }
 
@@ -1985,7 +2130,9 @@ export default function Home() {
             type="button"
             className="x"
             onClick={() =>
-              setChatJobId(null)
+              setChatJobId(
+                null
+              )
             }
           >
             ×
@@ -2052,7 +2199,8 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop: 10
+                marginTop:
+                  10
               }}
             >
               Invia
@@ -2182,7 +2330,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2214,6 +2363,7 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
+
                         business_name:
                           e.target.value
                       })
@@ -2235,6 +2385,7 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
+
                         phone:
                           e.target.value
                       })
@@ -2256,6 +2407,7 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
+
                         vat_number:
                           e.target.value
                       })
@@ -2277,6 +2429,7 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
+
                         tax_code:
                           e.target.value
                       })
@@ -2299,7 +2452,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2355,7 +2509,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2365,7 +2520,8 @@ export default function Home() {
               <div
                 className="grid"
                 style={{
-                  marginTop: 12
+                  marginTop:
+                    12
                 }}
               >
                 {
@@ -2435,7 +2591,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2469,7 +2626,8 @@ export default function Home() {
 
               <div
                 style={{
-                  marginTop: 20
+                  marginTop:
+                    20
                 }}
               >
                 <label>
@@ -2513,8 +2671,10 @@ export default function Home() {
                     locationBusy
                   }
                   style={{
-                    marginTop: 12,
-                    width: '100%'
+                    marginTop:
+                      12,
+                    width:
+                      '100%'
                   }}
                   onClick={
                     setProLocationManual
@@ -2528,7 +2688,8 @@ export default function Home() {
                 style={{
                   margin:
                     '24px 0',
-                  border: 0,
+                  border:
+                    0,
                   borderTop:
                     '1px solid #e5e5e5'
                 }}
@@ -2572,7 +2733,8 @@ export default function Home() {
 
             <div
               style={{
-                marginTop: 30
+                marginTop:
+                  30
               }}
             >
               <span className="tag">
@@ -2694,7 +2856,8 @@ export default function Home() {
                             {
                               Number(
                                 job.distance_km
-                              ).toFixed(1)
+                              )
+                                .toFixed(1)
                             } km
                             {' · '}
                             ⏱{' '}
@@ -2756,7 +2919,8 @@ export default function Home() {
                                 'space-between',
                               alignItems:
                                 'flex-start',
-                              gap: 10
+                              gap:
+                                10
                             }}
                           >
                             <div>
@@ -2776,8 +2940,10 @@ export default function Home() {
                             <span
                               className="muted"
                               style={{
-                                fontSize: 12,
-                                fontWeight: 700
+                                fontSize:
+                                  12,
+                                fontWeight:
+                                  700
                               }}
                             >
                               {
@@ -2789,7 +2955,8 @@ export default function Home() {
 
                           <p
                             style={{
-                              marginBottom: 8
+                              marginBottom:
+                                8
                             }}
                           >
                             {
@@ -2802,8 +2969,10 @@ export default function Home() {
                               style={{
                                 cursor:
                                   'pointer',
-                                fontWeight: 800,
-                                fontSize: 13,
+                                fontWeight:
+                                  800,
+                                fontSize:
+                                  13,
                                 padding:
                                   '6px 0'
                               }}
@@ -2946,7 +3115,8 @@ export default function Home() {
 
             <div
               style={{
-                marginTop: 30
+                marginTop:
+                  30
               }}
             >
               <span className="tag">
@@ -2970,7 +3140,8 @@ export default function Home() {
                   <div
                     className="card"
                     style={{
-                      padding: 0,
+                      padding:
+                        0,
                       overflow:
                         'hidden'
                     }}
@@ -3000,16 +3171,21 @@ export default function Home() {
                               style={{
                                 display:
                                   'flex',
+
                                 justifyContent:
                                   'space-between',
+
                                 alignItems:
                                   'center',
-                                gap: 10
+
+                                gap:
+                                  10
                               }}
                             >
                               <b
                                 style={{
-                                  fontSize: 13
+                                  fontSize:
+                                    13
                                 }}
                               >
                                 {
@@ -3021,7 +3197,8 @@ export default function Home() {
 
                               <span
                                 style={{
-                                  fontSize: 13,
+                                  fontSize:
+                                    13,
                                   whiteSpace:
                                     'nowrap'
                                 }}
@@ -3042,8 +3219,12 @@ export default function Home() {
                               style={{
                                 margin:
                                   '5px 0 0',
-                                fontSize: 12,
-                                lineHeight: 1.35
+
+                                fontSize:
+                                  12,
+
+                                lineHeight:
+                                  1.35
                               }}
                             >
                               {
@@ -3100,6 +3281,10 @@ export default function Home() {
                   () => {
                     setAuthMode(
                       'login'
+                    );
+
+                    setAcceptedLegal(
+                      false
                     );
 
                     setAuthOpen(
@@ -3302,7 +3487,9 @@ export default function Home() {
                     const p =
                       await getPosition();
 
-                    setCoords(p);
+                    setCoords(
+                      p
+                    );
 
                     setMessage(
                       p
@@ -3353,7 +3540,9 @@ export default function Home() {
                 <div
                   className="card"
                   style={{
-                    marginTop: 16,
+                    marginTop:
+                      16,
+
                     borderColor:
                       '#48b779'
                   }}
@@ -3379,7 +3568,8 @@ export default function Home() {
                       Number(
                         bestMatch.average_rating
                         || 0
-                      ).toFixed(1)
+                      )
+                        .toFixed(1)
                     }
                     {' · '}
                     {
@@ -3404,7 +3594,8 @@ export default function Home() {
                       != null
                         ? Number(
                             bestMatch.distance_km
-                          ).toFixed(1)
+                          )
+                            .toFixed(1)
                         : '—'
                     } km
                   </p>
@@ -3635,7 +3826,9 @@ export default function Home() {
                                     job.id
                                   );
 
-                                  setRating(5);
+                                  setRating(
+                                    5
+                                  );
                                 }
                               }
                             >
@@ -3669,10 +3862,15 @@ export default function Home() {
                 type="button"
                 className="x"
                 onClick={
-                  () =>
+                  () => {
                     setAuthOpen(
                       false
-                    )
+                    );
+
+                    setAcceptedLegal(
+                      false
+                    );
+                  }
                 }
               >
                 ×
@@ -3697,10 +3895,15 @@ export default function Home() {
                       : 'outline'
                   }
                   onClick={
-                    () =>
+                    () => {
                       setAuthMode(
                         'login'
-                      )
+                      );
+
+                      setAcceptedLegal(
+                        false
+                      );
+                    }
                   }
                 >
                   Accedi
@@ -3715,10 +3918,15 @@ export default function Home() {
                       : 'outline'
                   }
                   onClick={
-                    () =>
+                    () => {
                       setAuthMode(
                         'signup'
-                      )
+                      );
+
+                      setAcceptedLegal(
+                        false
+                      );
+                    }
                   }
                 >
                   Registrati
@@ -3798,7 +4006,9 @@ export default function Home() {
 
               <input
                 type="password"
-                minLength={6}
+                minLength={
+                  6
+                }
                 required
                 value={
                   password
@@ -3811,13 +4021,103 @@ export default function Home() {
                 }
               />
 
+              {
+                authMode ===
+                  'signup' &&
+                (
+                  <label
+                    style={{
+                      display:
+                        'flex',
+                      alignItems:
+                        'flex-start',
+                      gap:
+                        10,
+                      marginTop:
+                        16,
+                      fontWeight:
+                        600,
+                      fontSize:
+                        13,
+                      lineHeight:
+                        1.45,
+                      cursor:
+                        'pointer'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      required
+                      checked={
+                        acceptedLegal
+                      }
+                      onChange={
+                        e =>
+                          setAcceptedLegal(
+                            e.target.checked
+                          )
+                      }
+                      style={{
+                        width:
+                          18,
+                        height:
+                          18,
+                        minWidth:
+                          18,
+                        padding:
+                          0,
+                        margin:
+                          '1px 0 0'
+                      }}
+                    />
+
+                    <span>
+                      Dichiaro di aver letto e accetto i{' '}
+
+                      <a
+                        href="/termini"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={
+                          e =>
+                            e.stopPropagation()
+                        }
+                      >
+                        Termini e condizioni
+                      </a>
+
+                      {' '}e dichiaro di aver letto la{' '}
+
+                      <a
+                        href="/privacy"
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={
+                          e =>
+                            e.stopPropagation()
+                        }
+                      >
+                        Privacy Policy
+                      </a>
+                      .
+                    </span>
+                  </label>
+                )
+              }
+
               <button
                 className="full"
                 style={{
-                  marginTop: 14
+                  marginTop:
+                    14
                 }}
                 disabled={
-                  busy
+                  busy ||
+                  (
+                    authMode ===
+                      'signup' &&
+                    !acceptedLegal
+                  )
                 }
               >
                 {
@@ -3924,7 +4224,8 @@ export default function Home() {
               <button
                 className="full"
                 style={{
-                  marginTop: 12
+                  marginTop:
+                    12
                 }}
               >
                 Invia recensione
