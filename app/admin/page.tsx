@@ -5,7 +5,7 @@ import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 
 type PendingProfessional = {
-  professional_id: string;
+  id: string;
   business_name: string | null;
   phone: string | null;
   vat_number: string | null;
@@ -16,17 +16,26 @@ type PendingProfessional = {
 };
 
 export default function AdminPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [user, setUser] =
+    useState<User | null>(null);
+
+  const [isAdmin, setIsAdmin] =
+    useState<boolean | null>(null);
+
   const [professionals, setProfessionals] =
     useState<PendingProfessional[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [actionLoading, setActionLoading] =
     useState<string | null>(null);
-  const [message, setMessage] = useState('');
+
+  const [message, setMessage] =
+    useState('');
 
   useEffect(() => {
-    checkAccess();
+    void checkAccess();
   }, []);
 
   async function checkAccess() {
@@ -35,7 +44,8 @@ export default function AdminPage() {
 
     const {
       data: { user: currentUser }
-    } = await supabase.auth.getUser();
+    } =
+      await supabase.auth.getUser();
 
     setUser(currentUser);
 
@@ -45,20 +55,27 @@ export default function AdminPage() {
       return;
     }
 
-    const { data, error } = await supabase.rpc(
-      'is_current_user_admin'
-    );
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        'is_current_user_admin'
+      );
 
     if (error) {
       setMessage(
         `Errore controllo amministratore: ${error.message}`
       );
+
       setIsAdmin(false);
       setLoading(false);
       return;
     }
 
-    const admin = data === true;
+    const admin =
+      data === true;
+
     setIsAdmin(admin);
 
     if (admin) {
@@ -69,14 +86,19 @@ export default function AdminPage() {
   }
 
   async function loadProfessionals() {
-    const { data, error } = await supabase.rpc(
-      'admin_professionals_pending'
-    );
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        'admin_professionals_pending'
+      );
 
     if (error) {
       setMessage(
         `Errore caricamento professionisti: ${error.message}`
       );
+
       setProfessionals([]);
       return;
     }
@@ -95,25 +117,48 @@ export default function AdminPage() {
         ? 'approvare'
         : 'rifiutare';
 
-    const confirmed = window.confirm(
-      `Confermi di voler ${text} questo professionista?`
+    const confirmed =
+      window.confirm(
+        `Confermi di voler ${text} questo professionista?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    if (!professionalId) {
+      setMessage(
+        'Errore: ID professionista non disponibile.'
+      );
+      return;
+    }
+
+    setActionLoading(
+      professionalId
     );
 
-    if (!confirmed) return;
-
-    setActionLoading(professionalId);
     setMessage('');
 
-    const { data, error } = await supabase.rpc(
-      'admin_set_professional_verification',
-      {
-        p_professional_id: professionalId,
-        p_status: status
-      }
-    );
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        'admin_set_professional_verification',
+        {
+          p_professional_id:
+            professionalId,
+
+          p_status:
+            status
+        }
+      );
 
     if (error) {
-      setMessage(`Errore: ${error.message}`);
+      setMessage(
+        `Errore: ${error.message}`
+      );
+
       setActionLoading(null);
       return;
     }
@@ -122,6 +167,7 @@ export default function AdminPage() {
       setMessage(
         'Non è stato possibile aggiornare il professionista.'
       );
+
       setActionLoading(null);
       return;
     }
@@ -133,6 +179,7 @@ export default function AdminPage() {
     );
 
     await loadProfessionals();
+
     setActionLoading(null);
   }
 
@@ -151,7 +198,9 @@ export default function AdminPage() {
             padding: '60px 20px'
           }}
         >
-          <h2>Caricamento pannello amministratore...</h2>
+          <h2>
+            Caricamento pannello amministratore...
+          </h2>
         </div>
       </main>
     );
@@ -174,13 +223,21 @@ export default function AdminPage() {
               padding: 30
             }}
           >
-            <div style={{ fontSize: 50 }}>🔐</div>
+            <div
+              style={{
+                fontSize: 50
+              }}
+            >
+              🔐
+            </div>
 
-            <h1>Accesso richiesto</h1>
+            <h1>
+              Accesso richiesto
+            </h1>
 
             <p>
               Devi prima accedere a LavoroSubito con
-              l'account amministratore.
+              l&apos;account amministratore.
             </p>
 
             <a
@@ -221,9 +278,17 @@ export default function AdminPage() {
               padding: 30
             }}
           >
-            <div style={{ fontSize: 50 }}>⛔</div>
+            <div
+              style={{
+                fontSize: 50
+              }}
+            >
+              ⛔
+            </div>
 
-            <h1>Accesso negato</h1>
+            <h1>
+              Accesso negato
+            </h1>
 
             <p>
               Questo account non dispone dei permessi
@@ -279,7 +344,9 @@ export default function AdminPage() {
             LavoroSubito
           </div>
 
-          <small>V25 · Amministrazione</small>
+          <small>
+            MVP 1.0 · Amministrazione
+          </small>
         </div>
 
         <button
@@ -304,7 +371,11 @@ export default function AdminPage() {
           padding: '40px 20px 80px'
         }}
       >
-        <div style={{ marginBottom: 35 }}>
+        <div
+          style={{
+            marginBottom: 35
+          }}
+        >
           <div
             style={{
               display: 'inline-block',
@@ -363,9 +434,19 @@ export default function AdminPage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0 }}>Da verificare</h2>
+            <h2
+              style={{
+                margin: 0
+              }}
+            >
+              Da verificare
+            </h2>
 
-            <p style={{ marginBottom: 0 }}>
+            <p
+              style={{
+                marginBottom: 0
+              }}
+            >
               {professionals.length}{' '}
               {professionals.length === 1
                 ? 'professionista'
@@ -398,9 +479,17 @@ export default function AdminPage() {
               textAlign: 'center'
             }}
           >
-            <div style={{ fontSize: 45 }}>✅</div>
+            <div
+              style={{
+                fontSize: 45
+              }}
+            >
+              ✅
+            </div>
 
-            <h2>Nessuna verifica in attesa</h2>
+            <h2>
+              Nessuna verifica in attesa
+            </h2>
 
             <p>
               Al momento non ci sono professionisti da
@@ -417,7 +506,7 @@ export default function AdminPage() {
         >
           {professionals.map(pro => (
             <article
-              key={pro.professional_id}
+              key={pro.id}
               style={{
                 background: '#fff',
                 border: '1px solid #e1e1e1',
@@ -439,7 +528,11 @@ export default function AdminPage() {
                 🟡 DA VERIFICARE
               </div>
 
-              <h2 style={{ marginTop: 0 }}>
+              <h2
+                style={{
+                  marginTop: 0
+                }}
+              >
                 {pro.business_name ||
                   pro.full_name ||
                   'Professionista'}
@@ -447,34 +540,40 @@ export default function AdminPage() {
 
               {pro.full_name && (
                 <p>
-                  <b>Nome:</b> {pro.full_name}
+                  <b>Nome:</b>{' '}
+                  {pro.full_name}
                 </p>
               )}
 
               <p>
                 <b>Nome attività:</b>{' '}
-                {pro.business_name || 'Non inserito'}
+                {pro.business_name ||
+                  'Non inserito'}
               </p>
 
               <p>
                 <b>Telefono:</b>{' '}
-                {pro.phone || 'Non inserito'}
+                {pro.phone ||
+                  'Non inserito'}
               </p>
 
               <p>
                 <b>Partita IVA:</b>{' '}
-                {pro.vat_number || 'Non inserita'}
+                {pro.vat_number ||
+                  'Non inserita'}
               </p>
 
               <p>
                 <b>Codice fiscale:</b>{' '}
-                {pro.tax_code || 'Non inserito'}
+                {pro.tax_code ||
+                  'Non inserito'}
               </p>
 
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateColumns:
+                    '1fr 1fr',
                   gap: 12,
                   marginTop: 25
                 }}
@@ -482,11 +581,12 @@ export default function AdminPage() {
                 <button
                   type="button"
                   disabled={
-                    actionLoading === pro.professional_id
+                    actionLoading ===
+                    pro.id
                   }
                   onClick={() =>
                     changeVerification(
-                      pro.professional_id,
+                      pro.id,
                       'verificato'
                     )
                   }
@@ -506,11 +606,12 @@ export default function AdminPage() {
                 <button
                   type="button"
                   disabled={
-                    actionLoading === pro.professional_id
+                    actionLoading ===
+                    pro.id
                   }
                   onClick={() =>
                     changeVerification(
-                      pro.professional_id,
+                      pro.id,
                       'rifiutato'
                     )
                   }
@@ -528,7 +629,7 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {actionLoading === pro.professional_id && (
+              {actionLoading === pro.id && (
                 <p
                   style={{
                     marginTop: 15,
@@ -542,7 +643,11 @@ export default function AdminPage() {
           ))}
         </div>
 
-        <div style={{ marginTop: 40 }}>
+        <div
+          style={{
+            marginTop: 40
+          }}
+        >
           <a
             href="/"
             style={{
