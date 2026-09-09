@@ -26,22 +26,43 @@ const CATEGORIES = [
 const DISTANCES = [10, 20, 30, 50, 100];
 
 function slugify(value: string) {
-  return value.toLowerCase().replaceAll(' ', '-');
+  return value
+    .toLowerCase()
+    .replaceAll(' ', '-');
 }
 
 function availabilityLabel(value: string) {
-  if (value === 'ora') return '🟢 Disponibile ora';
-  if (value === '1-2h') return '🟡 Entro 1–2 ore';
-  if (value === 'oggi') return '🟠 Disponibile oggi';
+  if (value === 'ora') {
+    return '🟢 Disponibile ora';
+  }
+
+  if (value === '1-2h') {
+    return '🟡 Entro 1–2 ore';
+  }
+
+  if (value === 'oggi') {
+    return '🟠 Disponibile oggi';
+  }
 
   return '⚫ Offline';
 }
 
 function statusLabel(value: string) {
-  if (value === 'aperta') return '🔴 RICERCA IN CORSO';
-  if (value === 'accettata') return '🟢 ACCETTATA';
-  if (value === 'completata') return '✅ COMPLETATA';
-  if (value === 'annullata') return '⚫ ANNULLATA';
+  if (value === 'aperta') {
+    return '🔴 RICERCA IN CORSO';
+  }
+
+  if (value === 'accettata') {
+    return '🟢 ACCETTATA';
+  }
+
+  if (value === 'completata') {
+    return '✅ COMPLETATA';
+  }
+
+  if (value === 'annullata') {
+    return '⚫ ANNULLATA';
+  }
 
   return value.toUpperCase();
 }
@@ -117,7 +138,10 @@ export default function Home() {
   const [setup, setSetup] =
     useState<any>(null);
 
-  const [proCity, setProCity] =
+  const [
+    proCity,
+    setProCity
+  ] =
     useState('');
 
   const [
@@ -270,7 +294,9 @@ export default function Home() {
     useState<any[]>([]);
 
   const chatInputRef =
-    useRef<HTMLInputElement | null>(null);
+    useRef<HTMLInputElement | null>(
+      null
+    );
 
   const [
     reviewJobId,
@@ -418,19 +444,31 @@ export default function Home() {
     setRole('');
     setFullName('');
     setMessage('');
+
     setClientJobs([]);
     setMatchingJobs([]);
     setAcceptedJobs([]);
+
     setSelectedProCats([]);
-    setAvailability('offline');
+
+    setAvailability(
+      'offline'
+    );
+
     setIdentity({});
     setSetup(null);
+
     setProCity('');
     setProPostalCode('');
+
     setLocationBusy(false);
+
     setReviews([]);
+
     setBestMatch(null);
+
     setChatJobId(null);
+
     setMessages([]);
   }
 
@@ -439,7 +477,9 @@ export default function Home() {
   ) {
     const profile =
       await supabase
-        .from('profiles')
+        .from(
+          'profiles'
+        )
         .select(
           'role,full_name'
         )
@@ -467,7 +507,9 @@ export default function Home() {
 
     const catResponse =
       await supabase
-        .from('categories')
+        .from(
+          'categories'
+        )
         .select(
           'id,name,slug'
         )
@@ -727,6 +769,7 @@ export default function Home() {
             .geolocation
         ) {
           resolve(null);
+
           return;
         }
 
@@ -1053,7 +1096,9 @@ export default function Home() {
     }
 
     setBusy(true);
+
     setMessage('');
+
     setBestMatch(null);
 
     let position =
@@ -1165,6 +1210,7 @@ export default function Home() {
     clearPhoto();
 
     setDescription('');
+
     setAddress('');
 
     await loadClientJobs();
@@ -1507,7 +1553,8 @@ export default function Home() {
             rating,
 
           p_comment:
-            reviewComment.trim()
+            reviewComment
+              .trim()
             || null
         }
       );
@@ -1538,6 +1585,7 @@ export default function Home() {
     event.preventDefault();
 
     setBusy(true);
+
     setMessage('');
 
     if (
@@ -1688,6 +1736,7 @@ export default function Home() {
     );
 
     await loadProfessional();
+
     await loadMatchingJobs();
   }
 
@@ -1725,13 +1774,17 @@ export default function Home() {
     );
 
     await loadProfessional();
+
     await loadMatchingJobs();
 
     return true;
   }
 
   async function setProLocation() {
-    setLocationBusy(true);
+    setLocationBusy(
+      true
+    );
+
     setMessage('');
 
     const p =
@@ -1744,7 +1797,10 @@ export default function Home() {
         'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
       );
 
-      setLocationBusy(false);
+      setLocationBusy(
+        false
+      );
+
       return;
     }
 
@@ -1754,7 +1810,9 @@ export default function Home() {
       '✅ Posizione GPS aggiornata.'
     );
 
-    setLocationBusy(false);
+    setLocationBusy(
+      false
+    );
   }
 
   async function setProLocationManual() {
@@ -1776,7 +1834,10 @@ export default function Home() {
       return;
     }
 
-    setLocationBusy(true);
+    setLocationBusy(
+      true
+    );
+
     setMessage('');
 
     try {
@@ -1818,7 +1879,10 @@ export default function Home() {
           'Località non trovata.'
         );
 
-        setLocationBusy(false);
+        setLocationBusy(
+          false
+        );
+
         return;
       }
 
@@ -1845,7 +1909,10 @@ export default function Home() {
           'Coordinate della località non valide.'
         );
 
-        setLocationBusy(false);
+        setLocationBusy(
+          false
+        );
+
         return;
       }
 
@@ -1870,7 +1937,9 @@ export default function Home() {
       );
     }
 
-    setLocationBusy(false);
+    setLocationBusy(
+      false
+    );
   }
 
   async function setRadius(
@@ -2666,7 +2735,7 @@ export default function Home() {
             <div
               style={{
                 marginTop:
-                  34
+                  30
               }}
             >
               <span className="tag">
@@ -2836,95 +2905,214 @@ export default function Home() {
                 verified
                 &&
                 visibleAccepted.map(
-                  job => (
-                    <article
-                      className="card job"
-                      key={
-                        `a-${job.id}`
-                      }
-                    >
-                      <span className="status">
-                        {
-                          statusLabel(
-                            job.status
-                          )
-                        }
-                      </span>
-
-                      <h3>
-                        {
-                          job.category_name
-                          ||
-                          'Intervento'
-                        }
-                      </h3>
-
-                      <p>
-                        {
-                          job.description
-                        }
-                      </p>
-
-                      <Photo
-                        id={
-                          job.id
-                        }
-                      />
-
-                      {
-                        job.address
-                        &&
-                        (
-                          <div className="success">
-                            📍{' '}
-                            <b>
-                              Indirizzo intervento
-                            </b>
-                            <br />
-                            {
-                              job.address
-                            }
-                          </div>
-                        )
-                      }
-
-                      <div className="actions">
-                        <button
-                          className="full"
-                          onClick={
-                            () =>
-                              openChat(
-                                job.id,
-                                job.category_name
-                                ||
-                                'Intervento'
-                              )
+                  job => {
+                    if (
+                      job.status ===
+                      'completata'
+                    ) {
+                      return (
+                        <article
+                          className="card job"
+                          key={
+                            `a-${job.id}`
                           }
                         >
-                          💬 Chat
-                        </button>
+                          <div
+                            style={{
+                              display:
+                                'flex',
+                              justifyContent:
+                                'space-between',
+                              alignItems:
+                                'flex-start',
+                              gap:
+                                10
+                            }}
+                          >
+                            <div>
+                              <span className="status">
+                                ✅ COMPLETATA
+                              </span>
+
+                              <h3>
+                                {
+                                  job.category_name
+                                  ||
+                                  'Intervento'
+                                }
+                              </h3>
+                            </div>
+
+                            <span
+                              className="muted"
+                              style={{
+                                fontSize:
+                                  12,
+                                fontWeight:
+                                  700
+                              }}
+                            >
+                              {
+                                job.urgency
+                                  ?.toUpperCase()
+                              }
+                            </span>
+                          </div>
+
+                          <p
+                            style={{
+                              marginBottom:
+                                8
+                            }}
+                          >
+                            {
+                              job.description
+                            }
+                          </p>
+
+                          <details>
+                            <summary
+                              style={{
+                                cursor:
+                                  'pointer',
+                                fontWeight:
+                                  800,
+                                fontSize:
+                                  13,
+                                padding:
+                                  '6px 0'
+                              }}
+                            >
+                              Mostra dettagli
+                            </summary>
+
+                            <Photo
+                              id={
+                                job.id
+                              }
+                            />
+
+                            {
+                              job.address
+                              &&
+                              (
+                                <div className="success">
+                                  📍{' '}
+                                  <b>
+                                    Indirizzo intervento
+                                  </b>
+                                  <br />
+                                  {
+                                    job.address
+                                  }
+                                </div>
+                              )
+                            }
+
+                            <div className="actions">
+                              <button
+                                className="full"
+                                onClick={
+                                  () =>
+                                    openChat(
+                                      job.id,
+                                      job.category_name
+                                      ||
+                                      'Intervento'
+                                    )
+                                }
+                              >
+                                💬 Chat
+                              </button>
+                            </div>
+                          </details>
+                        </article>
+                      );
+                    }
+
+                    return (
+                      <article
+                        className="card job"
+                        key={
+                          `a-${job.id}`
+                        }
+                      >
+                        <span className="status">
+                          {
+                            statusLabel(
+                              job.status
+                            )
+                          }
+                        </span>
+
+                        <h3>
+                          {
+                            job.category_name
+                            ||
+                            'Intervento'
+                          }
+                        </h3>
+
+                        <p>
+                          {
+                            job.description
+                          }
+                        </p>
+
+                        <Photo
+                          id={
+                            job.id
+                          }
+                        />
 
                         {
-                          job.status !==
-                            'completata'
+                          job.address
                           &&
                           (
-                            <button
-                              className="outline"
-                              onClick={
-                                () =>
-                                  completeJob(
-                                    job.id
-                                  )
+                            <div className="success">
+                              📍{' '}
+                              <b>
+                                Indirizzo intervento
+                              </b>
+                              <br />
+                              {
+                                job.address
                               }
-                            >
-                              ✓ Completa
-                            </button>
+                            </div>
                           )
                         }
-                      </div>
-                    </article>
-                  )
+
+                        <div className="actions">
+                          <button
+                            className="full"
+                            onClick={
+                              () =>
+                                openChat(
+                                  job.id,
+                                  job.category_name
+                                  ||
+                                  'Intervento'
+                                )
+                            }
+                          >
+                            💬 Chat
+                          </button>
+
+                          <button
+                            className="outline"
+                            onClick={
+                              () =>
+                                completeJob(
+                                  job.id
+                                )
+                            }
+                          >
+                            ✓ Completa
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  }
                 )
               }
             </div>
@@ -2932,7 +3120,7 @@ export default function Home() {
             <div
               style={{
                 marginTop:
-                  34
+                  30
               }}
             >
               <span className="tag">
@@ -2944,42 +3132,117 @@ export default function Home() {
               </h2>
 
               {
-                reviews.map(
-                  review => (
-                    <div
-                      className="card job"
-                      key={
-                        review.review_id
-                      }
-                    >
-                      <b>
-                        {
-                          '⭐'.repeat(
-                            Number(
-                              review.rating
-                              || 0
-                            )
-                          )
-                        }
-                      </b>
+                reviews.length ===
+                  0
+                ? (
+                  <div className="card">
+                    <p className="muted">
+                      Non hai ancora recensioni.
+                    </p>
+                  </div>
+                )
+                : (
+                  <div
+                    className="card"
+                    style={{
+                      padding:
+                        0,
+                      overflow:
+                        'hidden'
+                    }}
+                  >
+                    {
+                      reviews.map(
+                        (
+                          review,
+                          index
+                        ) => (
+                          <div
+                            key={
+                              review.review_id
+                            }
+                            style={{
+                              padding:
+                                '12px 14px',
 
-                      <h3>
-                        {
-                          review.client_name
-                          ||
-                          'Cliente'
-                        }
-                      </h3>
+                              borderBottom:
+                                index <
+                                reviews.length - 1
+                                  ? '1px solid #e3e5e8'
+                                  : 'none'
+                            }}
+                          >
+                            <div
+                              style={{
+                                display:
+                                  'flex',
 
-                      <p>
-                        {
-                          review.comment
-                          ||
-                          'Nessun commento.'
-                        }
-                      </p>
-                    </div>
-                  )
+                                justifyContent:
+                                  'space-between',
+
+                                alignItems:
+                                  'center',
+
+                                gap:
+                                  10
+                              }}
+                            >
+                              <b
+                                style={{
+                                  fontSize:
+                                    13
+                                }}
+                              >
+                                {
+                                  review.client_name
+                                  ||
+                                  'Cliente'
+                                }
+                              </b>
+
+                              <span
+                                style={{
+                                  fontSize:
+                                    13,
+                                  whiteSpace:
+                                    'nowrap'
+                                }}
+                              >
+                                {
+                                  '⭐'.repeat(
+                                    Number(
+                                      review.rating
+                                      || 0
+                                    )
+                                  )
+                                }
+                              </span>
+                            </div>
+
+                            <p
+                              className="muted"
+                              style={{
+                                margin:
+                                  '5px 0 0',
+
+                                fontSize:
+                                  12,
+
+                                lineHeight:
+                                  1.35
+                              }}
+                            >
+                              {
+                                review.comment
+                                ||
+                                'Nessun commento.'
+                              }
+                            </p>
+                          </div>
+                        )
+                      )
+                    }
+                  </div>
                 )
               }
             </div>
@@ -3049,6 +3312,7 @@ export default function Home() {
             <h1>
               Un problema?
               <br />
+
               <span>
                 Risolviamolo subito.
               </span>
@@ -3326,8 +3590,11 @@ export default function Home() {
                         bestMatch.availability_status
                       )
                     }
+
                     {' · '}
+
                     📍{' '}
+
                     {
                       bestMatch.distance_km
                       != null
@@ -3456,10 +3723,13 @@ export default function Home() {
                         (
                           <div className="notice">
                             📍{' '}
+
                             <b>
                               Indirizzo intervento
                             </b>
+
                             <br />
+
                             {
                               job.address
                             }
@@ -3471,6 +3741,7 @@ export default function Home() {
                         <b>
                           Urgenza:
                         </b>{' '}
+
                         {
                           job.urgency
                             ?.toUpperCase()
