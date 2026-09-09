@@ -89,6 +89,46 @@ function etaLabel(
     : `Circa ${h} h`;
 }
 
+function LegalFooter() {
+  return (
+    <footer>
+      <div>
+        © 2026 LavoroSubito · MVP 1.0
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 16,
+          flexWrap: 'wrap'
+        }}
+      >
+        <a
+          href="/privacy"
+          style={{
+            color: 'inherit',
+            fontWeight: 700
+          }}
+        >
+          Privacy
+        </a>
+
+        <a
+          href="/termini"
+          style={{
+            color: 'inherit',
+            fontWeight: 700
+          }}
+        >
+          Termini e condizioni
+        </a>
+      </div>
+    </footer>
+  );
+}
+
 export default function Home() {
   const [user, setUser] =
     useState<User | null>(null);
@@ -320,9 +360,7 @@ export default function Home() {
     supabase.auth
       .getUser()
       .then(({ data }) => {
-        setUser(
-          data.user
-        );
+        setUser(data.user);
 
         if (data.user) {
           void loadProfile(
@@ -339,16 +377,13 @@ export default function Home() {
             session
           ) => {
             const currentUser =
-              session?.user
-              ?? null;
+              session?.user ?? null;
 
             setUser(
               currentUser
             );
 
-            if (
-              currentUser
-            ) {
+            if (currentUser) {
               void loadProfile(
                 currentUser.id
               );
@@ -364,11 +399,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (
-      !user
-      ||
-      !role
-    ) {
+    if (!user || !role) {
       return;
     }
 
@@ -407,10 +438,8 @@ export default function Home() {
               payload.new;
 
             if (
-              chatJobId
-              &&
-              row?.job_id ===
-                chatJobId
+              chatJobId &&
+              row?.job_id === chatJobId
             ) {
               await loadChat(
                 chatJobId
@@ -444,31 +473,19 @@ export default function Home() {
     setRole('');
     setFullName('');
     setMessage('');
-
     setClientJobs([]);
     setMatchingJobs([]);
     setAcceptedJobs([]);
-
     setSelectedProCats([]);
-
-    setAvailability(
-      'offline'
-    );
-
+    setAvailability('offline');
     setIdentity({});
     setSetup(null);
-
     setProCity('');
     setProPostalCode('');
-
     setLocationBusy(false);
-
     setReviews([]);
-
     setBestMatch(null);
-
     setChatJobId(null);
-
     setMessages([]);
   }
 
@@ -477,9 +494,7 @@ export default function Home() {
   ) {
     const profile =
       await supabase
-        .from(
-          'profiles'
-        )
+        .from('profiles')
         .select(
           'role,full_name'
         )
@@ -501,15 +516,12 @@ export default function Home() {
 
     setFullName(
       profile.data
-        ?.full_name
-      ?? ''
+        ?.full_name ?? ''
     );
 
     const catResponse =
       await supabase
-        .from(
-          'categories'
-        )
+        .from('categories')
         .select(
           'id,name,slug'
         )
@@ -526,8 +538,7 @@ export default function Home() {
     );
 
     if (
-      detected ===
-      'cliente'
+      detected === 'cliente'
     ) {
       await loadClientJobs();
     } else {
@@ -551,25 +562,19 @@ export default function Home() {
         supabase.rpc(
           'my_professional_identity'
         ),
-
         supabase.rpc(
           'my_professional_categories'
         ),
-
         supabase.rpc(
           'my_professional_setup_status'
         ),
-
         supabase.rpc(
           'my_professional_availability'
         )
       ]);
 
     if (
-      Array.isArray(
-        idRes.data
-      )
-      &&
+      Array.isArray(idRes.data) &&
       idRes.data[0]
     ) {
       setIdentity(
@@ -578,9 +583,7 @@ export default function Home() {
     }
 
     if (
-      Array.isArray(
-        catRes.data
-      )
+      Array.isArray(catRes.data)
     ) {
       setSelectedProCats(
         catRes.data.map(
@@ -591,10 +594,7 @@ export default function Home() {
     }
 
     if (
-      Array.isArray(
-        setupRes.data
-      )
-      &&
+      Array.isArray(setupRes.data) &&
       setupRes.data[0]
     ) {
       setSetup(
@@ -617,9 +617,7 @@ export default function Home() {
       await supabase.auth
         .getUser();
 
-    if (
-      authData.user
-    ) {
+    if (authData.user) {
       const pro =
         await supabase
           .from(
@@ -636,8 +634,7 @@ export default function Home() {
 
       if (
         pro.data
-          ?.max_distance_km
-        != null
+          ?.max_distance_km != null
       ) {
         setMaxDistance(
           Number(
@@ -658,9 +655,7 @@ export default function Home() {
         'my_client_jobs'
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         `Errore richieste: ${error.message}`
       );
@@ -673,9 +668,7 @@ export default function Home() {
         ? data
         : [];
 
-    setClientJobs(
-      rows
-    );
+    setClientJobs(rows);
 
     void loadPhotos(
       rows.map(
@@ -694,9 +687,7 @@ export default function Home() {
         'my_matching_jobs'
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMatchingJobs([]);
       return;
     }
@@ -706,9 +697,7 @@ export default function Home() {
         ? data
         : [];
 
-    setMatchingJobs(
-      rows
-    );
+    setMatchingJobs(rows);
 
     void loadPhotos(
       rows.map(
@@ -731,9 +720,7 @@ export default function Home() {
         ? data
         : [];
 
-    setAcceptedJobs(
-      rows
-    );
+    setAcceptedJobs(rows);
 
     void loadPhotos(
       rows.map(
@@ -769,7 +756,6 @@ export default function Home() {
             .geolocation
         ) {
           resolve(null);
-
           return;
         }
 
@@ -789,10 +775,8 @@ export default function Home() {
             {
               enableHighAccuracy:
                 true,
-
               timeout:
                 12000,
-
               maximumAge:
                 60000
             }
@@ -809,9 +793,7 @@ export default function Home() {
       event.target
         .files?.[0];
 
-    if (
-      !file
-    ) {
+    if (!file) {
       return;
     }
 
@@ -830,9 +812,9 @@ export default function Home() {
 
     if (
       file.size >
-      10
-      * 1024
-      * 1024
+      10 *
+      1024 *
+      1024
     ) {
       setMessage(
         'La foto supera 10 MB.'
@@ -841,52 +823,38 @@ export default function Home() {
       return;
     }
 
-    if (
-      photoPreview
-    ) {
+    if (photoPreview) {
       URL
         .revokeObjectURL(
           photoPreview
         );
     }
 
-    setPhotoFile(
-      file
-    );
+    setPhotoFile(file);
 
     setPhotoPreview(
-      URL
-        .createObjectURL(
-          file
-        )
+      URL.createObjectURL(
+        file
+      )
     );
   }
 
   function clearPhoto() {
-    if (
-      photoPreview
-    ) {
-      URL
-        .revokeObjectURL(
-          photoPreview
-        );
+    if (photoPreview) {
+      URL.revokeObjectURL(
+        photoPreview
+      );
     }
 
-    setPhotoFile(
-      null
-    );
-
-    setPhotoPreview(
-      ''
-    );
+    setPhotoFile(null);
+    setPhotoPreview('');
   }
 
   async function uploadPhoto(
     jobId: string
   ) {
     if (
-      !photoFile
-      ||
+      !photoFile ||
       !user
     ) {
       return;
@@ -897,8 +865,7 @@ export default function Home() {
         photoFile.name
           .split('.')
           .pop()
-        ||
-        'jpg'
+        || 'jpg'
       )
         .replace(
           /[^a-zA-Z0-9]/g,
@@ -921,15 +888,11 @@ export default function Home() {
           {
             contentType:
               photoFile.type,
-
-            upsert:
-              false
+            upsert: false
           }
         );
 
-    if (
-      upload.error
-    ) {
+    if (upload.error) {
       setMessage(
         `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
@@ -943,15 +906,13 @@ export default function Home() {
         {
           p_job_id:
             jobId,
-
           p_photo_url:
             path
         }
       );
 
     if (
-      save.error
-      ||
+      save.error ||
       save.data === false
     ) {
       await supabase
@@ -994,13 +955,10 @@ export default function Home() {
         }
       );
 
-    if (
-      !data
-    ) {
+    if (!data) {
       setJobPhotos(
         current => ({
           ...current,
-
           [jobId]:
             null
         })
@@ -1020,14 +978,12 @@ export default function Home() {
         );
 
     if (
-      download.error
-      ||
+      download.error ||
       !download.data
     ) {
       setJobPhotos(
         current => ({
           ...current,
-
           [jobId]:
             null
         })
@@ -1039,12 +995,10 @@ export default function Home() {
     setJobPhotos(
       current => ({
         ...current,
-
         [jobId]:
-          URL
-            .createObjectURL(
-              download.data
-            )
+          URL.createObjectURL(
+            download.data
+          )
       })
     );
   }
@@ -1056,18 +1010,14 @@ export default function Home() {
       const id
       of ids
     ) {
-      await loadPhoto(
-        id
-      );
+      await loadPhoto(id);
     }
   }
 
   async function submitJob() {
     if (
-      !cat
-      ||
-      !description.trim()
-      ||
+      !cat ||
+      !description.trim() ||
       !address.trim()
     ) {
       setMessage(
@@ -1077,9 +1027,7 @@ export default function Home() {
       return;
     }
 
-    if (
-      !user
-    ) {
+    if (!user) {
       setSignupRole(
         'cliente'
       );
@@ -1088,31 +1036,23 @@ export default function Home() {
         'signup'
       );
 
-      setAuthOpen(
-        true
-      );
+      setAuthOpen(true);
 
       return;
     }
 
     setBusy(true);
-
     setMessage('');
-
     setBestMatch(null);
 
     let position =
       coords;
 
-    if (
-      !position
-    ) {
+    if (!position) {
       position =
         await getPosition();
 
-      if (
-        position
-      ) {
+      if (position) {
         setCoords(
           position
         );
@@ -1158,16 +1098,13 @@ export default function Home() {
             category.data.id,
 
           urgency:
-            urgency
-              .toLowerCase(),
+            urgency.toLowerCase(),
 
           description:
-            description
-              .trim(),
+            description.trim(),
 
           address:
-            address
-              .trim(),
+            address.trim(),
 
           latitude:
             position
@@ -1179,14 +1116,11 @@ export default function Home() {
               ?.longitude
             ?? null
         })
-        .select(
-          'id'
-        )
+        .select('id')
         .single();
 
     if (
-      insert.error
-      ||
+      insert.error ||
       !insert.data
     ) {
       setBusy(false);
@@ -1210,7 +1144,6 @@ export default function Home() {
     clearPhoto();
 
     setDescription('');
-
     setAddress('');
 
     await loadClientJobs();
@@ -1227,15 +1160,12 @@ export default function Home() {
     const first =
       Array.isArray(
         matching.data
-      )
-      &&
+      ) &&
       matching.data.length
         ? matching.data[0]
         : null;
 
-    setBestMatch(
-      first
-    );
+    setBestMatch(first);
 
     try {
       const {
@@ -1381,8 +1311,7 @@ export default function Home() {
     );
 
     if (
-      role ===
-      'cliente'
+      role === 'cliente'
     ) {
       await loadClientJobs();
     } else {
@@ -1394,17 +1323,10 @@ export default function Home() {
     id: string,
     title: string
   ) {
-    setChatJobId(
-      id
-    );
+    setChatJobId(id);
+    setChatTitle(title);
 
-    setChatTitle(
-      title
-    );
-
-    await loadChat(
-      id
-    );
+    await loadChat(id);
 
     setTimeout(
       () =>
@@ -1422,9 +1344,7 @@ export default function Home() {
       error
     } =
       await supabase
-        .from(
-          'messages'
-        )
+        .from('messages')
         .select(
           'id,job_id,sender_id,message,created_at'
         )
@@ -1436,9 +1356,7 @@ export default function Home() {
           'created_at'
         );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
@@ -1458,8 +1376,7 @@ export default function Home() {
     event.preventDefault();
 
     if (
-      !user
-      ||
+      !user ||
       !chatJobId
     ) {
       return;
@@ -1472,9 +1389,7 @@ export default function Home() {
         .trim()
       ?? '';
 
-    if (
-      !text
-    ) {
+    if (!text) {
       return;
     }
 
@@ -1482,9 +1397,7 @@ export default function Home() {
       error
     } =
       await supabase
-        .from(
-          'messages'
-        )
+        .from('messages')
         .insert({
           job_id:
             chatJobId,
@@ -1496,9 +1409,7 @@ export default function Home() {
             text
         });
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
@@ -1533,9 +1444,7 @@ export default function Home() {
   ) {
     event.preventDefault();
 
-    if (
-      !reviewJobId
-    ) {
+    if (!reviewJobId) {
       return;
     }
 
@@ -1567,13 +1476,9 @@ export default function Home() {
           : 'Recensione non inviata.'
     );
 
-    setReviewJobId(
-      null
-    );
+    setReviewJobId(null);
 
-    setReviewComment(
-      ''
-    );
+    setReviewComment('');
 
     await loadClientJobs();
   }
@@ -1585,7 +1490,6 @@ export default function Home() {
     event.preventDefault();
 
     setBusy(true);
-
     setMessage('');
 
     if (
@@ -1617,9 +1521,7 @@ export default function Home() {
           : '✅ Registrazione completata. Controlla la tua email.'
       );
 
-      if (
-        !error
-      ) {
+      if (!error) {
         setAuthMode(
           'login'
         );
@@ -1635,20 +1537,14 @@ export default function Home() {
             password
           });
 
-      if (
-        error
-      ) {
+      if (error) {
         setMessage(
           error.message
         );
       } else {
-        setAuthOpen(
-          false
-        );
+        setAuthOpen(false);
 
-        if (
-          data.user
-        ) {
+        if (data.user) {
           await loadProfile(
             data.user.id
           );
@@ -1759,9 +1655,7 @@ export default function Home() {
         }
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
@@ -1781,18 +1675,14 @@ export default function Home() {
   }
 
   async function setProLocation() {
-    setLocationBusy(
-      true
-    );
+    setLocationBusy(true);
 
     setMessage('');
 
     const p =
       await getPosition();
 
-    if (
-      !p
-    ) {
+    if (!p) {
       setMessage(
         'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
       );
@@ -1810,9 +1700,7 @@ export default function Home() {
       '✅ Posizione GPS aggiornata.'
     );
 
-    setLocationBusy(
-      false
-    );
+    setLocationBusy(false);
   }
 
   async function setProLocationManual() {
@@ -1823,8 +1711,7 @@ export default function Home() {
       proPostalCode.trim();
 
     if (
-      !city
-      &&
+      !city &&
       !postalCode
     ) {
       setMessage(
@@ -1834,28 +1721,21 @@ export default function Home() {
       return;
     }
 
-    setLocationBusy(
-      true
-    );
-
+    setLocationBusy(true);
     setMessage('');
 
     try {
       const params =
         new URLSearchParams();
 
-      if (
-        city
-      ) {
+      if (city) {
         params.set(
           'city',
           city
         );
       }
 
-      if (
-        postalCode
-      ) {
+      if (postalCode) {
         params.set(
           'postalCode',
           postalCode
@@ -1870,18 +1750,13 @@ export default function Home() {
       const result =
         await response.json();
 
-      if (
-        !response.ok
-      ) {
+      if (!response.ok) {
         setMessage(
-          result.error
-          ||
+          result.error ||
           'Località non trovata.'
         );
 
-        setLocationBusy(
-          false
-        );
+        setLocationBusy(false);
 
         return;
       }
@@ -1899,8 +1774,7 @@ export default function Home() {
       if (
         !Number.isFinite(
           latitude
-        )
-        ||
+        ) ||
         !Number.isFinite(
           longitude
         )
@@ -1909,16 +1783,13 @@ export default function Home() {
           'Coordinate della località non valide.'
         );
 
-        setLocationBusy(
-          false
-        );
+        setLocationBusy(false);
 
         return;
       }
 
       const label =
-        result.displayName
-        ||
+        result.displayName ||
         [
           postalCode,
           city
@@ -1937,9 +1808,7 @@ export default function Home() {
       );
     }
 
-    setLocationBusy(
-      false
-    );
+    setLocationBusy(false);
   }
 
   async function setRadius(
@@ -1956,9 +1825,7 @@ export default function Home() {
         }
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
@@ -1966,9 +1833,7 @@ export default function Home() {
       return;
     }
 
-    setMaxDistance(
-      value
-    );
+    setMaxDistance(value);
 
     setMessage(
       `✅ Raggio impostato a ${value} km.`
@@ -1991,9 +1856,7 @@ export default function Home() {
         }
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
@@ -2001,9 +1864,7 @@ export default function Home() {
       return;
     }
 
-    setAvailability(
-      value
-    );
+    setAvailability(value);
 
     setMessage(
       `✅ ${availabilityLabel(value)}`
@@ -2082,14 +1943,12 @@ export default function Home() {
             sum,
             r
           ) =>
-            sum
-            +
+            sum +
             Number(
               r.rating || 0
             ),
           0
-        )
-        /
+        ) /
         reviews.length
       : 0;
 
@@ -2115,9 +1974,7 @@ export default function Home() {
   }
 
   function ChatModal() {
-    if (
-      !chatJobId
-    ) {
+    if (!chatJobId) {
       return null;
     }
 
@@ -2128,9 +1985,7 @@ export default function Home() {
             type="button"
             className="x"
             onClick={() =>
-              setChatJobId(
-                null
-              )
+              setChatJobId(null)
             }
           >
             ×
@@ -2197,8 +2052,7 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop:
-                  10
+                marginTop: 10
               }}
             >
               Invia
@@ -2210,8 +2064,7 @@ export default function Home() {
   }
 
   if (
-    user
-    &&
+    user &&
     role ===
       'professionista'
   ) {
@@ -2245,8 +2098,7 @@ export default function Home() {
             <h2>
               Ciao{' '}
               {
-                fullName
-                ||
+                fullName ||
                 'Professionista'
               }
             </h2>
@@ -2266,8 +2118,7 @@ export default function Home() {
             </div>
 
             {
-              message
-              &&
+              message &&
               (
                 <div className="notice">
                   {message}
@@ -2331,8 +2182,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2364,7 +2214,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         business_name:
                           e.target.value
                       })
@@ -2386,7 +2235,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         phone:
                           e.target.value
                       })
@@ -2408,7 +2256,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         vat_number:
                           e.target.value
                       })
@@ -2430,7 +2277,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         tax_code:
                           e.target.value
                       })
@@ -2453,8 +2299,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2510,8 +2355,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2521,8 +2365,7 @@ export default function Home() {
               <div
                 className="grid"
                 style={{
-                  marginTop:
-                    12
+                  marginTop: 12
                 }}
               >
                 {
@@ -2592,8 +2435,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2627,8 +2469,7 @@ export default function Home() {
 
               <div
                 style={{
-                  marginTop:
-                    20
+                  marginTop: 20
                 }}
               >
                 <label>
@@ -2672,10 +2513,8 @@ export default function Home() {
                     locationBusy
                   }
                   style={{
-                    marginTop:
-                      12,
-                    width:
-                      '100%'
+                    marginTop: 12,
+                    width: '100%'
                   }}
                   onClick={
                     setProLocationManual
@@ -2689,8 +2528,7 @@ export default function Home() {
                 style={{
                   margin:
                     '24px 0',
-                  border:
-                    0,
+                  border: 0,
                   borderTop:
                     '1px solid #e5e5e5'
                 }}
@@ -2734,8 +2572,7 @@ export default function Home() {
 
             <div
               style={{
-                marginTop:
-                  30
+                marginTop: 30
               }}
             >
               <span className="tag">
@@ -2747,8 +2584,7 @@ export default function Home() {
               </h2>
 
               {
-                !verified
-                &&
+                !verified &&
                 (
                   <div className="notice">
                     🔒 Il matching è visibile solo dopo la verifica amministratore.
@@ -2801,8 +2637,7 @@ export default function Home() {
               </div>
 
               {
-                verified
-                &&
+                verified &&
                 visibleMatching.map(
                   job => (
                     <article
@@ -2852,16 +2687,14 @@ export default function Home() {
 
                       {
                         job.distance_km
-                        != null
-                        &&
+                        != null &&
                         (
                           <p>
                             📍{' '}
                             {
                               Number(
                                 job.distance_km
-                              )
-                                .toFixed(1)
+                              ).toFixed(1)
                             } km
                             {' · '}
                             ⏱{' '}
@@ -2877,8 +2710,7 @@ export default function Home() {
                       <button
                         className="full"
                         disabled={
-                          busy
-                          ||
+                          busy ||
                           availability ===
                             'offline'
                         }
@@ -2902,8 +2734,7 @@ export default function Home() {
               }
 
               {
-                verified
-                &&
+                verified &&
                 visibleAccepted.map(
                   job => {
                     if (
@@ -2925,8 +2756,7 @@ export default function Home() {
                                 'space-between',
                               alignItems:
                                 'flex-start',
-                              gap:
-                                10
+                              gap: 10
                             }}
                           >
                             <div>
@@ -2946,10 +2776,8 @@ export default function Home() {
                             <span
                               className="muted"
                               style={{
-                                fontSize:
-                                  12,
-                                fontWeight:
-                                  700
+                                fontSize: 12,
+                                fontWeight: 700
                               }}
                             >
                               {
@@ -2961,8 +2789,7 @@ export default function Home() {
 
                           <p
                             style={{
-                              marginBottom:
-                                8
+                              marginBottom: 8
                             }}
                           >
                             {
@@ -2975,10 +2802,8 @@ export default function Home() {
                               style={{
                                 cursor:
                                   'pointer',
-                                fontWeight:
-                                  800,
-                                fontSize:
-                                  13,
+                                fontWeight: 800,
+                                fontSize: 13,
                                 padding:
                                   '6px 0'
                               }}
@@ -2993,15 +2818,16 @@ export default function Home() {
                             />
 
                             {
-                              job.address
-                              &&
+                              job.address &&
                               (
                                 <div className="success">
                                   📍{' '}
                                   <b>
                                     Indirizzo intervento
                                   </b>
+
                                   <br />
+
                                   {
                                     job.address
                                   }
@@ -3066,15 +2892,16 @@ export default function Home() {
                         />
 
                         {
-                          job.address
-                          &&
+                          job.address &&
                           (
                             <div className="success">
                               📍{' '}
                               <b>
                                 Indirizzo intervento
                               </b>
+
                               <br />
+
                               {
                                 job.address
                               }
@@ -3119,8 +2946,7 @@ export default function Home() {
 
             <div
               style={{
-                marginTop:
-                  30
+                marginTop: 30
               }}
             >
               <span className="tag">
@@ -3132,8 +2958,7 @@ export default function Home() {
               </h2>
 
               {
-                reviews.length ===
-                  0
+                reviews.length === 0
                 ? (
                   <div className="card">
                     <p className="muted">
@@ -3145,8 +2970,7 @@ export default function Home() {
                   <div
                     className="card"
                     style={{
-                      padding:
-                        0,
+                      padding: 0,
                       overflow:
                         'hidden'
                     }}
@@ -3176,21 +3000,16 @@ export default function Home() {
                               style={{
                                 display:
                                   'flex',
-
                                 justifyContent:
                                   'space-between',
-
                                 alignItems:
                                   'center',
-
-                                gap:
-                                  10
+                                gap: 10
                               }}
                             >
                               <b
                                 style={{
-                                  fontSize:
-                                    13
+                                  fontSize: 13
                                 }}
                               >
                                 {
@@ -3202,8 +3021,7 @@ export default function Home() {
 
                               <span
                                 style={{
-                                  fontSize:
-                                    13,
+                                  fontSize: 13,
                                   whiteSpace:
                                     'nowrap'
                                 }}
@@ -3224,12 +3042,8 @@ export default function Home() {
                               style={{
                                 margin:
                                   '5px 0 0',
-
-                                fontSize:
-                                  12,
-
-                                lineHeight:
-                                  1.35
+                                fontSize: 12,
+                                lineHeight: 1.35
                               }}
                             >
                               {
@@ -3249,9 +3063,7 @@ export default function Home() {
           </section>
         </div>
 
-        <footer>
-          © 2026 LavoroSubito · MVP 1.0
-        </footer>
+        <LegalFooter />
 
         <ChatModal />
       </main>
@@ -3442,8 +3254,7 @@ export default function Home() {
             </div>
 
             {
-              photoPreview
-              &&
+              photoPreview &&
               (
                 <>
                   <img
@@ -3491,9 +3302,7 @@ export default function Home() {
                     const p =
                       await getPosition();
 
-                    setCoords(
-                      p
-                    );
+                    setCoords(p);
 
                     setMessage(
                       p
@@ -3528,8 +3337,7 @@ export default function Home() {
             </div>
 
             {
-              message
-              &&
+              message &&
               (
                 <div className="success">
                   {
@@ -3540,15 +3348,12 @@ export default function Home() {
             }
 
             {
-              bestMatch
-              &&
+              bestMatch &&
               (
                 <div
                   className="card"
                   style={{
-                    marginTop:
-                      16,
-
+                    marginTop: 16,
                     borderColor:
                       '#48b779'
                   }}
@@ -3574,8 +3379,7 @@ export default function Home() {
                       Number(
                         bestMatch.average_rating
                         || 0
-                      )
-                        .toFixed(1)
+                      ).toFixed(1)
                     }
                     {' · '}
                     {
@@ -3600,8 +3404,7 @@ export default function Home() {
                       != null
                         ? Number(
                             bestMatch.distance_km
-                          )
-                            .toFixed(1)
+                          ).toFixed(1)
                         : '—'
                     } km
                   </p>
@@ -3612,11 +3415,9 @@ export default function Home() {
         </section>
 
         {
-          user
-          &&
+          user &&
           role ===
-            'cliente'
-          &&
+            'cliente' &&
           (
             <section className="section">
               <span className="tag">
@@ -3718,12 +3519,10 @@ export default function Home() {
                       />
 
                       {
-                        job.address
-                        &&
+                        job.address &&
                         (
                           <div className="notice">
                             📍{' '}
-
                             <b>
                               Indirizzo intervento
                             </b>
@@ -3749,8 +3548,7 @@ export default function Home() {
                       </p>
 
                       {
-                        job.professional_name
-                        &&
+                        job.professional_name &&
                         (
                           <div className="success">
                             ✅{' '}
@@ -3764,8 +3562,7 @@ export default function Home() {
                       <div className="actions">
                         {
                           job.status ===
-                            'aperta'
-                          &&
+                            'aperta' &&
                           (
                             <button
                               className="danger"
@@ -3788,8 +3585,7 @@ export default function Home() {
                             ||
                             job.status ===
                               'completata'
-                          )
-                          &&
+                          ) &&
                           (
                             <button
                               className="full"
@@ -3810,8 +3606,7 @@ export default function Home() {
 
                         {
                           job.status ===
-                            'accettata'
-                          &&
+                            'accettata' &&
                           (
                             <button
                               className="outline"
@@ -3829,10 +3624,8 @@ export default function Home() {
 
                         {
                           job.status ===
-                            'completata'
-                          &&
-                          !job.reviewed
-                          &&
+                            'completata' &&
+                          !job.reviewed &&
                           (
                             <button
                               className="outline"
@@ -3842,9 +3635,7 @@ export default function Home() {
                                     job.id
                                   );
 
-                                  setRating(
-                                    5
-                                  );
+                                  setRating(5);
                                 }
                               }
                             >
@@ -3862,13 +3653,10 @@ export default function Home() {
         }
       </div>
 
-      <footer>
-        © 2026 LavoroSubito · MVP 1.0
-      </footer>
+      <LegalFooter />
 
       {
-        authOpen
-        &&
+        authOpen &&
         (
           <div className="modal">
             <form
@@ -3939,8 +3727,7 @@ export default function Home() {
 
               {
                 authMode ===
-                  'signup'
-                &&
+                  'signup' &&
                 (
                   <>
                     <label>
@@ -4011,9 +3798,7 @@ export default function Home() {
 
               <input
                 type="password"
-                minLength={
-                  6
-                }
+                minLength={6}
                 required
                 value={
                   password
@@ -4029,8 +3814,7 @@ export default function Home() {
               <button
                 className="full"
                 style={{
-                  marginTop:
-                    14
+                  marginTop: 14
                 }}
                 disabled={
                   busy
@@ -4053,8 +3837,7 @@ export default function Home() {
       <ChatModal />
 
       {
-        reviewJobId
-        &&
+        reviewJobId &&
         (
           <div className="modal">
             <form
@@ -4141,8 +3924,7 @@ export default function Home() {
               <button
                 className="full"
                 style={{
-                  marginTop:
-                    12
+                  marginTop: 12
                 }}
               >
                 Invia recensione
