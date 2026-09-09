@@ -117,6 +117,21 @@ export default function Home() {
   const [setup, setSetup] =
     useState<any>(null);
 
+  const [proCity, setProCity] =
+    useState('');
+
+  const [
+    proPostalCode,
+    setProPostalCode
+  ] =
+    useState('');
+
+  const [
+    locationBusy,
+    setLocationBusy
+  ] =
+    useState(false);
+
   const [reviews, setReviews] =
     useState<any[]>([]);
 
@@ -410,6 +425,9 @@ export default function Home() {
     setAvailability('offline');
     setIdentity({});
     setSetup(null);
+    setProCity('');
+    setProPostalCode('');
+    setLocationBusy(false);
     setReviews([]);
     setBestMatch(null);
     setChatJobId(null);
@@ -1673,20 +1691,11 @@ export default function Home() {
     await loadMatchingJobs();
   }
 
-  async function setProLocation() {
-    const p =
-      await getPosition();
-
-    if (
-      !p
-    ) {
-      setMessage(
-        'Posizione non disponibile.'
-      );
-
-      return;
-    }
-
+  async function saveProfessionalCoordinates(
+    latitude: number,
+    longitude: number,
+    successMessage: string
+  ) {
     const {
       error
     } =
@@ -1694,21 +1703,174 @@ export default function Home() {
         'update_my_professional_location',
         {
           p_latitude:
-            p.latitude,
+            latitude,
 
           p_longitude:
-            p.longitude
+            longitude
         }
       );
 
-    setMessage(
+    if (
       error
-        ? error.message
-        : '✅ Posizione aggiornata.'
+    ) {
+      setMessage(
+        error.message
+      );
+
+      return false;
+    }
+
+    setMessage(
+      successMessage
     );
 
     await loadProfessional();
     await loadMatchingJobs();
+
+    return true;
+  }
+
+  async function setProLocation() {
+    setLocationBusy(true);
+    setMessage('');
+
+    const p =
+      await getPosition();
+
+    if (
+      !p
+    ) {
+      setMessage(
+        'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
+      );
+
+      setLocationBusy(false);
+      return;
+    }
+
+    await saveProfessionalCoordinates(
+      p.latitude,
+      p.longitude,
+      '✅ Posizione GPS aggiornata.'
+    );
+
+    setLocationBusy(false);
+  }
+
+  async function setProLocationManual() {
+    const city =
+      proCity.trim();
+
+    const postalCode =
+      proPostalCode.trim();
+
+    if (
+      !city
+      &&
+      !postalCode
+    ) {
+      setMessage(
+        'Inserisci la città o il CAP della tua zona operativa.'
+      );
+
+      return;
+    }
+
+    setLocationBusy(true);
+    setMessage('');
+
+    try {
+      const params =
+        new URLSearchParams();
+
+      if (
+        city
+      ) {
+        params.set(
+          'city',
+          city
+        );
+      }
+
+      if (
+        postalCode
+      ) {
+        params.set(
+          'postalCode',
+          postalCode
+        );
+      }
+
+      const response =
+        await fetch(
+          `/api/geocode?${params.toString()}`
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok
+      ) {
+        setMessage(
+          result.error
+          ||
+          'Località non trovata.'
+        );
+
+        setLocationBusy(false);
+        return;
+      }
+
+      const latitude =
+        Number(
+          result.latitude
+        );
+
+      const longitude =
+        Number(
+          result.longitude
+        );
+
+      if (
+        !Number.isFinite(
+          latitude
+        )
+        ||
+        !Number.isFinite(
+          longitude
+        )
+      ) {
+        setMessage(
+          'Coordinate della località non valide.'
+        );
+
+        setLocationBusy(false);
+        return;
+      }
+
+      const label =
+        result.displayName
+        ||
+        [
+          postalCode,
+          city
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+      await saveProfessionalCoordinates(
+        latitude,
+        longitude,
+        `✅ Zona operativa impostata: ${label}`
+      );
+    } catch {
+      setMessage(
+        'Errore durante la ricerca della località.'
+      );
+    }
+
+    setLocationBusy(false);
   }
 
   async function setRadius(
@@ -2370,20 +2532,107 @@ export default function Home() {
               </span>
 
               <h3>
+                Zona operativa
+              </h3>
+
+              <p className="muted">
+                Puoi usare la posizione GPS oppure indicare
+                manualmente città e CAP.
+              </p>
+
+              <button
+                className="full"
+                disabled={
+                  locationBusy
+                }
+                onClick={
+                  setProLocation
+                }
+              >
+                {
+                  locationBusy
+                    ? 'Localizzazione...'
+                    : '📍 Usa la mia posizione GPS'
+                }
+              </button>
+
+              <div
+                style={{
+                  marginTop:
+                    20
+                }}
+              >
+                <label>
+                  Città
+                </label>
+
+                <input
+                  value={
+                    proCity
+                  }
+                  onChange={
+                    e =>
+                      setProCity(
+                        e.target.value
+                      )
+                  }
+                  placeholder="Es. Urbino"
+                />
+
+                <label>
+                  CAP
+                </label>
+
+                <input
+                  value={
+                    proPostalCode
+                  }
+                  onChange={
+                    e =>
+                      setProPostalCode(
+                        e.target.value
+                      )
+                  }
+                  inputMode="numeric"
+                  placeholder="Es. 61029"
+                />
+
+                <button
+                  className="outline"
+                  disabled={
+                    locationBusy
+                  }
+                  style={{
+                    marginTop:
+                      12,
+                    width:
+                      '100%'
+                  }}
+                  onClick={
+                    setProLocationManual
+                  }
+                >
+                  🗺 Imposta città / CAP
+                </button>
+              </div>
+
+              <hr
+                style={{
+                  margin:
+                    '24px 0',
+                  border:
+                    0,
+                  borderTop:
+                    '1px solid #e5e5e5'
+                }}
+              />
+
+              <h3>
                 Raggio massimo:{' '}
                 {maxDistance} km
               </h3>
 
               <div className="actions">
-                <button
-                  className="full"
-                  onClick={
-                    setProLocation
-                  }
-                >
-                  📍 Aggiorna posizione
-                </button>
-
                 {
                   DISTANCES.map(
                     value => (
