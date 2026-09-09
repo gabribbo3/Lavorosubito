@@ -1,320 +1,693 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import {
+  NextRequest,
+  NextResponse
+} from 'next/server';
+
+import {
+  createClient
+} from '@supabase/supabase-js';
+
 import webpush from 'web-push';
 
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL!;
-
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabaseAdmin = createClient(
-  supabaseUrl,
-  serviceRoleKey,
-  {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  }
-);
-
-function cleanKey(
-  value: string | undefined
+function distanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
 ) {
-  return (value ?? '')
-    .replace(/\s+/g, '')
-    .replace(/^["']|["']$/g, '');
+
+  const earthRadius =
+    6371;
+
+  const dLat =
+    (
+      lat2 - lat1
+    )
+    * Math.PI
+    / 180;
+
+  const dLon =
+    (
+      lon2 - lon1
+    )
+    * Math.PI
+    / 180;
+
+  const a =
+    Math.sin(
+      dLat / 2
+    ) ** 2
+
+    +
+
+    Math.cos(
+      lat1
+      * Math.PI
+      / 180
+    )
+
+    *
+
+    Math.cos(
+      lat2
+      * Math.PI
+      / 180
+    )
+
+    *
+
+    Math.sin(
+      dLon / 2
+    ) ** 2;
+
+  return (
+    2
+    *
+    earthRadius
+    *
+    Math.asin(
+      Math.sqrt(
+        a
+      )
+    )
+  );
+
 }
 
 export async function POST(
-  request: NextRequest
+  request:
+    NextRequest
 ) {
+
   try {
+
+    const supabaseUrl =
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL;
+
+    const publishableKey =
+      process.env
+        .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+    const serviceRoleKey =
+      process.env
+        .SUPABASE_SERVICE_ROLE_KEY;
+
     const vapidPublicKey =
-      cleanKey(
-        process.env
-          .NEXT_PUBLIC_VAPID_PUBLIC_KEY
-      );
+      process.env
+        .NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
     const vapidPrivateKey =
-      cleanKey(
-        process.env
-          .VAPID_PRIVATE_KEY
-      );
+      process.env
+        .VAPID_PRIVATE_KEY;
 
     if (
-      !vapidPublicKey ||
+      !supabaseUrl
+      ||
+      !publishableKey
+      ||
+      !serviceRoleKey
+      ||
+      !vapidPublicKey
+      ||
       !vapidPrivateKey
     ) {
+
       return NextResponse.json(
         {
+          ok:
+            false,
+
           error:
-            'Chiavi VAPID mancanti'
+            'Configurazione server incompleta.'
         },
         {
-          status: 500
+          status:
+            500
         }
       );
+
     }
 
-    webpush.setVapidDetails(
-      'mailto:info@lavorosubito.it',
-      vapidPublicKey,
-      vapidPrivateKey
-    );
+    const authorization =
+      request
+        .headers
+        .get(
+          'authorization'
+        );
 
-    const authHeader =
-      request.headers.get(
-        'authorization'
-      );
-
-    const token =
-      authHeader?.startsWith(
-        'Bearer '
-      )
-        ? authHeader.slice(7)
-        : null;
-
-    if (!token) {
-      return NextResponse.json(
-        {
-          error:
-            'Non autorizzato'
-        },
-        {
-          status: 401
-        }
-      );
-    }
-
-    const {
-      data: userData,
-      error: userError
-    } =
-      await supabaseAdmin.auth
-        .getUser(token);
+    const accessToken =
+      authorization
+        ?.replace(
+          /^Bearer\s+/i,
+          ''
+        );
 
     if (
-      userError ||
-      !userData.user
+      !accessToken
     ) {
+
       return NextResponse.json(
         {
-          error:
-            'Sessione non valida'
+          ok:
+            false
         },
         {
-          status: 401
+          status:
+            401
         }
       );
+
     }
 
-    const {
-      jobId
-    } =
-      await request.json();
+    const userClient =
+      createClient(
+        supabaseUrl,
+        publishableKey,
+        {
+          global:
+            {
+              headers:
+                {
+                  Authorization:
+                    `Bearer ${accessToken}`
+                }
+            }
+        }
+      );
 
-    if (!jobId) {
+    const {
+      data: {
+        user
+      }
+    } =
+      await userClient
+        .auth
+        .getUser();
+
+    if (
+      !user
+    ) {
+
       return NextResponse.json(
         {
-          error:
-            'jobId mancante'
+          ok:
+            false
         },
         {
-          status: 400
+          status:
+            401
         }
       );
+
     }
 
+    const body =
+      await request
+        .json();
+
+    const jobId =
+      body
+        ?.jobId;
+
+    if (
+      !jobId
+    ) {
+
+      return NextResponse.json(
+        {
+          ok:
+            false,
+
+          error:
+            'jobId mancante.'
+        },
+        {
+          status:
+            400
+        }
+      );
+
+    }
+
+    const admin =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth:
+            {
+              persistSession:
+                false
+            }
+        }
+      );
+
     const {
-      data: job,
-      error: jobError
+      data:
+        job,
+      error:
+        jobError
     } =
-      await supabaseAdmin
-        .from('jobs')
+      await admin
+        .from(
+          'jobs'
+        )
         .select(
-          'id, client_id, description, urgency'
+          'id,client_id,category_id,urgency,latitude,longitude,description'
         )
         .eq(
           'id',
           jobId
         )
-        .single();
+        .maybeSingle();
 
     if (
-      jobError ||
+      jobError
+      ||
       !job
     ) {
+
       return NextResponse.json(
         {
+          ok:
+            false,
+
           error:
-            'Lavoro non trovato'
+            'Richiesta non trovata.'
         },
         {
-          status: 404
+          status:
+            404
         }
       );
+
     }
 
     if (
       job.client_id !==
-      userData.user.id
+        user.id
     ) {
+
       return NextResponse.json(
         {
-          error:
-            'Non autorizzato'
+          ok:
+            false
         },
         {
-          status: 403
+          status:
+            403
         }
       );
+
     }
 
     const {
-      data: matches,
-      error: matchError
+      data:
+        categoryRows
     } =
-      await supabaseAdmin.rpc(
-        'find_professionals_for_job',
-        {
-          p_job_id:
-            jobId
-        }
-      );
-
-    if (matchError) {
-      throw matchError;
-    }
+      await admin
+        .from(
+          'professional_categories'
+        )
+        .select(
+          'professional_id'
+        )
+        .eq(
+          'category_id',
+          job.category_id
+        );
 
     const professionalIds =
-      (matches ?? [])
-        .filter(
-          (match: any) =>
-            match
-              .availability_status !==
-            'offline'
+      [
+        ...new Set(
+          (
+            categoryRows
+            ?? []
+          ).map(
+            (
+              row:
+                any
+            ) =>
+              row
+                .professional_id
+          )
         )
-        .map(
-          (match: any) =>
-            match
-              .professional_id
-        );
+      ];
 
     if (
       professionalIds.length ===
-      0
+        0
     ) {
-      return NextResponse.json({
-        success: true,
-        sent: 0
-      });
+
+      return NextResponse.json(
+        {
+          ok:
+            true,
+
+          sent:
+            0
+        }
+      );
+
     }
 
     const {
-      data: subscriptions,
-      error:
-        subscriptionError
+      data:
+        professionals
     } =
-      await supabaseAdmin
+      await admin
+        .from(
+          'professionals'
+        )
+        .select(
+          'id,business_name,verified,verification_status,latitude,longitude,max_distance_km'
+        )
+        .in(
+          'id',
+          professionalIds
+        )
+        .eq(
+          'verified',
+          true
+        )
+        .eq(
+          'verification_status',
+          'verificato'
+        );
+
+    const {
+      data:
+        availabilityRows
+    } =
+      await admin
+        .from(
+          'availability'
+        )
+        .select(
+          'professional_id,status'
+        )
+        .in(
+          'professional_id',
+          professionalIds
+        );
+
+    const availabilityMap =
+      new Map(
+        (
+          availabilityRows
+          ?? []
+        ).map(
+          (
+            row:
+              any
+          ) =>
+            [
+              row
+                .professional_id,
+
+              row
+                .status
+            ]
+        )
+      );
+
+    const urgency =
+      String(
+        job
+          .urgency
+        ?? ''
+      )
+        .toLowerCase();
+
+    const eligibleProfessionals =
+      (
+        professionals
+        ?? []
+      ).filter(
+        (
+          professional:
+            any
+        ) => {
+
+          const availability =
+            availabilityMap
+              .get(
+                professional.id
+              );
+
+          if (
+            !availability
+            ||
+            availability ===
+              'offline'
+          ) {
+
+            return false;
+
+          }
+
+          if (
+            urgency ===
+              'subito'
+            &&
+            ![
+              'ora',
+              '1-2h'
+            ].includes(
+              String(
+                availability
+              )
+            )
+          ) {
+
+            return false;
+
+          }
+
+          if (
+            urgency ===
+              'oggi'
+            &&
+            ![
+              'ora',
+              '1-2h',
+              'oggi'
+            ].includes(
+              String(
+                availability
+              )
+            )
+          ) {
+
+            return false;
+
+          }
+
+          if (
+            job.latitude ==
+              null
+            ||
+            job.longitude ==
+              null
+            ||
+            professional.latitude ==
+              null
+            ||
+            professional.longitude ==
+              null
+          ) {
+
+            return true;
+
+          }
+
+          const distance =
+            distanceKm(
+              job.latitude,
+              job.longitude,
+              professional.latitude,
+              professional.longitude
+            );
+
+          const radius =
+            Number(
+              professional
+                .max_distance_km
+              ?? 30
+            );
+
+          if (
+            distance >
+              radius
+          ) {
+
+            return false;
+
+          }
+
+          const estimatedMinutes =
+            Math.ceil(
+              distance
+              * 2.2
+              + 8
+            );
+
+          if (
+            urgency ===
+              'subito'
+            &&
+            estimatedMinutes >
+              45
+          ) {
+
+            return false;
+
+          }
+
+          if (
+            urgency ===
+              'oggi'
+            &&
+            estimatedMinutes >
+              180
+          ) {
+
+            return false;
+
+          }
+
+          return true;
+
+        }
+      );
+
+    const targetIds =
+      eligibleProfessionals
+        .map(
+          professional =>
+            professional.id
+        );
+
+    if (
+      targetIds.length ===
+        0
+    ) {
+
+      return NextResponse.json(
+        {
+          ok:
+            true,
+
+          sent:
+            0
+        }
+      );
+
+    }
+
+    const {
+      data:
+        subscriptions
+    } =
+      await admin
         .from(
           'push_subscriptions'
         )
         .select(
-          'id, user_id, endpoint, p256dh, auth'
+          'endpoint,p256dh,auth,user_id'
         )
         .in(
           'user_id',
-          professionalIds
+          targetIds
         );
 
-    if (
-      subscriptionError
-    ) {
-      throw subscriptionError;
-    }
+    webpush
+      .setVapidDetails(
+        'mailto:noreply@lavorosubito.app',
+        vapidPublicKey.trim(),
+        vapidPrivateKey.trim()
+      );
 
-    let sent = 0;
+    let sent =
+      0;
 
     for (
       const subscription
-      of subscriptions ?? []
+      of subscriptions
+      ?? []
     ) {
+
       try {
+
         await webpush
           .sendNotification(
             {
               endpoint:
                 subscription.endpoint,
 
-              keys: {
-                p256dh:
-                  subscription.p256dh,
+              keys:
+                {
+                  p256dh:
+                    subscription.p256dh,
 
-                auth:
-                  subscription.auth
-              }
+                  auth:
+                    subscription.auth
+                }
             },
+            JSON.stringify(
+              {
+                title:
+                  'Nuovo lavoro compatibile',
 
-            JSON.stringify({
-              title:
-                job.urgency ===
-                'subito'
-                  ? '🚨 Nuovo lavoro urgente'
-                  : '🔔 Nuova richiesta LavoroSubito',
+                body:
+                  job.description
+                  ||
+                  'Nuova richiesta disponibile',
 
-              body:
-                job.description,
-
-              url: '/'
-            })
+                url:
+                  '/'
+              }
+            )
           );
 
         sent++;
-      } catch (
-        error: any
-      ) {
-        if (
-          error?.statusCode ===
-            404 ||
-          error?.statusCode ===
-            410
-        ) {
-          await supabaseAdmin
-            .from(
-              'push_subscriptions'
-            )
-            .delete()
-            .eq(
-              'id',
-              subscription.id
-            );
-        }
-      }
-    }
 
-    return NextResponse.json({
-      success: true,
-      sent
-    });
-  } catch (
-    error: any
-  ) {
-    console.error(
-      'Push error:',
-      error
-    );
+      } catch {
+      }
+
+    }
 
     return NextResponse.json(
       {
-        error:
-          error?.message ||
-          'Errore notifiche'
-      },
-      {
-        status: 500
+        ok:
+          true,
+
+        sent
       }
     );
+
+  } catch (
+    error:
+      any
+  ) {
+
+    return NextResponse.json(
+      {
+        ok:
+          false,
+
+        error:
+          error?.message
+          ??
+          'Errore server'
+      },
+      {
+        status:
+          500
+      }
+    );
+
   }
+
 }
