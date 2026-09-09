@@ -456,8 +456,7 @@ export default function Home() {
         .subscribe(
           status =>
             setLive(
-              status ===
-                'SUBSCRIBED'
+              status === 'SUBSCRIBED'
             )
         );
 
@@ -486,9 +485,7 @@ export default function Home() {
 
     setSelectedProCats([]);
 
-    setAvailability(
-      'offline'
-    );
+    setAvailability('offline');
 
     setIdentity({});
     setSetup(null);
@@ -777,8 +774,7 @@ export default function Home() {
     } | null>(
       resolve => {
         if (
-          !navigator
-            .geolocation
+          !navigator.geolocation
         ) {
           resolve(null);
           return;
@@ -862,10 +858,9 @@ export default function Home() {
     setPhotoFile(file);
 
     setPhotoPreview(
-      URL
-        .createObjectURL(
-          file
-        )
+      URL.createObjectURL(
+        file
+      )
     );
   }
 
@@ -1000,7 +995,6 @@ export default function Home() {
       setJobPhotos(
         current => ({
           ...current,
-
           [jobId]:
             null
         })
@@ -1026,7 +1020,6 @@ export default function Home() {
       setJobPhotos(
         current => ({
           ...current,
-
           [jobId]:
             null
         })
@@ -1040,10 +1033,9 @@ export default function Home() {
         ...current,
 
         [jobId]:
-          URL
-            .createObjectURL(
-              download.data
-            )
+          URL.createObjectURL(
+            download.data
+          )
       })
     );
   }
@@ -1665,6 +1657,46 @@ export default function Home() {
     }
 
     setBusy(false);
+  }
+
+  async function forgotPassword() {
+    const cleanEmail =
+      email.trim();
+
+    if (
+      !cleanEmail
+    ) {
+      setMessage(
+        'Inserisci prima la tua email.'
+      );
+
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+
+    const redirectTo =
+      `${window.location.origin}/reset-password`;
+
+    const {
+      error
+    } =
+      await supabase.auth
+        .resetPasswordForEmail(
+          cleanEmail,
+          {
+            redirectTo
+          }
+        );
+
+    setBusy(false);
+
+    setMessage(
+      error
+        ? `Errore: ${error.message}`
+        : '✅ Se l’indirizzo è associato a un account, riceverai una email per reimpostare la password.'
+    );
   }
 
   async function logout() {
@@ -3129,116 +3161,116 @@ export default function Home() {
 
               {
                 reviews.length === 0
-                ? (
-                  <div className="card">
-                    <p className="muted">
-                      Non hai ancora recensioni.
-                    </p>
-                  </div>
-                )
-                : (
-                  <div
-                    className="card"
-                    style={{
-                      padding:
-                        0,
-                      overflow:
-                        'hidden'
-                    }}
-                  >
-                    {
-                      reviews.map(
-                        (
-                          review,
-                          index
-                        ) => (
-                          <div
-                            key={
-                              review.review_id
-                            }
-                            style={{
-                              padding:
-                                '12px 14px',
-
-                              borderBottom:
-                                index <
-                                reviews.length - 1
-                                  ? '1px solid #e3e5e8'
-                                  : 'none'
-                            }}
-                          >
+                  ? (
+                    <div className="card">
+                      <p className="muted">
+                        Non hai ancora recensioni.
+                      </p>
+                    </div>
+                  )
+                  : (
+                    <div
+                      className="card"
+                      style={{
+                        padding:
+                          0,
+                        overflow:
+                          'hidden'
+                      }}
+                    >
+                      {
+                        reviews.map(
+                          (
+                            review,
+                            index
+                          ) => (
                             <div
-                              style={{
-                                display:
-                                  'flex',
-
-                                justifyContent:
-                                  'space-between',
-
-                                alignItems:
-                                  'center',
-
-                                gap:
-                                  10
-                              }}
-                            >
-                              <b
-                                style={{
-                                  fontSize:
-                                    13
-                                }}
-                              >
-                                {
-                                  review.client_name
-                                  ||
-                                  'Cliente'
-                                }
-                              </b>
-
-                              <span
-                                style={{
-                                  fontSize:
-                                    13,
-                                  whiteSpace:
-                                    'nowrap'
-                                }}
-                              >
-                                {
-                                  '⭐'.repeat(
-                                    Number(
-                                      review.rating
-                                      || 0
-                                    )
-                                  )
-                                }
-                              </span>
-                            </div>
-
-                            <p
-                              className="muted"
-                              style={{
-                                margin:
-                                  '5px 0 0',
-
-                                fontSize:
-                                  12,
-
-                                lineHeight:
-                                  1.35
-                              }}
-                            >
-                              {
-                                review.comment
-                                ||
-                                'Nessun commento.'
+                              key={
+                                review.review_id
                               }
-                            </p>
-                          </div>
+                              style={{
+                                padding:
+                                  '12px 14px',
+
+                                borderBottom:
+                                  index <
+                                  reviews.length - 1
+                                    ? '1px solid #e3e5e8'
+                                    : 'none'
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display:
+                                    'flex',
+
+                                  justifyContent:
+                                    'space-between',
+
+                                  alignItems:
+                                    'center',
+
+                                  gap:
+                                    10
+                                }}
+                              >
+                                <b
+                                  style={{
+                                    fontSize:
+                                      13
+                                  }}
+                                >
+                                  {
+                                    review.client_name
+                                    ||
+                                    'Cliente'
+                                  }
+                                </b>
+
+                                <span
+                                  style={{
+                                    fontSize:
+                                      13,
+                                    whiteSpace:
+                                      'nowrap'
+                                  }}
+                                >
+                                  {
+                                    '⭐'.repeat(
+                                      Number(
+                                        review.rating
+                                        || 0
+                                      )
+                                    )
+                                  }
+                                </span>
+                              </div>
+
+                              <p
+                                className="muted"
+                                style={{
+                                  margin:
+                                    '5px 0 0',
+
+                                  fontSize:
+                                    12,
+
+                                  lineHeight:
+                                    1.35
+                                }}
+                              >
+                                {
+                                  review.comment
+                                  ||
+                                  'Nessun commento.'
+                                }
+                              </p>
+                            </div>
+                          )
                         )
-                      )
-                    }
-                  </div>
-                )
+                      }
+                    </div>
+                  )
               }
             </div>
           </section>
@@ -4020,6 +4052,31 @@ export default function Home() {
                     )
                 }
               />
+
+              {
+                authMode ===
+                  'login' &&
+                (
+                  <button
+                    type="button"
+                    className="outline"
+                    disabled={
+                      busy
+                    }
+                    style={{
+                      marginTop:
+                        12,
+                      width:
+                        '100%'
+                    }}
+                    onClick={
+                      forgotPassword
+                    }
+                  >
+                    🔑 Password dimenticata?
+                  </button>
+                )
+              }
 
               {
                 authMode ===
