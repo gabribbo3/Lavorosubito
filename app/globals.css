@@ -31,6 +31,7 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -42,6 +43,7 @@ textarea {
 
 button {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 header {
@@ -54,7 +56,7 @@ header {
       255,
       255,
       255,
-      0.94
+      0.96
     );
 
   backdrop-filter:
@@ -69,10 +71,12 @@ header {
     space-between;
   align-items: center;
 
+  gap: 12px;
+
   padding:
-    18px
+    14px
     max(
-      22px,
+      18px,
       calc(
         (100vw - 1180px)
         / 2
@@ -81,24 +85,25 @@ header {
 }
 
 .logo {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 900;
   letter-spacing: -1px;
+  white-space: nowrap;
 }
 
 .logo b {
   display: inline-grid;
   place-items: center;
 
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
 
   background: #111317;
   color: white;
 
   border-radius: 12px;
 
-  margin-right: 10px;
+  margin-right: 9px;
 }
 
 .logo span {
@@ -126,7 +131,7 @@ header {
   gap: 34px;
 
   padding:
-    56px 0;
+    44px 0 52px;
 }
 
 .hero h1 {
@@ -143,7 +148,7 @@ header {
     -4px;
 
   margin:
-    16px 0;
+    14px 0;
 }
 
 .hero h1 span {
@@ -152,6 +157,8 @@ header {
 
 .hero p {
   font-size: 19px;
+  line-height: 1.5;
+
   color: var(--muted);
 
   max-width: 580px;
@@ -166,20 +173,20 @@ header {
     var(--line);
 
   border-radius:
-    24px;
+    22px;
 
   padding:
-    24px;
+    22px;
 
   box-shadow:
     0
-    14px
-    36px
+    12px
+    32px
     rgba(
       15,
       17,
       22,
-      0.05
+      0.045
     );
 }
 
@@ -206,7 +213,7 @@ header {
       1fr
     );
 
-  gap: 10px;
+  gap: 9px;
 }
 
 .cat {
@@ -221,7 +228,10 @@ header {
     14px;
 
   padding:
-    16px;
+    14px;
+
+  min-height:
+    58px;
 
   text-align:
     left;
@@ -230,7 +240,7 @@ header {
     800;
 
   transition:
-    0.2s ease;
+    0.15s ease;
 }
 
 .cat:hover {
@@ -248,10 +258,10 @@ header {
 
 .cat strong {
   font-size:
-    22px;
+    21px;
 
   margin-right:
-    8px;
+    7px;
 }
 
 .urg {
@@ -266,7 +276,7 @@ header {
   gap: 8px;
 
   margin:
-    18px 0;
+    16px 0;
 }
 
 .urg button,
@@ -282,7 +292,7 @@ header {
     12px;
 
   padding:
-    12px;
+    11px;
 
   font-weight:
     800;
@@ -307,7 +317,7 @@ label {
     800;
 
   margin:
-    15px 0 7px;
+    14px 0 7px;
 }
 
 input,
@@ -326,7 +336,7 @@ textarea {
     #ffffff;
 
   padding:
-    14px;
+    13px 14px;
 
   outline: none;
 }
@@ -350,6 +360,9 @@ textarea:focus {
 textarea {
   resize:
     vertical;
+
+  min-height:
+    120px;
 }
 
 .full,
@@ -367,6 +380,9 @@ textarea {
   border:
     1px solid
     transparent;
+
+  min-height:
+    46px;
 }
 
 .full {
@@ -414,7 +430,7 @@ textarea {
   flex-wrap:
     wrap;
 
-  gap: 10px;
+  gap: 9px;
 
   margin-top:
     12px;
@@ -422,31 +438,34 @@ textarea {
 
 .section {
   padding:
-    30px 0 70px;
+    28px 0 64px;
 }
 
 .section h2 {
   font-size:
-    36px;
+    34px;
 
   letter-spacing:
     -1.5px;
 
   margin:
-    8px 0 16px;
+    8px 0 15px;
 }
 
 .success,
 .notice,
 .error {
   padding:
-    14px 16px;
+    13px 15px;
 
   border-radius:
     14px;
 
   margin:
-    14px 0;
+    13px 0;
+
+  line-height:
+    1.4;
 }
 
 .success {
@@ -482,12 +501,12 @@ textarea {
   gap: 8px;
 
   margin:
-    18px 0;
+    16px 0;
 }
 
 .job {
   margin:
-    14px 0;
+    13px 0;
 }
 
 .job-top {
@@ -496,7 +515,7 @@ textarea {
   justify-content:
     space-between;
 
-  gap: 16px;
+  gap: 14px;
 
   align-items:
     flex-start;
@@ -549,12 +568,12 @@ textarea {
     );
 
   gap:
-    12px;
+    10px;
 }
 
 .kpi .card {
   padding:
-    16px;
+    15px;
 }
 
 .kpi strong {
@@ -562,7 +581,7 @@ textarea {
     block;
 
   font-size:
-    28px;
+    27px;
 }
 
 .modal {
@@ -590,7 +609,7 @@ textarea {
     center;
 
   padding:
-    18px;
+    16px;
 }
 
 .modalBox {
@@ -610,10 +629,10 @@ textarea {
     #ffffff;
 
   border-radius:
-    24px;
+    22px;
 
   padding:
-    24px;
+    22px;
 
   position:
     relative;
@@ -624,10 +643,10 @@ textarea {
     absolute;
 
   right:
-    16px;
+    15px;
 
   top:
-    14px;
+    12px;
 
   border:
     0;
@@ -683,7 +702,7 @@ textarea {
 
 footer {
   padding:
-    35px 20px;
+    30px 20px;
 
   text-align:
     center;
@@ -764,20 +783,212 @@ footer {
     820px
 ) {
 
+  header {
+    padding:
+      12px 16px;
+  }
+
+  .logo {
+    font-size:
+      21px;
+
+    letter-spacing:
+      -0.7px;
+  }
+
+  .logo b {
+    width:
+      36px;
+
+    height:
+      36px;
+
+    border-radius:
+      10px;
+
+    margin-right:
+      7px;
+  }
+
+  header .outline {
+    padding:
+      10px 12px;
+
+    min-height:
+      42px;
+
+    font-size:
+      14px;
+
+    white-space:
+      nowrap;
+  }
+
+  .container {
+    width:
+      calc(
+        100% - 24px
+      );
+  }
+
   .hero {
     grid-template-columns:
       1fr;
 
-    padding-top:
-      30px;
+    gap:
+      24px;
+
+    padding:
+      26px 0 38px;
   }
 
   .hero h1 {
     font-size:
-      54px;
+      clamp(
+        44px,
+        13vw,
+        56px
+      );
+
+    line-height:
+      0.98;
 
     letter-spacing:
       -2.6px;
+
+    margin:
+      12px 0 16px;
+  }
+
+  .hero p {
+    font-size:
+      17px;
+
+    line-height:
+      1.45;
+
+    margin-bottom:
+      0;
+  }
+
+  .card {
+    padding:
+      17px;
+
+    border-radius:
+      20px;
+  }
+
+  .grid {
+    gap:
+      8px;
+  }
+
+  .cat {
+    padding:
+      11px 12px;
+
+    min-height:
+      54px;
+
+    font-size:
+      14px;
+  }
+
+  .cat strong {
+    font-size:
+      19px;
+
+    margin-right:
+      5px;
+  }
+
+  .urg {
+    margin:
+      14px 0;
+  }
+
+  .urg button {
+    padding:
+      10px 6px;
+
+    font-size:
+      14px;
+  }
+
+  label {
+    margin-top:
+      13px;
+
+    font-size:
+      15px;
+  }
+
+  input,
+  select,
+  textarea {
+    padding:
+      12px 13px;
+
+    border-radius:
+      13px;
+  }
+
+  textarea {
+    min-height:
+      105px;
+  }
+
+  .actions {
+    gap:
+      8px;
+  }
+
+  .hero .card > .actions {
+    display:
+      grid;
+
+    grid-template-columns:
+      1fr;
+  }
+
+  .hero .card > .actions .outline,
+  .hero .card > .actions .full {
+    width:
+      100%;
+  }
+
+  .full,
+  .outline,
+  .danger {
+    padding:
+      12px 14px;
+
+    min-height:
+      44px;
+  }
+
+  .section {
+    padding:
+      26px 0 55px;
+  }
+
+  .section h2 {
+    font-size:
+      29px;
+  }
+
+  .filter {
+    gap:
+      6px;
+  }
+
+  .filter button {
+    padding:
+      9px 11px;
+
+    font-size:
+      13px;
   }
 
   .kpi {
@@ -785,27 +996,105 @@ footer {
       1fr 1fr;
   }
 
-  .logo {
+  .kpi strong {
     font-size:
       24px;
   }
 
+  .modal {
+    padding:
+      12px;
+  }
+
+  .modalBox {
+    padding:
+      18px;
+
+    border-radius:
+      20px;
+  }
+
+  .mine {
+    margin-left:
+      24px;
+  }
+
+  .theirs {
+    margin-right:
+      24px;
+  }
+
+  footer {
+    padding:
+      26px 16px;
+  }
+}
+
+@media (
+  max-width:
+    430px
+) {
+
+  .logo {
+    font-size:
+      19px;
+  }
+
   .logo b {
     width:
-      38px;
+      34px;
 
     height:
-      38px;
+      34px;
+  }
+
+  header .outline {
+    padding:
+      9px 10px;
+
+    font-size:
+      13px;
+  }
+
+  .hero h1 {
+    font-size:
+      46px;
+  }
+
+  .hero p {
+    font-size:
+      16px;
+  }
+
+  .cat {
+    font-size:
+      13px;
+  }
+
+  .cat strong {
+    font-size:
+      18px;
   }
 
   .card {
     padding:
-      18px;
+      16px;
   }
 
-  .section h2 {
-    font-size:
-      30px;
+  .full,
+  .outline,
+  .danger {
+    width:
+      100%;
   }
 
+  .filter button {
+    width:
+      auto;
+  }
+
+  .kpi .card {
+    padding:
+      13px;
+  }
 }
