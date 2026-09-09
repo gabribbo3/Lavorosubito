@@ -450,7 +450,8 @@ export default function Home() {
     const [
       identityResponse,
       categoryResponse,
-      setupResponse
+      setupResponse,
+      availabilityResponse
     ] =
       await Promise.all([
         supabase.rpc(
@@ -463,6 +464,10 @@ export default function Home() {
 
         supabase.rpc(
           'my_professional_setup_status'
+        ),
+
+        supabase.rpc(
+          'my_professional_availability'
         )
       ]);
 
@@ -487,25 +492,13 @@ export default function Home() {
       );
     }
 
+    if (availabilityResponse.data) {
+      setAvailability(
+        availabilityResponse.data as Availability
+      );
+    }
+
     if (user) {
-      const {
-        data: availabilityRow
-      } =
-        await supabase
-          .from('availability')
-          .select('status')
-          .eq(
-            'professional_id',
-            user.id
-          )
-          .maybeSingle();
-
-      if (availabilityRow?.status) {
-        setAvailability(
-          availabilityRow.status as Availability
-        );
-      }
-
       const {
         data: professionalRow
       } =
@@ -832,7 +825,6 @@ export default function Home() {
     setJobPhotos(
       current => ({
         ...current,
-
         [jobId]:
           URL.createObjectURL(
             download.data
@@ -865,18 +857,9 @@ export default function Home() {
     }
 
     if (!user) {
-      setSignupRole(
-        'cliente'
-      );
-
-      setAuthMode(
-        'signup'
-      );
-
-      setAuthOpen(
-        true
-      );
-
+      setSignupRole('cliente');
+      setAuthMode('signup');
+      setAuthOpen(true);
       return;
     }
 
@@ -910,11 +893,9 @@ export default function Home() {
 
     if (!category) {
       setBusy(false);
-
       setMessage(
         'Categoria non trovata.'
       );
-
       return;
     }
 
@@ -1301,9 +1282,7 @@ export default function Home() {
       );
 
       if (!error) {
-        setAuthMode(
-          'login'
-        );
+        setAuthMode('login');
       }
     } else {
       const {
@@ -1506,9 +1485,7 @@ export default function Home() {
       return;
     }
 
-    setAvailability(
-      value
-    );
+    setAvailability(value);
 
     setMessage(
       `✅ ${availabilityLabel(value)}`
@@ -2445,13 +2422,8 @@ export default function Home() {
                 className="outline"
                 onClick={
                   () => {
-                    setAuthMode(
-                      'login'
-                    );
-
-                    setAuthOpen(
-                      true
-                    );
+                    setAuthMode('login');
+                    setAuthOpen(true);
                   }
                 }
               >
