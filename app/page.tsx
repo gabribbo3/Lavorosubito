@@ -12,6 +12,9 @@ import {
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+const PRIVACY_VERSION = '2026-09-09';
+const TERMS_VERSION = '2026-09-09';
+
 const CATEGORIES = [
   ['Idraulico', '🔧'],
   ['Elettricista', '⚡'],
@@ -485,7 +488,9 @@ export default function Home() {
 
     setSelectedProCats([]);
 
-    setAvailability('offline');
+    setAvailability(
+      'offline'
+    );
 
     setIdentity({});
     setSetup(null);
@@ -791,8 +796,10 @@ export default function Home() {
                 longitude:
                   p.coords.longitude
               }),
+
             () =>
               resolve(null),
+
             {
               enableHighAccuracy:
                 true,
@@ -1593,16 +1600,27 @@ export default function Home() {
       } =
         await supabase.auth
           .signUp({
-            email,
+            email:
+              email.trim(),
+
             password,
 
             options: {
               data: {
                 full_name:
-                  authName,
+                  authName.trim(),
 
                 role:
-                  signupRole
+                  signupRole,
+
+                legal_accepted:
+                  true,
+
+                privacy_version:
+                  PRIVACY_VERSION,
+
+                terms_version:
+                  TERMS_VERSION
               }
             }
           });
@@ -1631,7 +1649,9 @@ export default function Home() {
       } =
         await supabase.auth
           .signInWithPassword({
-            email,
+            email:
+              email.trim(),
+
             password
           });
 
@@ -2231,8 +2251,7 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop:
-                  10
+                marginTop: 10
               }}
             >
               Invia
@@ -2245,8 +2264,7 @@ export default function Home() {
 
   if (
     user &&
-    role ===
-      'professionista'
+    role === 'professionista'
   ) {
     return (
       <main>
@@ -2261,9 +2279,7 @@ export default function Home() {
 
           <button
             className="outline"
-            onClick={
-              logout
-            }
+            onClick={logout}
           >
             Esci
           </button>
@@ -2351,8 +2367,7 @@ export default function Home() {
                 <strong>
                   {
                     reviews.length
-                      ? averageRating
-                          .toFixed(1)
+                      ? averageRating.toFixed(1)
                       : '—'
                   }
                 </strong>
@@ -2362,8 +2377,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2395,7 +2409,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         business_name:
                           e.target.value
                       })
@@ -2417,7 +2430,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         phone:
                           e.target.value
                       })
@@ -2439,7 +2451,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         vat_number:
                           e.target.value
                       })
@@ -2461,7 +2472,6 @@ export default function Home() {
                     setIdentity(
                       (x: any) => ({
                         ...x,
-
                         tax_code:
                           e.target.value
                       })
@@ -2484,8 +2494,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2510,9 +2519,7 @@ export default function Home() {
                   ].map(
                     value => (
                       <button
-                        key={
-                          value
-                        }
+                        key={value}
                         className={
                           availability ===
                             value
@@ -2541,8 +2548,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2552,8 +2558,7 @@ export default function Home() {
               <div
                 className="grid"
                 style={{
-                  marginTop:
-                    12
+                  marginTop: 12
                 }}
               >
                 {
@@ -2623,8 +2628,7 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop:
-                  16
+                marginTop: 16
               }}
             >
               <span className="tag">
@@ -2658,8 +2662,7 @@ export default function Home() {
 
               <div
                 style={{
-                  marginTop:
-                    20
+                  marginTop: 20
                 }}
               >
                 <label>
@@ -2703,10 +2706,8 @@ export default function Home() {
                     locationBusy
                   }
                   style={{
-                    marginTop:
-                      12,
-                    width:
-                      '100%'
+                    marginTop: 12,
+                    width: '100%'
                   }}
                   onClick={
                     setProLocationManual
@@ -2718,10 +2719,8 @@ export default function Home() {
 
               <hr
                 style={{
-                  margin:
-                    '24px 0',
-                  border:
-                    0,
+                  margin: '24px 0',
+                  border: 0,
                   borderTop:
                     '1px solid #e5e5e5'
                 }}
@@ -2737,9 +2736,7 @@ export default function Home() {
                   DISTANCES.map(
                     value => (
                       <button
-                        key={
-                          value
-                        }
+                        key={value}
                         className={
                           maxDistance ===
                             value
@@ -2753,9 +2750,7 @@ export default function Home() {
                             )
                         }
                       >
-                        {
-                          value
-                        } km
+                        {value} km
                       </button>
                     )
                   )
@@ -2765,8 +2760,7 @@ export default function Home() {
 
             <div
               style={{
-                marginTop:
-                  30
+                marginTop: 30
               }}
             >
               <span className="tag">
@@ -2796,9 +2790,7 @@ export default function Home() {
                   ].map(
                     filter => (
                       <button
-                        key={
-                          filter
-                        }
+                        key={filter}
                         className={
                           proFilter ===
                             filter
@@ -2951,8 +2943,7 @@ export default function Home() {
                                 'space-between',
                               alignItems:
                                 'flex-start',
-                              gap:
-                                10
+                              gap: 10
                             }}
                           >
                             <div>
@@ -2972,10 +2963,8 @@ export default function Home() {
                             <span
                               className="muted"
                               style={{
-                                fontSize:
-                                  12,
-                                fontWeight:
-                                  700
+                                fontSize: 12,
+                                fontWeight: 700
                               }}
                             >
                               {
@@ -2987,8 +2976,7 @@ export default function Home() {
 
                           <p
                             style={{
-                              marginBottom:
-                                8
+                              marginBottom: 8
                             }}
                           >
                             {
@@ -3001,10 +2989,8 @@ export default function Home() {
                               style={{
                                 cursor:
                                   'pointer',
-                                fontWeight:
-                                  800,
-                                fontSize:
-                                  13,
+                                fontWeight: 800,
+                                fontSize: 13,
                                 padding:
                                   '6px 0'
                               }}
@@ -3147,8 +3133,7 @@ export default function Home() {
 
             <div
               style={{
-                marginTop:
-                  30
+                marginTop: 30
               }}
             >
               <span className="tag">
@@ -3172,8 +3157,7 @@ export default function Home() {
                     <div
                       className="card"
                       style={{
-                        padding:
-                          0,
+                        padding: 0,
                         overflow:
                           'hidden'
                       }}
@@ -3210,14 +3194,12 @@ export default function Home() {
                                   alignItems:
                                     'center',
 
-                                  gap:
-                                    10
+                                  gap: 10
                                 }}
                               >
                                 <b
                                   style={{
-                                    fontSize:
-                                      13
+                                    fontSize: 13
                                   }}
                                 >
                                   {
@@ -3229,8 +3211,7 @@ export default function Home() {
 
                                 <span
                                   style={{
-                                    fontSize:
-                                      13,
+                                    fontSize: 13,
                                     whiteSpace:
                                       'nowrap'
                                   }}
@@ -3252,8 +3233,7 @@ export default function Home() {
                                   margin:
                                     '5px 0 0',
 
-                                  fontSize:
-                                    12,
+                                  fontSize: 12,
 
                                   lineHeight:
                                     1.35
@@ -3299,9 +3279,7 @@ export default function Home() {
             ? (
               <button
                 className="outline"
-                onClick={
-                  logout
-                }
+                onClick={logout}
               >
                 Esci
               </button>
@@ -3371,9 +3349,7 @@ export default function Home() {
                     ]
                   ) => (
                     <button
-                      key={
-                        name
-                      }
+                      key={name}
                       className={
                         cat ===
                           name
@@ -3388,14 +3364,10 @@ export default function Home() {
                       }
                     >
                       <strong>
-                        {
-                          icon
-                        }
+                        {icon}
                       </strong>
 
-                      {
-                        name
-                      }
+                      {name}
                     </button>
                   )
                 )
@@ -3411,9 +3383,7 @@ export default function Home() {
                 ].map(
                   value => (
                     <button
-                      key={
-                        value
-                      }
+                      key={value}
                       className={
                         urgency ===
                           value
@@ -3427,9 +3397,7 @@ export default function Home() {
                           )
                       }
                     >
-                      {
-                        value
-                      }
+                      {value}
                     </button>
                   )
                 )
@@ -3559,9 +3527,7 @@ export default function Home() {
               message &&
               (
                 <div className="success">
-                  {
-                    message
-                  }
+                  {message}
                 </div>
               )
             }
@@ -3572,9 +3538,7 @@ export default function Home() {
                 <div
                   className="card"
                   style={{
-                    marginTop:
-                      16,
-
+                    marginTop: 16,
                     borderColor:
                       '#48b779'
                   }}
@@ -3676,9 +3640,7 @@ export default function Home() {
                   ].map(
                     filter => (
                       <button
-                        key={
-                          filter
-                        }
+                        key={filter}
                         className={
                           clientFilter ===
                             filter
@@ -4064,10 +4026,8 @@ export default function Home() {
                       busy
                     }
                     style={{
-                      marginTop:
-                        12,
-                      width:
-                        '100%'
+                      marginTop: 12,
+                      width: '100%'
                     }}
                     onClick={
                       forgotPassword
@@ -4088,18 +4048,12 @@ export default function Home() {
                         'flex',
                       alignItems:
                         'flex-start',
-                      gap:
-                        10,
-                      marginTop:
-                        16,
-                      fontWeight:
-                        600,
-                      fontSize:
-                        13,
-                      lineHeight:
-                        1.45,
-                      cursor:
-                        'pointer'
+                      gap: 10,
+                      marginTop: 16,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                      cursor: 'pointer'
                     }}
                   >
                     <input
@@ -4115,14 +4069,10 @@ export default function Home() {
                           )
                       }
                       style={{
-                        width:
-                          18,
-                        height:
-                          18,
-                        minWidth:
-                          18,
-                        padding:
-                          0,
+                        width: 18,
+                        height: 18,
+                        minWidth: 18,
+                        padding: 0,
                         margin:
                           '1px 0 0'
                       }}
@@ -4165,8 +4115,7 @@ export default function Home() {
               <button
                 className="full"
                 style={{
-                  marginTop:
-                    14
+                  marginTop: 14
                 }}
                 disabled={
                   busy ||
@@ -4236,9 +4185,7 @@ export default function Home() {
                     stars => (
                       <button
                         type="button"
-                        key={
-                          stars
-                        }
+                        key={stars}
                         className={
                           rating ===
                             stars
@@ -4252,9 +4199,7 @@ export default function Home() {
                             )
                         }
                       >
-                        {
-                          stars
-                        } ⭐
+                        {stars} ⭐
                       </button>
                     )
                   )
@@ -4281,8 +4226,7 @@ export default function Home() {
               <button
                 className="full"
                 style={{
-                  marginTop:
-                    12
+                  marginTop: 12
                 }}
               >
                 Invia recensione
