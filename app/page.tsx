@@ -1571,14 +1571,12 @@ export default function Home() {
   }
 
   async function authSubmit(
-    event:
-      FormEvent
+    event: FormEvent
   ) {
     event.preventDefault();
 
     if (
-      authMode ===
-        'signup' &&
+      authMode === 'signup' &&
       !acceptedLegal
     ) {
       setMessage(
@@ -1592,10 +1590,10 @@ export default function Home() {
     setMessage('');
 
     if (
-      authMode ===
-      'signup'
+      authMode === 'signup'
     ) {
       const {
+        data,
         error
       } =
         await supabase.auth
@@ -1625,23 +1623,45 @@ export default function Home() {
             }
           });
 
-      setMessage(
-        error
-          ? error.message
-          : '✅ Registrazione completata. Controlla la tua email.'
+      if (error) {
+        console.error(
+          'SIGNUP ERROR:',
+          error
+        );
+
+        alert(
+          `Errore registrazione:\n${error.message}`
+        );
+
+        setMessage(
+          `Errore registrazione: ${error.message}`
+        );
+
+        setBusy(false);
+
+        return;
+      }
+
+      console.log(
+        'SIGNUP SUCCESS:',
+        data
       );
 
-      if (
-        !error
-      ) {
-        setAcceptedLegal(
-          false
-        );
+      alert(
+        'Registrazione completata correttamente.'
+      );
 
-        setAuthMode(
-          'login'
-        );
-      }
+      setMessage(
+        '✅ Registrazione completata. Controlla la tua email.'
+      );
+
+      setAcceptedLegal(
+        false
+      );
+
+      setAuthMode(
+        'login'
+      );
     } else {
       const {
         data,
