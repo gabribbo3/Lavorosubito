@@ -1230,9 +1230,6 @@ export default function Home() {
 
     setBestMatch(first);
 
-    let emailDebug =
-      'EMAIL DEBUG → chiamata non eseguita';
-
     try {
       const {
         data: sessionData
@@ -1246,13 +1243,10 @@ export default function Home() {
           ?.access_token;
 
       if (
-        !accessToken
+        accessToken
       ) {
-        emailDebug =
-          'EMAIL DEBUG → token utente mancante';
-      } else {
-        const emailResponse =
-          await fetch(
+        await Promise.allSettled([
+          fetch(
             '/api/email/new-job',
             {
               method:
@@ -1271,24 +1265,9 @@ export default function Home() {
                   jobId
                 })
             }
-          );
+          ),
 
-        let emailResult:
-          any = null;
-
-        try {
-          emailResult =
-            await emailResponse
-              .json();
-        } catch {
-          emailResult = null;
-        }
-
-        emailDebug =
-          `EMAIL DEBUG → HTTP ${emailResponse.status} → ${JSON.stringify(emailResult)}`;
-
-        try {
-          await fetch(
+          fetch(
             '/api/push/send',
             {
               method:
@@ -1307,29 +1286,16 @@ export default function Home() {
                   jobId
                 })
             }
-          );
-        } catch {
-        }
+          )
+        ]);
       }
-    } catch (
-      error
-    ) {
-      emailDebug =
-        `EMAIL DEBUG → errore: ${
-          error instanceof Error
-            ? error.message
-            : 'errore sconosciuto'
-        }`;
+    } catch {
     }
 
     setMessage(
-      `${
-        first
-          ? '✅ Professionista compatibile trovato.'
-          : '✅ Richiesta creata. Nessun professionista compatibile al momento.'
-      }
-
-${emailDebug}`
+      first
+        ? '✅ Professionista compatibile trovato.'
+        : '✅ Richiesta creata. Nessun professionista compatibile al momento.'
     );
 
     setBusy(false);
