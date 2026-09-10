@@ -52,13 +52,11 @@ export default function PrivacyPage() {
       </p>
 
       <p>
-        <strong>[NOME / RAGIONE SOCIALE]</strong>
+        <strong>Mattia Garbugli</strong>
         <br />
-        Sede: [INDIRIZZO]
+        Indirizzo: Via Nazionale 27, 61029 Urbino (PU), Italia
         <br />
-        Email: [EMAIL PRIVACY]
-        <br />
-        Partita IVA / Codice fiscale: [DATI]
+        Email: gaf90@hotmail.it
       </p>
 
       <h2>2. Dati trattati</h2>
@@ -74,7 +72,7 @@ export default function PrivacyPage() {
 
         <li>
           indirizzo email e dati necessari per
-          l'autenticazione;
+          l&apos;autenticazione;
         </li>
 
         <li>
@@ -83,7 +81,7 @@ export default function PrivacyPage() {
 
         <li>
           dati professionali, tra cui nome attività,
-          Partita IVA e codice fiscale;
+          Partita IVA e codice fiscale, se forniti;
         </li>
 
         <li>
@@ -92,12 +90,12 @@ export default function PrivacyPage() {
 
         <li>
           posizione geografica, coordinate GPS e zona
-          operativa, quando fornite dall'utente;
+          operativa, quando fornite dall&apos;utente;
         </li>
 
         <li>
           indirizzo presso il quale deve essere eseguito
-          l'intervento;
+          l&apos;intervento;
         </li>
 
         <li>
@@ -105,8 +103,8 @@ export default function PrivacyPage() {
         </li>
 
         <li>
-          fotografie caricate dall'utente relative al
-          problema o all'intervento;
+          fotografie caricate dall&apos;utente relative al
+          problema o all&apos;intervento;
         </li>
 
         <li>
@@ -125,7 +123,7 @@ export default function PrivacyPage() {
 
         <li>
           eventuali dati tecnici necessari per
-          l'attivazione delle notifiche.
+          l&apos;attivazione delle notifiche.
         </li>
       </ul>
 
@@ -200,8 +198,8 @@ export default function PrivacyPage() {
 
       <ul>
         <li>
-          dell'esecuzione del contratto o delle misure
-          precontrattuali richieste dall'utente;
+          dell&apos;esecuzione del contratto o delle misure
+          precontrattuali richieste dall&apos;utente;
         </li>
 
         <li>
@@ -209,7 +207,7 @@ export default function PrivacyPage() {
         </li>
 
         <li>
-          dell'adempimento di obblighi legali;
+          dell&apos;adempimento di obblighi legali;
         </li>
 
         <li>
@@ -223,14 +221,14 @@ export default function PrivacyPage() {
 
       <p>
         La piattaforma può utilizzare la posizione
-        dell'utente per determinare la distanza tra una
+        dell&apos;utente per determinare la distanza tra una
         richiesta di intervento e i professionisti
         disponibili.
       </p>
 
       <p>
-        L'accesso alla posizione del dispositivo avviene
-        solo quando autorizzato dall'utente. In alternativa,
+        L&apos;accesso alla posizione del dispositivo avviene
+        solo quando autorizzato dall&apos;utente. In alternativa,
         il professionista può indicare manualmente la propria
         zona operativa tramite città e CAP.
       </p>
@@ -241,17 +239,17 @@ export default function PrivacyPage() {
         richieste e professionisti.
       </p>
 
-      <h2>6. Indirizzo dell'intervento</h2>
+      <h2>6. Indirizzo dell&apos;intervento</h2>
 
       <p>
-        L'indirizzo fornito dal cliente è utilizzato per
-        consentire l'esecuzione del servizio richiesto.
+        L&apos;indirizzo fornito dal cliente è utilizzato per
+        consentire l&apos;esecuzione del servizio richiesto.
       </p>
 
       <p>
         La piattaforma adotta misure per limitarne la
         visibilità ai soggetti autorizzati e coinvolti
-        nell'intervento.
+        nell&apos;intervento.
       </p>
 
       <h2>7. Fotografie</h2>
@@ -259,11 +257,11 @@ export default function PrivacyPage() {
       <p>
         Gli utenti possono caricare fotografie relative al
         problema per facilitare la valutazione
-        dell'intervento.
+        dell&apos;intervento.
       </p>
 
       <p>
-        L'utente è invitato a non includere nelle immagini
+        L&apos;utente è invitato a non includere nelle immagini
         documenti, volti, targhe o altre informazioni
         personali non necessarie.
       </p>
@@ -272,7 +270,7 @@ export default function PrivacyPage() {
 
       <p>
         Cliente e professionista possono comunicare tramite
-        la chat collegata all'intervento.
+        la chat collegata all&apos;intervento.
       </p>
 
       <p>
@@ -305,7 +303,7 @@ export default function PrivacyPage() {
 
       <p>
         I dati collegati a un account possono essere
-        conservati fino alla cancellazione dell'account,
+        conservati fino alla cancellazione dell&apos;account,
         salvo obblighi di conservazione ulteriori previsti
         dalla legge.
       </p>
@@ -318,7 +316,7 @@ export default function PrivacyPage() {
       </p>
 
       <ul>
-        <li>hosting dell'applicazione;</li>
+        <li>hosting dell&apos;applicazione;</li>
         <li>database e autenticazione;</li>
         <li>archiviazione delle immagini;</li>
         <li>invio di notifiche;</li>
@@ -359,11 +357,11 @@ export default function PrivacyPage() {
         una sicurezza assoluta.
       </p>
 
-      <h2>14. Diritti dell'interessato</h2>
+      <h2>14. Diritti dell&apos;interessato</h2>
 
       <p>
         Nei casi previsti dal Regolamento UE 2016/679
-        (GDPR), l'utente può esercitare i diritti di:
+        (GDPR), l&apos;utente può esercitare i diritti di:
       </p>
 
       <ul>
@@ -380,15 +378,15 @@ export default function PrivacyPage() {
       </ul>
 
       <p>
-        Le richieste possono essere inviate a:
-        <strong> [EMAIL PRIVACY]</strong>.
+        Le richieste possono essere inviate a:{' '}
+        <strong>gaf90@hotmail.it</strong>.
       </p>
 
       <h2>15. Reclamo al Garante</h2>
 
       <p>
-        L'utente ha inoltre il diritto di proporre reclamo
-        all'autorità di controllo competente, incluso il
+        L&apos;utente ha inoltre il diritto di proporre reclamo
+        all&apos;autorità di controllo competente, incluso il
         Garante per la protezione dei dati personali.
       </p>
 
