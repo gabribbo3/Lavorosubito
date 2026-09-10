@@ -37,7 +37,9 @@ function distanceKm(
   );
 }
 
-function escapeHtml(value: string) {
+function escapeHtml(
+  value: string
+) {
   return value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -51,16 +53,20 @@ export async function POST(
 ) {
   try {
     const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL;
 
     const publishableKey =
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+      process.env
+        .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
     const serviceRoleKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env
+        .SUPABASE_SERVICE_ROLE_KEY;
 
     const resendApiKey =
-      process.env.RESEND_API_KEY;
+      process.env
+        .RESEND_API_KEY;
 
     if (
       !supabaseUrl
@@ -86,17 +92,18 @@ export async function POST(
       );
 
     const accessToken =
-      authorization?.replace(
-        /^Bearer\s+/i,
-        ''
-      );
+      authorization
+        ?.replace(
+          /^Bearer\s+/i,
+          ''
+        );
 
-    if (!accessToken) {
+    if (
+      !accessToken
+    ) {
       return NextResponse.json(
         {
-          ok: false,
-          error:
-            'Token mancante.'
+          ok: false
         },
         {
           status: 401
@@ -119,8 +126,11 @@ export async function POST(
       );
 
     const {
-      data: { user },
-      error: userError
+      data: {
+        user
+      },
+      error:
+        userError
     } =
       await userClient.auth
         .getUser();
@@ -131,9 +141,7 @@ export async function POST(
     ) {
       return NextResponse.json(
         {
-          ok: false,
-          error:
-            'Utente non autenticato.'
+          ok: false
         },
         {
           status: 401
@@ -192,11 +200,15 @@ export async function POST(
       );
 
     const {
-      data: job,
-      error: jobError
+      data:
+        job,
+      error:
+        jobError
     } =
       await admin
-        .from('jobs')
+        .from(
+          'jobs'
+        )
         .select(
           'id,client_id,category_id,urgency,latitude,longitude,status'
         )
@@ -228,9 +240,7 @@ export async function POST(
     ) {
       return NextResponse.json(
         {
-          ok: false,
-          error:
-            'Operazione non autorizzata.'
+          ok: false
         },
         {
           status: 403
@@ -244,18 +254,21 @@ export async function POST(
     ) {
       return NextResponse.json({
         ok: true,
-        sent: 0,
-        reason:
-          'job_not_open'
+        sent: 0
       });
     }
 
     const {
-      data: category
+      data:
+        category
     } =
       await admin
-        .from('categories')
-        .select('name')
+        .from(
+          'categories'
+        )
+        .select(
+          'name'
+        )
         .eq(
           'id',
           job.category_id
@@ -269,8 +282,10 @@ export async function POST(
       );
 
     const {
-      data: categoryRows,
-      error: categoryError
+      data:
+        categoryRows,
+      error:
+        categoryError
     } =
       await admin
         .from(
@@ -291,7 +306,7 @@ export async function POST(
         {
           ok: false,
           error:
-            'Errore selezione professionisti.'
+            'Errore durante la selezione dei professionisti.'
         },
         {
           status: 500
@@ -299,14 +314,22 @@ export async function POST(
       );
     }
 
-    const professionalIds = [
-      ...new Set(
-        (categoryRows ?? []).map(
-          (row: any) =>
-            row.professional_id
+    const professionalIds =
+      [
+        ...new Set(
+          (
+            categoryRows
+            ?? []
+          ).map(
+            (
+              row:
+                any
+            ) =>
+              row
+                .professional_id
+          )
         )
-      )
-    ];
+      ];
 
     if (
       professionalIds.length ===
@@ -314,14 +337,13 @@ export async function POST(
     ) {
       return NextResponse.json({
         ok: true,
-        sent: 0,
-        reason:
-          'no_professionals_for_category'
+        sent: 0
       });
     }
 
     const {
-      data: professionals,
+      data:
+        professionals,
       error:
         professionalsError
     } =
@@ -352,7 +374,7 @@ export async function POST(
         {
           ok: false,
           error:
-            'Errore selezione professionisti verificati.'
+            'Errore durante la selezione dei professionisti.'
         },
         {
           status: 500
@@ -385,7 +407,7 @@ export async function POST(
         {
           ok: false,
           error:
-            'Errore disponibilità professionisti.'
+            'Errore durante la verifica della disponibilità.'
         },
         {
           status: 500
@@ -399,7 +421,10 @@ export async function POST(
           availabilityRows
           ?? []
         ).map(
-          (row: any) => [
+          (
+            row:
+              any
+          ) => [
             row.professional_id,
             row.status
           ]
@@ -408,8 +433,10 @@ export async function POST(
 
     const urgency =
       String(
-        job.urgency ?? ''
-      ).toLowerCase();
+        job.urgency
+        ?? ''
+      )
+        .toLowerCase();
 
     const eligibleProfessionals =
       (
@@ -427,7 +454,8 @@ export async function POST(
 
           if (
             !availability
-            || availability ===
+            ||
+            availability ===
               'offline'
           ) {
             return false;
@@ -467,10 +495,17 @@ export async function POST(
           }
 
           if (
-            job.latitude == null
-            || job.longitude == null
-            || professional.latitude == null
-            || professional.longitude == null
+            job.latitude ==
+              null
+            ||
+            job.longitude ==
+              null
+            ||
+            professional.latitude ==
+              null
+            ||
+            professional.longitude ==
+              null
           ) {
             return true;
           }
@@ -507,7 +542,9 @@ export async function POST(
 
           const estimatedMinutes =
             Math.ceil(
-              distance * 2.2 + 8
+              distance
+              * 2.2
+              + 8
             );
 
           if (
@@ -542,13 +579,60 @@ export async function POST(
         );
 
     if (
-      targetIds.length === 0
+      targetIds.length ===
+      0
     ) {
       return NextResponse.json({
         ok: true,
-        sent: 0,
-        reason:
-          'no_eligible_professionals'
+        sent: 0
+      });
+    }
+
+    const {
+      data:
+        emailRows,
+      error:
+        emailError
+    } =
+      await admin
+        .from(
+          'professional_notification_emails'
+        )
+        .select(
+          'professional_id,email,enabled'
+        )
+        .in(
+          'professional_id',
+          targetIds
+        )
+        .eq(
+          'enabled',
+          true
+        );
+
+    if (
+      emailError
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Errore durante il caricamento delle email.'
+        },
+        {
+          status: 500
+        }
+      );
+    }
+
+    if (
+      !emailRows
+      ||
+      emailRows.length === 0
+    ) {
+      return NextResponse.json({
+        ok: true,
+        sent: 0
       });
     }
 
@@ -559,90 +643,122 @@ export async function POST(
 
     const safeUrgency =
       escapeHtml(
-        urgency.toUpperCase()
+        urgency
+          .toUpperCase()
       );
 
-    const response =
-      await fetch(
-        'https://api.resend.com/emails',
-        {
-          method: 'POST',
+    const appUrl =
+      'https://lavorosubito.vercel.app/';
 
-          headers: {
-            Authorization:
-              `Bearer ${resendApiKey}`,
+    let sent = 0;
 
-            'Content-Type':
-              'application/json'
-          },
-
-          body:
-            JSON.stringify({
-              from:
-                'LavoroSubito <onboarding@resend.dev>',
-
-              to: [
-                'delivered@resend.dev'
-              ],
-
-              subject:
-                `TEST LavoroSubito - ${urgency.toUpperCase()}`,
-
-              html: `
-                <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#111317">
-                  <h2>Test email LavoroSubito riuscito</h2>
-
-                  <p>
-                    La route email è stata eseguita correttamente.
-                  </p>
-
-                  <p>
-                    <strong>Categoria:</strong>
-                    ${safeCategory}
-                  </p>
-
-                  <p>
-                    <strong>Urgenza:</strong>
-                    ${safeUrgency}
-                  </p>
-
-                  <p>
-                    Professionisti compatibili trovati:
-                    ${targetIds.length}
-                  </p>
-                </div>
-              `
-            })
-        }
-      );
-
-    const resendResult =
-      await response.json();
-
-    if (
-      !response.ok
+    for (
+      const row
+      of emailRows
     ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            'Resend ha rifiutato l’invio.',
-          details:
-            resendResult
-        },
-        {
-          status: 500
+      try {
+        const response =
+          await fetch(
+            'https://api.resend.com/emails',
+            {
+              method:
+                'POST',
+
+              headers: {
+                Authorization:
+                  `Bearer ${resendApiKey}`,
+
+                'Content-Type':
+                  'application/json',
+
+                'Idempotency-Key':
+                  `new-job/${jobId}/${row.professional_id}`
+              },
+
+              body:
+                JSON.stringify({
+                  from:
+                    'LavoroSubito <onboarding@resend.dev>',
+
+                  to: [
+                    row.email
+                  ],
+
+                  subject:
+                    `Nuovo intervento ${urgency.toUpperCase()} su LavoroSubito`,
+
+                  html: `
+                    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#111317">
+
+                      <h2>
+                        Nuovo intervento disponibile
+                      </h2>
+
+                      <p>
+                        C'è una nuova richiesta compatibile con il tuo profilo professionale.
+                      </p>
+
+                      <p>
+                        <strong>Categoria:</strong>
+                        ${safeCategory}
+                      </p>
+
+                      <p>
+                        <strong>Urgenza:</strong>
+                        ${safeUrgency}
+                      </p>
+
+                      <p>
+                        Accedi a LavoroSubito per visualizzare la richiesta e accettare l'intervento.
+                      </p>
+
+                      <p style="margin:28px 0">
+                        <a
+                          href="${appUrl}"
+                          style="background:#121419;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700"
+                        >
+                          Apri LavoroSubito
+                        </a>
+                      </p>
+
+                      <p style="font-size:12px;color:#68707b">
+                        L'indirizzo completo del cliente non viene inviato via email.
+                      </p>
+
+                    </div>
+                  `
+                })
+            }
+          );
+
+        if (
+          response.ok
+        ) {
+          sent++;
+        } else {
+          const errorText =
+            await response.text();
+
+          console.error(
+            'RESEND ERROR:',
+            errorText
+          );
         }
-      );
+      } catch (
+        error
+      ) {
+        console.error(
+          'EMAIL SEND ERROR:',
+          error
+        );
+      }
     }
 
     return NextResponse.json({
       ok: true,
-      sent: 1,
+      sent,
       eligible:
-        targetIds.length,
-      resend:
-        resendResult
+        targetIds.length
     });
   } catch (
     error
