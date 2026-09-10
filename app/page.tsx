@@ -1237,31 +1237,57 @@ export default function Home() {
         await supabase.auth
           .getSession();
 
-      if (
+      const accessToken =
         sessionData
           .session
-          ?.access_token
+          ?.access_token;
+
+      if (
+        accessToken
       ) {
-        await fetch(
-          '/api/push/send',
-          {
-            method:
-              'POST',
+        await Promise.allSettled([
+          fetch(
+            '/api/email/new-job',
+            {
+              method:
+                'POST',
 
-            headers: {
-              'Content-Type':
-                'application/json',
+              headers: {
+                'Content-Type':
+                  'application/json',
 
-              Authorization:
-                `Bearer ${sessionData.session.access_token}`
-            },
+                Authorization:
+                  `Bearer ${accessToken}`
+              },
 
-            body:
-              JSON.stringify({
-                jobId
-              })
-          }
-        );
+              body:
+                JSON.stringify({
+                  jobId
+                })
+            }
+          ),
+
+          fetch(
+            '/api/push/send',
+            {
+              method:
+                'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json',
+
+                Authorization:
+                  `Bearer ${accessToken}`
+              },
+
+              body:
+                JSON.stringify({
+                  jobId
+                })
+            }
+          )
+        ]);
       }
     } catch {
     }
