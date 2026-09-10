@@ -648,7 +648,7 @@ export async function POST(
       );
 
     const appUrl =
-      'https://lavorosubito.vercel.app/';
+      'https://www.lavorosubito24.com/';
 
     let sent = 0;
 
@@ -678,7 +678,7 @@ export async function POST(
               body:
                 JSON.stringify({
                   from:
-                    'LavoroSubito <onboarding@resend.dev>',
+                    'LavoroSubito <notifiche@lavorosubito24.com>',
 
                   to: [
                     row.email
