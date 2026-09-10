@@ -71,7 +71,8 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          error: 'Configurazione server incompleta.'
+          error:
+            'Configurazione server incompleta.'
         },
         {
           status: 500
@@ -80,7 +81,9 @@ export async function POST(
     }
 
     const authorization =
-      request.headers.get('authorization');
+      request.headers.get(
+        'authorization'
+      );
 
     const accessToken =
       authorization?.replace(
@@ -90,8 +93,14 @@ export async function POST(
 
     if (!accessToken) {
       return NextResponse.json(
-        { ok: false },
-        { status: 401 }
+        {
+          ok: false,
+          error:
+            'Token mancante.'
+        },
+        {
+          status: 401
+        }
       );
     }
 
@@ -113,15 +122,22 @@ export async function POST(
       data: { user },
       error: userError
     } =
-      await userClient.auth.getUser();
+      await userClient.auth
+        .getUser();
 
     if (
       userError
       || !user
     ) {
       return NextResponse.json(
-        { ok: false },
-        { status: 401 }
+        {
+          ok: false,
+          error:
+            'Utente non autenticato.'
+        },
+        {
+          status: 401
+        }
       );
     }
 
@@ -134,7 +150,8 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          error: 'Richiesta non valida.'
+          error:
+            'Richiesta non valida.'
         },
         {
           status: 400
@@ -147,12 +164,14 @@ export async function POST(
 
     if (
       !jobId
-      || typeof jobId !== 'string'
+      || typeof jobId !==
+        'string'
     ) {
       return NextResponse.json(
         {
           ok: false,
-          error: 'jobId mancante o non valido.'
+          error:
+            'jobId mancante o non valido.'
         },
         {
           status: 400
@@ -166,7 +185,8 @@ export async function POST(
         serviceRoleKey,
         {
           auth: {
-            persistSession: false
+            persistSession:
+              false
           }
         }
       );
@@ -180,7 +200,10 @@ export async function POST(
         .select(
           'id,client_id,category_id,urgency,latitude,longitude,status'
         )
-        .eq('id', jobId)
+        .eq(
+          'id',
+          jobId
+        )
         .maybeSingle();
 
     if (
@@ -190,7 +213,8 @@ export async function POST(
       return NextResponse.json(
         {
           ok: false,
-          error: 'Richiesta non trovata.'
+          error:
+            'Richiesta non trovata.'
         },
         {
           status: 404
@@ -199,20 +223,30 @@ export async function POST(
     }
 
     if (
-      job.client_id !== user.id
+      job.client_id !==
+      user.id
     ) {
       return NextResponse.json(
-        { ok: false },
-        { status: 403 }
+        {
+          ok: false,
+          error:
+            'Operazione non autorizzata.'
+        },
+        {
+          status: 403
+        }
       );
     }
 
     if (
-      job.status !== 'aperta'
+      job.status !==
+      'aperta'
     ) {
       return NextResponse.json({
         ok: true,
-        sent: 0
+        sent: 0,
+        reason:
+          'job_not_open'
       });
     }
 
@@ -250,12 +284,14 @@ export async function POST(
           job.category_id
         );
 
-    if (categoryError) {
+    if (
+      categoryError
+    ) {
       return NextResponse.json(
         {
           ok: false,
           error:
-            'Errore durante la selezione dei professionisti.'
+            'Errore selezione professionisti.'
         },
         {
           status: 500
@@ -273,20 +309,26 @@ export async function POST(
     ];
 
     if (
-      professionalIds.length === 0
+      professionalIds.length ===
+      0
     ) {
       return NextResponse.json({
         ok: true,
-        sent: 0
+        sent: 0,
+        reason:
+          'no_professionals_for_category'
       });
     }
 
     const {
       data: professionals,
-      error: professionalsError
+      error:
+        professionalsError
     } =
       await admin
-        .from('professionals')
+        .from(
+          'professionals'
+        )
         .select(
           'id,verified,verification_status,latitude,longitude,max_distance_km'
         )
@@ -310,7 +352,7 @@ export async function POST(
         {
           ok: false,
           error:
-            'Errore durante la selezione dei professionisti.'
+            'Errore selezione professionisti verificati.'
         },
         {
           status: 500
@@ -319,11 +361,15 @@ export async function POST(
     }
 
     const {
-      data: availabilityRows,
-      error: availabilityError
+      data:
+        availabilityRows,
+      error:
+        availabilityError
     } =
       await admin
-        .from('availability')
+        .from(
+          'availability'
+        )
         .select(
           'professional_id,status'
         )
@@ -339,7 +385,7 @@ export async function POST(
         {
           ok: false,
           error:
-            'Errore durante la verifica della disponibilità.'
+            'Errore disponibilità professionisti.'
         },
         {
           status: 500
@@ -349,7 +395,10 @@ export async function POST(
 
     const availabilityMap =
       new Map(
-        (availabilityRows ?? []).map(
+        (
+          availabilityRows
+          ?? []
+        ).map(
           (row: any) => [
             row.professional_id,
             row.status
@@ -363,8 +412,14 @@ export async function POST(
       ).toLowerCase();
 
     const eligibleProfessionals =
-      (professionals ?? []).filter(
-        (professional: any) => {
+      (
+        professionals
+        ?? []
+      ).filter(
+        (
+          professional:
+            any
+        ) => {
           const availability =
             availabilityMap.get(
               professional.id
@@ -372,13 +427,15 @@ export async function POST(
 
           if (
             !availability
-            || availability === 'offline'
+            || availability ===
+              'offline'
           ) {
             return false;
           }
 
           if (
-            urgency === 'subito'
+            urgency ===
+              'subito'
             &&
             ![
               'ora',
@@ -393,7 +450,8 @@ export async function POST(
           }
 
           if (
-            urgency === 'oggi'
+            urgency ===
+              'oggi'
             &&
             ![
               'ora',
@@ -435,12 +493,14 @@ export async function POST(
 
           const radius =
             Number(
-              professional.max_distance_km
+              professional
+                .max_distance_km
               ?? 30
             );
 
           if (
-            distance > radius
+            distance >
+            radius
           ) {
             return false;
           }
@@ -451,17 +511,21 @@ export async function POST(
             );
 
           if (
-            urgency === 'subito'
+            urgency ===
+              'subito'
             &&
-            estimatedMinutes > 120
+            estimatedMinutes >
+              120
           ) {
             return false;
           }
 
           if (
-            urgency === 'oggi'
+            urgency ===
+              'oggi'
             &&
-            estimatedMinutes > 240
+            estimatedMinutes >
+              240
           ) {
             return false;
           }
@@ -471,53 +535,21 @@ export async function POST(
       );
 
     const targetIds =
-      eligibleProfessionals.map(
-        professional =>
-          professional.id
-      );
+      eligibleProfessionals
+        .map(
+          professional =>
+            professional.id
+        );
 
     if (
       targetIds.length === 0
     ) {
       return NextResponse.json({
         ok: true,
-        sent: 0
+        sent: 0,
+        reason:
+          'no_eligible_professionals'
       });
-    }
-
-    const {
-      data: emailRows,
-      error: emailError
-    } =
-      await admin
-        .from(
-          'professional_notification_emails'
-        )
-        .select(
-          'professional_id,email,enabled'
-        )
-        .in(
-          'professional_id',
-          targetIds
-        )
-        .eq(
-          'enabled',
-          true
-        );
-
-    if (
-      emailError
-    ) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            'Errore durante il caricamento delle email.'
-        },
-        {
-          status: 500
-        }
-      );
     }
 
     const safeCategory =
@@ -530,103 +562,101 @@ export async function POST(
         urgency.toUpperCase()
       );
 
-    const appUrl =
-      'https://lavorosubito.vercel.app/';
+    const response =
+      await fetch(
+        'https://api.resend.com/emails',
+        {
+          method: 'POST',
 
-    let sent = 0;
+          headers: {
+            Authorization:
+              `Bearer ${resendApiKey}`,
 
-    for (
-      const row
-      of emailRows ?? []
-    ) {
-      try {
-        const response =
-          await fetch(
-            'https://api.resend.com/emails',
-            {
-              method: 'POST',
+            'Content-Type':
+              'application/json'
+          },
 
-              headers: {
-                Authorization:
-                  `Bearer ${resendApiKey}`,
+          body:
+            JSON.stringify({
+              from:
+                'LavoroSubito <onboarding@resend.dev>',
 
-                'Content-Type':
-                  'application/json',
+              to: [
+                'delivered@resend.dev'
+              ],
 
-                'Idempotency-Key':
-                  `new-job/${jobId}/${row.professional_id}`
-              },
+              subject:
+                `TEST LavoroSubito - ${urgency.toUpperCase()}`,
 
-              body:
-                JSON.stringify({
-                  from:
-                    'LavoroSubito <onboarding@resend.dev>',
+              html: `
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#111317">
+                  <h2>Test email LavoroSubito riuscito</h2>
 
-                  to: [
-                    row.email
-                  ],
+                  <p>
+                    La route email è stata eseguita correttamente.
+                  </p>
 
-                  subject:
-                    `Nuovo intervento ${urgency.toUpperCase()} su LavoroSubito`,
+                  <p>
+                    <strong>Categoria:</strong>
+                    ${safeCategory}
+                  </p>
 
-                  html: `
-                    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#111317">
-                      <h2>Nuovo intervento disponibile</h2>
+                  <p>
+                    <strong>Urgenza:</strong>
+                    ${safeUrgency}
+                  </p>
 
-                      <p>
-                        C'è una nuova richiesta compatibile con il tuo profilo professionale.
-                      </p>
-
-                      <p>
-                        <strong>Categoria:</strong>
-                        ${safeCategory}
-                      </p>
-
-                      <p>
-                        <strong>Urgenza:</strong>
-                        ${safeUrgency}
-                      </p>
-
-                      <p>
-                        Accedi a LavoroSubito per vedere i dettagli disponibili e accettare l'intervento.
-                      </p>
-
-                      <p style="margin:28px 0">
-                        <a
-                          href="${appUrl}"
-                          style="background:#121419;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:700"
-                        >
-                          Apri LavoroSubito
-                        </a>
-                      </p>
-
-                      <p style="font-size:12px;color:#68707b">
-                        L'indirizzo completo e le informazioni riservate del cliente non vengono inviate via email.
-                      </p>
-                    </div>
-                  `
-                })
-            }
-          );
-
-        if (
-          response.ok
-        ) {
-          sent++;
+                  <p>
+                    Professionisti compatibili trovati:
+                    ${targetIds.length}
+                  </p>
+                </div>
+              `
+            })
         }
-      } catch {
-      }
+      );
+
+    const resendResult =
+      await response.json();
+
+    if (
+      !response.ok
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Resend ha rifiutato l’invio.',
+          details:
+            resendResult
+        },
+        {
+          status: 500
+        }
+      );
     }
 
     return NextResponse.json({
       ok: true,
-      sent
+      sent: 1,
+      eligible:
+        targetIds.length,
+      resend:
+        resendResult
     });
-  } catch {
+  } catch (
+    error
+  ) {
+    console.error(
+      'EMAIL ROUTE ERROR:',
+      error
+    );
+
     return NextResponse.json(
       {
         ok: false,
-        error: 'Errore server.'
+        error:
+          'Errore server.'
       },
       {
         status: 500
