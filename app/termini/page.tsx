@@ -40,12 +40,12 @@ export default function TerminiPage() {
       </p>
 
       <p>
-        I presenti Termini regolano l'utilizzo della
+        I presenti Termini regolano l&apos;utilizzo della
         piattaforma LavoroSubito.
       </p>
 
       <p>
-        Registrandosi o utilizzando il servizio, l'utente
+        Registrandosi o utilizzando il servizio, l&apos;utente
         dichiara di aver letto e accettato i presenti
         Termini.
       </p>
@@ -57,13 +57,11 @@ export default function TerminiPage() {
       </p>
 
       <p>
-        <strong>[NOME / RAGIONE SOCIALE]</strong>
+        <strong>Mattia Garbugli</strong>
         <br />
-        Sede: [INDIRIZZO]
+        Indirizzo: Via Nazionale 27, 61029 Urbino (PU), Italia
         <br />
-        Email: [EMAIL]
-        <br />
-        Partita IVA / Codice fiscale: [DATI]
+        Email: gaf90@hotmail.it
       </p>
 
       <h2>2. Descrizione del servizio</h2>
@@ -96,8 +94,8 @@ export default function TerminiPage() {
       </p>
 
       <p>
-        Il contratto relativo all'esecuzione concreta
-        dell'intervento viene concluso tra cliente e
+        Il contratto relativo all&apos;esecuzione concreta
+        dell&apos;intervento viene concluso tra cliente e
         professionista.
       </p>
 
@@ -115,21 +113,24 @@ export default function TerminiPage() {
       </p>
 
       <p>
-        L'utente si impegna a:
+        L&apos;utente si impegna a:
       </p>
 
       <ul>
         <li>fornire informazioni corrette e aggiornate;</li>
+
         <li>
           mantenere riservate le proprie credenziali;
         </li>
+
         <li>
           non utilizzare account appartenenti ad altre
           persone;
         </li>
+
         <li>
           informare tempestivamente LavoroSubito in caso di
-          utilizzo non autorizzato dell'account.
+          utilizzo non autorizzato dell&apos;account.
         </li>
       </ul>
 
@@ -141,7 +142,7 @@ export default function TerminiPage() {
       </p>
 
       <ul>
-        <li>nome dell'attività;</li>
+        <li>nome dell&apos;attività;</li>
         <li>numero di telefono;</li>
         <li>Partita IVA;</li>
         <li>codice fiscale;</li>
@@ -159,7 +160,7 @@ export default function TerminiPage() {
       <h2>6. Verifica dei professionisti</h2>
 
       <p>
-        L'indicazione "verificato" significa che la
+        L&apos;indicazione &quot;verificato&quot; significa che la
         piattaforma ha effettuato i controlli previsti dalle
         proprie procedure interne.
       </p>
@@ -191,14 +192,14 @@ export default function TerminiPage() {
       <h2>8. Urgenza</h2>
 
       <p>
-        Le indicazioni "SUBITO", "OGGI" e "48H" esprimono la
+        Le indicazioni &quot;SUBITO&quot;, &quot;OGGI&quot; e &quot;48H&quot; esprimono la
         priorità richiesta dal cliente e vengono utilizzate
         dalla piattaforma per il matching.
       </p>
 
       <p>
         Non costituiscono garanzia che un professionista
-        accetterà o completerà l'intervento entro uno
+        accetterà o completerà l&apos;intervento entro uno
         specifico orario.
       </p>
 
@@ -225,15 +226,15 @@ export default function TerminiPage() {
 
       <p>
         Il matching costituisce uno strumento di supporto e
-        non rappresenta una garanzia sull'accettazione,
-        disponibilità o qualità dell'intervento.
+        non rappresenta una garanzia sull&apos;accettazione,
+        disponibilità o qualità dell&apos;intervento.
       </p>
 
       <h2>11. Prezzi e preventivi</h2>
 
       <p>
         Salvo diversa funzionalità espressamente prevista
-        dalla piattaforma, il prezzo dell'intervento viene
+        dalla piattaforma, il prezzo dell&apos;intervento viene
         concordato tra cliente e professionista.
       </p>
 
@@ -248,7 +249,7 @@ export default function TerminiPage() {
       <p>
         Qualora LavoroSubito introduca pagamenti tramite la
         piattaforma, saranno applicate le condizioni
-        specifiche comunicate all'utente prima del
+        specifiche comunicate all&apos;utente prima del
         pagamento.
       </p>
 
@@ -257,11 +258,11 @@ export default function TerminiPage() {
         forniti tramite soggetti terzi autorizzati.
       </p>
 
-      <h2>13. Esecuzione dell'intervento</h2>
+      <h2>13. Esecuzione dell&apos;intervento</h2>
 
       <p>
-        Il professionista è responsabile dell'esecuzione
-        dell'intervento e del rispetto delle norme
+        Il professionista è responsabile dell&apos;esecuzione
+        dell&apos;intervento e del rispetto delle norme
         applicabili alla propria attività.
       </p>
 
@@ -312,12 +313,12 @@ export default function TerminiPage() {
       <h2>16. Contenuti caricati dagli utenti</h2>
 
       <p>
-        L'utente conserva la titolarità dei contenuti che
+        L&apos;utente conserva la titolarità dei contenuti che
         carica sulla piattaforma.
       </p>
 
       <p>
-        L'utente concede a LavoroSubito il diritto di
+        L&apos;utente concede a LavoroSubito il diritto di
         trattare tecnicamente tali contenuti nella misura
         necessaria per fornire il servizio.
       </p>
@@ -429,7 +430,7 @@ export default function TerminiPage() {
 
       <p>
         I presenti Termini sono regolati dalla legge
-        italiana, fatta salva l'applicazione delle norme
+        italiana, fatta salva l&apos;applicazione delle norme
         inderogabili previste a tutela dei consumatori.
       </p>
 
@@ -440,7 +441,11 @@ export default function TerminiPage() {
       </p>
 
       <p>
-        Email: <strong>[EMAIL]</strong>
+        <strong>Mattia Garbugli</strong>
+        <br />
+        Via Nazionale 27, 61029 Urbino (PU), Italia
+        <br />
+        Email: <strong>gaf90@hotmail.it</strong>
       </p>
 
       <hr
