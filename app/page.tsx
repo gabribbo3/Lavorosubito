@@ -28,6 +28,13 @@ const CATEGORIES = [
 
 const DISTANCES = [10, 20, 30, 50, 100];
 
+type ContactDetails = {
+  client_name?: string | null;
+  client_phone?: string | null;
+  professional_name?: string | null;
+  professional_phone?: string | null;
+};
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -55,8 +62,16 @@ function statusLabel(value: string) {
     return '🔴 RICERCA IN CORSO';
   }
 
+  if (value === 'abbinata') {
+    return '🟡 ABBINATA';
+  }
+
   if (value === 'accettata') {
     return '🟢 ACCETTATA';
+  }
+
+  if (value === 'in_corso') {
+    return '🟢 IN CORSO';
   }
 
   if (value === 'completata') {
@@ -67,7 +82,7 @@ function statusLabel(value: string) {
     return '⚫ ANNULLATA';
   }
 
-  return value.toUpperCase();
+  return String(value || '').toUpperCase();
 }
 
 function etaLabel(
@@ -81,15 +96,30 @@ function etaLabel(
     return `Circa ${value} min`;
   }
 
-  const h =
-    Math.floor(value / 60);
-
-  const m =
-    value % 60;
+  const h = Math.floor(value / 60);
+  const m = value % 60;
 
   return m
     ? `Circa ${h} h ${m} min`
     : `Circa ${h} h`;
+}
+
+function whatsappNumber(phone: string) {
+  let value = phone.replace(/\D/g, '');
+
+  if (value.startsWith('00')) {
+    value = value.slice(2);
+  }
+
+  // Numero mobile italiano inserito senza +39
+  if (
+    value.length === 10 &&
+    value.startsWith('3')
+  ) {
+    value = `39${value}`;
+  }
+
+  return value;
 }
 
 function LegalFooter() {
@@ -141,6 +171,17 @@ export default function Home() {
 
   const [fullName, setFullName] =
     useState('');
+
+  const [clientPhone, setClientPhone] =
+    useState('');
+
+  const [
+    contactDetails,
+    setContactDetails
+  ] =
+    useState<Record<string, ContactDetails>>(
+      {}
+    );
 
   const [message, setMessage] =
     useState('');
@@ -273,10 +314,7 @@ export default function Home() {
     setJobPhotos
   ] =
     useState<
-      Record<
-        string,
-        string | null
-      >
+      Record<string, string | null>
     >({});
 
   const [
@@ -353,10 +391,7 @@ export default function Home() {
   ] =
     useState<string | null>(null);
 
-  const [
-    rating,
-    setRating
-  ] =
+  const [rating, setRating] =
     useState(5);
 
   const [
@@ -372,39 +407,30 @@ export default function Home() {
         setUser(data.user);
 
         if (data.user) {
-          void loadProfile(
-            data.user.id
-          );
+          void loadProfile(data.user.id);
         }
       });
 
     const { data } =
-      supabase.auth
-        .onAuthStateChange(
-          (
-            _event,
-            session
-          ) => {
-            const currentUser =
-              session?.user ?? null;
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          const currentUser =
+            session?.user ?? null;
 
-            setUser(
-              currentUser
+          setUser(currentUser);
+
+          if (currentUser) {
+            void loadProfile(
+              currentUser.id
             );
-
-            if (currentUser) {
-              void loadProfile(
-                currentUser.id
-              );
-            } else {
-              resetState();
-            }
+          } else {
+            resetState();
           }
-        );
+        }
+      );
 
     return () =>
-      data.subscription
-        .unsubscribe();
+      data.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -425,9 +451,7 @@ export default function Home() {
             table: 'jobs'
           },
           async () => {
-            if (
-              role === 'cliente'
-            ) {
+            if (role === 'cliente') {
               await loadClientJobs();
             } else {
               await loadMatchingJobs();
@@ -456,20 +480,18 @@ export default function Home() {
             }
           }
         )
-        .subscribe(
-          status =>
-            setLive(
-              status === 'SUBSCRIBED'
-            )
-        );
+        .subscribe(status => {
+          setLive(
+            status === 'SUBSCRIBED'
+          );
+        });
 
     return () => {
       setLive(false);
 
-      void supabase
-        .removeChannel(
-          channel
-        );
+      void supabase.removeChannel(
+        channel
+      );
     };
   }, [
     user?.id,
@@ -480,28 +502,26 @@ export default function Home() {
   function resetState() {
     setRole('');
     setFullName('');
+    setClientPhone('');
     setMessage('');
 
     setClientJobs([]);
     setMatchingJobs([]);
     setAcceptedJobs([]);
 
-    setSelectedProCats([]);
+    setContactDetails({});
 
-    setAvailability(
-      'offline'
-    );
+    setSelectedProCats([]);
+    setAvailability('offline');
 
     setIdentity({});
     setSetup(null);
 
     setProCity('');
     setProPostalCode('');
-
     setLocationBusy(false);
 
     setReviews([]);
-
     setBestMatch(null);
 
     setAcceptedLegal(false);
@@ -517,28 +537,30 @@ export default function Home() {
       await supabase
         .from('profiles')
         .select(
-          'role,full_name'
+          'role,full_name,phone'
         )
-        .eq(
-          'id',
-          id
-        )
+        .eq('id', id)
         .maybeSingle();
 
     const detected =
       profile.data?.role ===
-        'professionista'
+      'professionista'
         ? 'professionista'
         : 'cliente';
 
-    setRole(
-      detected
-    );
+    setRole(detected);
 
     setFullName(
-      profile.data
-        ?.full_name ?? ''
+      profile.data?.full_name ?? ''
     );
+
+    if (
+      detected === 'cliente'
+    ) {
+      setClientPhone(
+        profile.data?.phone ?? ''
+      );
+    }
 
     const catResponse =
       await supabase
@@ -546,9 +568,7 @@ export default function Home() {
         .select(
           'id,name,slug'
         )
-        .order(
-          'name'
-        );
+        .order('name');
 
     setCategories(
       Array.isArray(
@@ -570,6 +590,211 @@ export default function Home() {
         loadReviews()
       ]);
     }
+  }
+
+  async function saveClientPhone() {
+    if (!user) {
+      return;
+    }
+
+    const phone =
+      clientPhone.trim();
+
+    if (!phone) {
+      setMessage(
+        'Inserisci il tuo numero di telefono.'
+      );
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+
+    const {
+      error
+    } =
+      await supabase.rpc(
+        'update_my_profile_phone',
+        {
+          p_phone: phone
+        }
+      );
+
+    setBusy(false);
+
+    if (error) {
+      setMessage(
+        `Errore: ${error.message}`
+      );
+      return;
+    }
+
+    setMessage(
+      '✅ Numero di telefono salvato.'
+    );
+  }
+
+  async function loadJobContact(
+    jobId: string
+  ) {
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        'job_contact_details',
+        {
+          p_job_id: jobId
+        }
+      );
+
+    if (error) {
+      return;
+    }
+
+    const contact =
+      Array.isArray(data)
+        ? data[0]
+        : data;
+
+    if (!contact) {
+      return;
+    }
+
+    setContactDetails(
+      current => ({
+        ...current,
+        [jobId]:
+          contact as ContactDetails
+      })
+    );
+  }
+
+  async function loadContactsForJobs(
+    jobs: any[]
+  ) {
+    const allowed =
+      jobs.filter(
+        job =>
+          job.status ===
+            'accettata' ||
+          job.status ===
+            'in_corso' ||
+          job.status ===
+            'completata'
+      );
+
+    for (
+      const job
+      of allowed
+    ) {
+      await loadJobContact(
+        String(job.id)
+      );
+    }
+  }
+
+  function ContactButtons({
+    jobId,
+    viewer
+  }: {
+    jobId: string;
+    viewer:
+      | 'cliente'
+      | 'professionista';
+  }) {
+    const contact =
+      contactDetails[jobId];
+
+    if (!contact) {
+      return null;
+    }
+
+    const name =
+      viewer === 'cliente'
+        ? contact.professional_name
+        : contact.client_name;
+
+    const phone =
+      viewer === 'cliente'
+        ? contact.professional_phone
+        : contact.client_phone;
+
+    if (!phone) {
+      return (
+        <div className="notice">
+          📞 {name || 'Contatto'} non
+          ha ancora inserito un numero
+          di telefono.
+        </div>
+      );
+    }
+
+    const wa =
+      whatsappNumber(
+        String(phone)
+      );
+
+    return (
+      <div
+        className="card"
+        style={{
+          marginTop: 12
+        }}
+      >
+        <span className="tag">
+          Contatto diretto
+        </span>
+
+        <h3>
+          {name || 'Contatto'}
+        </h3>
+
+        <p>
+          📱 <b>{phone}</b>
+        </p>
+
+        <p
+          className="muted"
+          style={{
+            fontSize: 12
+          }}
+        >
+          Il numero è disponibile solo
+          dopo l’accettazione del lavoro.
+        </p>
+
+        <div className="actions">
+          <a
+            className="full"
+            href={`tel:${phone}`}
+            style={{
+              textDecoration: 'none',
+              textAlign: 'center'
+            }}
+          >
+            📞 Chiama
+          </a>
+
+          {wa && (
+            <a
+              className="outline"
+              href={`https://wa.me/${wa}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                textDecoration:
+                  'none',
+                textAlign:
+                  'center'
+              }}
+            >
+              🟢 WhatsApp
+            </a>
+          )}
+        </div>
+      </div>
+    );
   }
 
   async function loadProfessional() {
@@ -618,7 +843,9 @@ export default function Home() {
     }
 
     if (
-      Array.isArray(setupRes.data) &&
+      Array.isArray(
+        setupRes.data
+      ) &&
       setupRes.data[0]
     ) {
       setSetup(
@@ -641,9 +868,7 @@ export default function Home() {
       await supabase.auth
         .getUser();
 
-    if (
-      authData.user
-    ) {
+    if (authData.user) {
       const pro =
         await supabase
           .from(
@@ -660,8 +885,7 @@ export default function Home() {
 
       if (
         pro.data
-          ?.max_distance_km
-        != null
+          ?.max_distance_km != null
       ) {
         setMaxDistance(
           Number(
@@ -686,7 +910,6 @@ export default function Home() {
       setMessage(
         `Errore richieste: ${error.message}`
       );
-
       return;
     }
 
@@ -702,6 +925,10 @@ export default function Home() {
         (row: any) =>
           row.id
       )
+    );
+
+    void loadContactsForJobs(
+      rows
     );
   }
 
@@ -736,11 +963,17 @@ export default function Home() {
 
   async function loadAcceptedJobs() {
     const {
-      data
+      data,
+      error
     } =
       await supabase.rpc(
         'my_accepted_jobs'
       );
+
+    if (error) {
+      setAcceptedJobs([]);
+      return;
+    }
 
     const rows =
       Array.isArray(data)
@@ -754,6 +987,10 @@ export default function Home() {
         (row: any) =>
           row.id
       )
+    );
+
+    void loadContactsForJobs(
+      rows
     );
   }
 
@@ -804,8 +1041,7 @@ export default function Home() {
               enableHighAccuracy:
                 true,
 
-              timeout:
-                12000,
+              timeout: 12000,
 
               maximumAge:
                 60000
@@ -828,38 +1064,30 @@ export default function Home() {
     }
 
     if (
-      !file.type
-        .startsWith(
-          'image/'
-        )
+      !file.type.startsWith(
+        'image/'
+      )
     ) {
       setMessage(
         'Seleziona un’immagine.'
       );
-
       return;
     }
 
     if (
       file.size >
-      10 *
-      1024 *
-      1024
+      10 * 1024 * 1024
     ) {
       setMessage(
         'La foto supera 10 MB.'
       );
-
       return;
     }
 
-    if (
-      photoPreview
-    ) {
-      URL
-        .revokeObjectURL(
-          photoPreview
-        );
+    if (photoPreview) {
+      URL.revokeObjectURL(
+        photoPreview
+      );
     }
 
     setPhotoFile(file);
@@ -872,13 +1100,10 @@ export default function Home() {
   }
 
   function clearPhoto() {
-    if (
-      photoPreview
-    ) {
-      URL
-        .revokeObjectURL(
-          photoPreview
-        );
+    if (photoPreview) {
+      URL.revokeObjectURL(
+        photoPreview
+      );
     }
 
     setPhotoFile(null);
@@ -900,8 +1125,7 @@ export default function Home() {
         photoFile.name
           .split('.')
           .pop()
-        ||
-        'jpg'
+        || 'jpg'
       )
         .replace(
           /[^a-zA-Z0-9]/g,
@@ -925,18 +1149,14 @@ export default function Home() {
             contentType:
               photoFile.type,
 
-            upsert:
-              false
+            upsert: false
           }
         );
 
-    if (
-      upload.error
-    ) {
+    if (upload.error) {
       setMessage(
         `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
-
       return;
     }
 
@@ -944,11 +1164,8 @@ export default function Home() {
       await supabase.rpc(
         'set_my_job_photo',
         {
-          p_job_id:
-            jobId,
-
-          p_photo_url:
-            path
+          p_job_id: jobId,
+          p_photo_url: path
         }
       );
 
@@ -961,9 +1178,7 @@ export default function Home() {
         .from(
           'job-photos'
         )
-        .remove([
-          path
-        ]);
+        .remove([path]);
 
       setMessage(
         `Richiesta creata, foto non collegata: ${save.error?.message ?? 'errore'}`
@@ -985,25 +1200,19 @@ export default function Home() {
       return;
     }
 
-    const {
-      data
-    } =
+    const { data } =
       await supabase.rpc(
         'get_job_photo_url',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
-    if (
-      !data
-    ) {
+    if (!data) {
       setJobPhotos(
         current => ({
           ...current,
-          [jobId]:
-            null
+          [jobId]: null
         })
       );
 
@@ -1027,8 +1236,7 @@ export default function Home() {
       setJobPhotos(
         current => ({
           ...current,
-          [jobId]:
-            null
+          [jobId]: null
         })
       );
 
@@ -1054,9 +1262,7 @@ export default function Home() {
       const id
       of ids
     ) {
-      await loadPhoto(
-        id
-      );
+      await loadPhoto(id);
     }
   }
 
@@ -1069,13 +1275,10 @@ export default function Home() {
       setMessage(
         'Completa categoria, descrizione e indirizzo.'
       );
-
       return;
     }
 
-    if (
-      !user
-    ) {
+    if (!user) {
       setSignupRole(
         'cliente'
       );
@@ -1102,18 +1305,12 @@ export default function Home() {
     let position =
       coords;
 
-    if (
-      !position
-    ) {
+    if (!position) {
       position =
         await getPosition();
 
-      if (
-        position
-      ) {
-        setCoords(
-          position
-        );
+      if (position) {
+        setCoords(position);
       }
     }
 
@@ -1122,18 +1319,14 @@ export default function Home() {
         .from(
           'categories'
         )
-        .select(
-          'id'
-        )
+        .select('id')
         .eq(
           'slug',
           slugify(cat)
         )
         .maybeSingle();
 
-    if (
-      !category.data
-    ) {
+    if (!category.data) {
       setBusy(false);
 
       setMessage(
@@ -1145,9 +1338,7 @@ export default function Home() {
 
     const insert =
       await supabase
-        .from(
-          'jobs'
-        )
+        .from('jobs')
         .insert({
           client_id:
             user.id,
@@ -1164,8 +1355,7 @@ export default function Home() {
               .trim(),
 
           address:
-            address
-              .trim(),
+            address.trim(),
 
           latitude:
             position
@@ -1177,9 +1367,7 @@ export default function Home() {
               ?.longitude
             ?? null
         })
-        .select(
-          'id'
-        )
+        .select('id')
         .single();
 
     if (
@@ -1215,8 +1403,7 @@ export default function Home() {
       await supabase.rpc(
         'find_verified_professionals_for_job',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
@@ -1242,15 +1429,12 @@ export default function Home() {
           .session
           ?.access_token;
 
-      if (
-        accessToken
-      ) {
+      if (accessToken) {
         await Promise.allSettled([
           fetch(
             '/api/email/new-job',
             {
-              method:
-                'POST',
+              method: 'POST',
 
               headers: {
                 'Content-Type':
@@ -1270,8 +1454,7 @@ export default function Home() {
           fetch(
             '/api/push/send',
             {
-              method:
-                'POST',
+              method: 'POST',
 
               headers: {
                 'Content-Type':
@@ -1290,6 +1473,8 @@ export default function Home() {
         ]);
       }
     } catch {
+      // Email/push non devono bloccare
+      // la creazione della richiesta.
     }
 
     setMessage(
@@ -1319,8 +1504,7 @@ export default function Home() {
       await supabase.rpc(
         'cancel_my_job',
         {
-          p_job_id:
-            id
+          p_job_id: id
         }
       );
 
@@ -1347,8 +1531,7 @@ export default function Home() {
       await supabase.rpc(
         'accept_verified_job',
         {
-          p_job_id:
-            id
+          p_job_id: id
         }
       );
 
@@ -1364,6 +1547,13 @@ export default function Home() {
       loadMatchingJobs(),
       loadAcceptedJobs()
     ]);
+
+    if (
+      data &&
+      !error
+    ) {
+      await loadJobContact(id);
+    }
 
     setBusy(false);
   }
@@ -1386,8 +1576,7 @@ export default function Home() {
       await supabase.rpc(
         'complete_job',
         {
-          p_job_id:
-            id
+          p_job_id: id
         }
       );
 
@@ -1400,8 +1589,7 @@ export default function Home() {
     );
 
     if (
-      role ===
-      'cliente'
+      role === 'cliente'
     ) {
       await loadClientJobs();
     } else {
@@ -1413,17 +1601,10 @@ export default function Home() {
     id: string,
     title: string
   ) {
-    setChatJobId(
-      id
-    );
+    setChatJobId(id);
+    setChatTitle(title);
 
-    setChatTitle(
-      title
-    );
-
-    await loadChat(
-      id
-    );
+    await loadChat(id);
 
     setTimeout(
       () =>
@@ -1441,9 +1622,7 @@ export default function Home() {
       error
     } =
       await supabase
-        .from(
-          'messages'
-        )
+        .from('messages')
         .select(
           'id,job_id,sender_id,message,created_at'
         )
@@ -1455,9 +1634,7 @@ export default function Home() {
           'created_at'
         );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
@@ -1471,8 +1648,7 @@ export default function Home() {
   }
 
   async function sendMessage(
-    event:
-      FormEvent
+    event: FormEvent
   ) {
     event.preventDefault();
 
@@ -1490,19 +1666,13 @@ export default function Home() {
         .trim()
       ?? '';
 
-    if (
-      !text
-    ) {
+    if (!text) {
       return;
     }
 
-    const {
-      error
-    } =
+    const { error } =
       await supabase
-        .from(
-          'messages'
-        )
+        .from('messages')
         .insert({
           job_id:
             chatJobId,
@@ -1514,13 +1684,10 @@ export default function Home() {
             text
         });
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
-
       return;
     }
 
@@ -1529,8 +1696,7 @@ export default function Home() {
     ) {
       chatInputRef
         .current
-        .value =
-        '';
+        .value = '';
     }
 
     await loadChat(
@@ -1546,14 +1712,11 @@ export default function Home() {
   }
 
   async function submitReview(
-    event:
-      FormEvent
+    event: FormEvent
   ) {
     event.preventDefault();
 
-    if (
-      !reviewJobId
-    ) {
+    if (!reviewJobId) {
       return;
     }
 
@@ -1585,13 +1748,8 @@ export default function Home() {
           : 'Recensione non inviata.'
     );
 
-    setReviewJobId(
-      null
-    );
-
-    setReviewComment(
-      ''
-    );
+    setReviewJobId(null);
+    setReviewComment('');
 
     await loadClientJobs();
   }
@@ -1602,13 +1760,13 @@ export default function Home() {
     event.preventDefault();
 
     if (
-      authMode === 'signup' &&
+      authMode ===
+        'signup' &&
       !acceptedLegal
     ) {
       setMessage(
         'Per registrarti devi accettare la Privacy Policy e i Termini e condizioni.'
       );
-
       return;
     }
 
@@ -1619,7 +1777,6 @@ export default function Home() {
       authMode === 'signup'
     ) {
       const {
-        data,
         error
       } =
         await supabase.auth
@@ -1650,32 +1807,13 @@ export default function Home() {
           });
 
       if (error) {
-        console.error(
-          'SIGNUP ERROR:',
-          error
-        );
-
-        alert(
-          `Errore registrazione:\n${error.message}`
-        );
-
         setMessage(
           `Errore registrazione: ${error.message}`
         );
 
         setBusy(false);
-
         return;
       }
-
-      console.log(
-        'SIGNUP SUCCESS:',
-        data
-      );
-
-      alert(
-        'Registrazione completata correttamente.'
-      );
 
       setMessage(
         '✅ Registrazione completata. Controlla la tua email.'
@@ -1701,20 +1839,14 @@ export default function Home() {
             password
           });
 
-      if (
-        error
-      ) {
+      if (error) {
         setMessage(
           error.message
         );
       } else {
-        setAuthOpen(
-          false
-        );
+        setAuthOpen(false);
 
-        if (
-          data.user
-        ) {
+        if (data.user) {
           await loadProfile(
             data.user.id
           );
@@ -1729,13 +1861,10 @@ export default function Home() {
     const cleanEmail =
       email.trim();
 
-    if (
-      !cleanEmail
-    ) {
+    if (!cleanEmail) {
       setMessage(
         'Inserisci prima la tua email.'
       );
-
       return;
     }
 
@@ -1820,13 +1949,10 @@ export default function Home() {
       setMessage(
         'Seleziona almeno una categoria.'
       );
-
       return;
     }
 
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_categories',
         {
@@ -1842,7 +1968,6 @@ export default function Home() {
     );
 
     await loadProfessional();
-
     await loadMatchingJobs();
   }
 
@@ -1851,9 +1976,7 @@ export default function Home() {
     longitude: number,
     successMessage: string
   ) {
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_professional_location',
         {
@@ -1865,13 +1988,10 @@ export default function Home() {
         }
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
-
       return false;
     }
 
@@ -1880,25 +2000,19 @@ export default function Home() {
     );
 
     await loadProfessional();
-
     await loadMatchingJobs();
 
     return true;
   }
 
   async function setProLocation() {
-    setLocationBusy(
-      true
-    );
-
+    setLocationBusy(true);
     setMessage('');
 
     const p =
       await getPosition();
 
-    if (
-      !p
-    ) {
+    if (!p) {
       setMessage(
         'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
       );
@@ -1906,7 +2020,6 @@ export default function Home() {
       setLocationBusy(
         false
       );
-
       return;
     }
 
@@ -1916,9 +2029,7 @@ export default function Home() {
       '✅ Posizione GPS aggiornata.'
     );
 
-    setLocationBusy(
-      false
-    );
+    setLocationBusy(false);
   }
 
   async function setProLocationManual() {
@@ -1935,32 +2046,24 @@ export default function Home() {
       setMessage(
         'Inserisci la città o il CAP della tua zona operativa.'
       );
-
       return;
     }
 
-    setLocationBusy(
-      true
-    );
-
+    setLocationBusy(true);
     setMessage('');
 
     try {
       const params =
         new URLSearchParams();
 
-      if (
-        city
-      ) {
+      if (city) {
         params.set(
           'city',
           city
         );
       }
 
-      if (
-        postalCode
-      ) {
+      if (postalCode) {
         params.set(
           'postalCode',
           postalCode
@@ -1975,18 +2078,13 @@ export default function Home() {
       const result =
         await response.json();
 
-      if (
-        !response.ok
-      ) {
+      if (!response.ok) {
         setMessage(
           result.error ||
           'Località non trovata.'
         );
 
-        setLocationBusy(
-          false
-        );
-
+        setLocationBusy(false);
         return;
       }
 
@@ -2012,10 +2110,7 @@ export default function Home() {
           'Coordinate della località non valide.'
         );
 
-        setLocationBusy(
-          false
-        );
-
+        setLocationBusy(false);
         return;
       }
 
@@ -2039,17 +2134,13 @@ export default function Home() {
       );
     }
 
-    setLocationBusy(
-      false
-    );
+    setLocationBusy(false);
   }
 
   async function setRadius(
     value: number
   ) {
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_max_distance',
         {
@@ -2058,19 +2149,14 @@ export default function Home() {
         }
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
-
       return;
     }
 
-    setMaxDistance(
-      value
-    );
+    setMaxDistance(value);
 
     setMessage(
       `✅ Raggio impostato a ${value} km.`
@@ -2082,30 +2168,22 @@ export default function Home() {
   async function setAvail(
     value: string
   ) {
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_availability',
         {
-          p_status:
-            value
+          p_status: value
         }
       );
 
-    if (
-      error
-    ) {
+    if (error) {
       setMessage(
         error.message
       );
-
       return;
     }
 
-    setAvailability(
-      value
-    );
+    setAvailability(value);
 
     setMessage(
       `✅ ${availabilityLabel(value)}`
@@ -2124,12 +2202,11 @@ export default function Home() {
           return clientJobs;
         }
 
-        return clientJobs
-          .filter(
-            job =>
-              job.status ===
-              clientFilter
-          );
+        return clientJobs.filter(
+          job =>
+            job.status ===
+            clientFilter
+        );
       },
       [
         clientJobs,
@@ -2138,29 +2215,22 @@ export default function Home() {
     );
 
   const visibleMatching =
-    proFilter ===
-      'tutti'
-    ||
-    proFilter ===
-      'aperta'
+    proFilter === 'tutti' ||
+    proFilter === 'aperta'
       ? matchingJobs
       : [];
 
   const visibleAccepted =
-    proFilter ===
-      'tutti'
+    proFilter === 'tutti'
       ? acceptedJobs
-      : acceptedJobs
-          .filter(
-            job =>
-              job.status ===
-              proFilter
-          );
+      : acceptedJobs.filter(
+          job =>
+            job.status ===
+            proFilter
+        );
 
   const verified =
-    identity.verified ===
-      true
-    &&
+    identity.verified === true &&
     identity.verification_status ===
       'verificato';
 
@@ -2173,8 +2243,7 @@ export default function Home() {
           setup.has_availability
         ]
           .filter(Boolean)
-          .length
-          * 25
+          .length * 25
       : 0;
 
   const averageRating =
@@ -2182,24 +2251,22 @@ export default function Home() {
       ? reviews.reduce(
           (
             sum,
-            r
+            review
           ) =>
             sum +
             Number(
-              r.rating || 0
+              review.rating || 0
             ),
           0
         ) /
         reviews.length
       : 0;
 
-  function Photo(
-    {
-      id
-    }: {
-      id: string;
-    }
-  ) {
+  function Photo({
+    id
+  }: {
+    id: string;
+  }) {
     const src =
       jobPhotos[id];
 
@@ -2215,9 +2282,7 @@ export default function Home() {
   }
 
   function ChatModal() {
-    if (
-      !chatJobId
-    ) {
+    if (!chatJobId) {
       return null;
     }
 
@@ -2228,9 +2293,7 @@ export default function Home() {
             type="button"
             className="x"
             onClick={() =>
-              setChatJobId(
-                null
-              )
+              setChatJobId(null)
             }
           >
             ×
@@ -2245,40 +2308,34 @@ export default function Home() {
           </h2>
 
           <div className="chat-list">
-            {
-              messages.map(
-                item => (
-                  <div
-                    key={
-                      item.id
+            {messages.map(
+              item => (
+                <div
+                  key={item.id}
+                  className={
+                    `bubble ${
+                      item.sender_id ===
+                        user?.id
+                        ? 'mine'
+                        : 'theirs'
+                    }`
+                  }
+                >
+                  <b>
+                    {
+                      item.sender_id ===
+                        user?.id
+                        ? 'Tu'
+                        : 'Interlocutore'
                     }
-                    className={
-                      `bubble ${
-                        item.sender_id ===
-                          user?.id
-                          ? 'mine'
-                          : 'theirs'
-                      }`
-                    }
-                  >
-                    <b>
-                      {
-                        item.sender_id ===
-                          user?.id
-                          ? 'Tu'
-                          : 'Interlocutore'
-                      }
-                    </b>
+                  </b>
 
-                    <div>
-                      {
-                        item.message
-                      }
-                    </div>
+                  <div>
+                    {item.message}
                   </div>
-                )
+                </div>
               )
-            }
+            )}
           </div>
 
           <form
@@ -2307,6 +2364,10 @@ export default function Home() {
       </div>
     );
   }
+
+  /*
+   * AREA PROFESSIONISTA
+   */
 
   if (
     user &&
@@ -2359,14 +2420,11 @@ export default function Home() {
               }
             </div>
 
-            {
-              message &&
-              (
-                <div className="notice">
-                  {message}
-                </div>
-              )
-            }
+            {message && (
+              <div className="notice">
+                {message}
+              </div>
+            )}
 
             <div className="kpi">
               <div className="card">
@@ -2385,11 +2443,9 @@ export default function Home() {
                 </span>
 
                 <strong>
-                  {
-                    verified
-                      ? '✅'
-                      : '🟡'
-                  }
+                  {verified
+                    ? '✅'
+                    : '🟡'}
                 </strong>
               </div>
 
@@ -2413,7 +2469,9 @@ export default function Home() {
                 <strong>
                   {
                     reviews.length
-                      ? averageRating.toFixed(1)
+                      ? averageRating.toFixed(
+                          1
+                        )
                       : '—'
                   }
                 </strong>
@@ -2453,8 +2511,8 @@ export default function Home() {
                 onChange={
                   e =>
                     setIdentity(
-                      (x: any) => ({
-                        ...x,
+                      (current: any) => ({
+                        ...current,
                         business_name:
                           e.target.value
                       })
@@ -2467,6 +2525,8 @@ export default function Home() {
               </label>
 
               <input
+                type="tel"
+                inputMode="tel"
                 value={
                   identity.phone
                   ?? ''
@@ -2474,13 +2534,14 @@ export default function Home() {
                 onChange={
                   e =>
                     setIdentity(
-                      (x: any) => ({
-                        ...x,
+                      (current: any) => ({
+                        ...current,
                         phone:
                           e.target.value
                       })
                     )
                 }
+                placeholder="+39 333 1234567"
               />
 
               <label>
@@ -2495,8 +2556,8 @@ export default function Home() {
                 onChange={
                   e =>
                     setIdentity(
-                      (x: any) => ({
-                        ...x,
+                      (current: any) => ({
+                        ...current,
                         vat_number:
                           e.target.value
                       })
@@ -2516,8 +2577,8 @@ export default function Home() {
                 onChange={
                   e =>
                     setIdentity(
-                      (x: any) => ({
-                        ...x,
+                      (current: any) => ({
+                        ...current,
                         tax_code:
                           e.target.value
                       })
@@ -2556,38 +2617,35 @@ export default function Home() {
               </h3>
 
               <div className="actions">
-                {
-                  [
-                    'ora',
-                    '1-2h',
-                    'oggi',
-                    'offline'
-                  ].map(
-                    value => (
-                      <button
-                        key={value}
-                        className={
-                          availability ===
-                            value
-                            ? 'full'
-                            : 'outline'
-                        }
-                        onClick={
-                          () =>
-                            setAvail(
-                              value
-                            )
-                        }
-                      >
-                        {
-                          availabilityLabel(
-                            value
-                          )
-                        }
-                      </button>
-                    )
+                {[
+                  'ora',
+                  '1-2h',
+                  'oggi',
+                  'offline'
+                ].map(
+                  value => (
+                    <button
+                      key={value}
+                      className={
+                        availability ===
+                          value
+                          ? 'full'
+                          : 'outline'
+                      }
+                      onClick={() =>
+                        setAvail(
+                          value
+                        )
+                      }
+                    >
+                      {
+                        availabilityLabel(
+                          value
+                        )
+                      }
+                    </button>
                   )
-                }
+                )}
               </div>
             </div>
 
@@ -2607,56 +2665,51 @@ export default function Home() {
                   marginTop: 12
                 }}
               >
-                {
-                  categories.map(
-                    category => (
-                      <button
-                        key={
-                          category.id
-                        }
-                        className={
-                          selectedProCats
-                            .includes(
+                {categories.map(
+                  category => (
+                    <button
+                      key={
+                        category.id
+                      }
+                      className={
+                        selectedProCats
+                          .includes(
+                            category.id
+                          )
+                          ? 'cat selected'
+                          : 'cat'
+                      }
+                      onClick={() =>
+                        setSelectedProCats(
+                          current =>
+                            current.includes(
                               category.id
                             )
-                            ? 'cat selected'
-                            : 'cat'
-                        }
-                        onClick={
-                          () =>
-                            setSelectedProCats(
-                              current =>
-                                current.includes(
-                                  category.id
+                              ? current.filter(
+                                  id =>
+                                    id !==
+                                    category.id
                                 )
-                                  ? current.filter(
-                                      id =>
-                                        id !==
-                                        category.id
-                                    )
-                                  : [
-                                      ...current,
-                                      category.id
-                                    ]
-                            )
-                        }
-                      >
-                        {
-                          selectedProCats
-                            .includes(
-                              category.id
-                            )
-                            ? '✓ '
-                            : ''
-                        }
+                              : [
+                                  ...current,
+                                  category.id
+                                ]
+                        )
+                      }
+                    >
+                      {
+                        selectedProCats
+                          .includes(
+                            category.id
+                          )
+                          ? '✓ '
+                          : ''
+                      }
 
-                        {
-                          category.name
-                        }
-                      </button>
-                    )
+                      {category.name}
+                    </button>
                   )
-                }
+                )}
               </div>
 
               <div className="actions">
@@ -2686,7 +2739,8 @@ export default function Home() {
               </h3>
 
               <p className="muted">
-                Puoi usare la posizione GPS oppure indicare
+                Puoi usare la posizione
+                GPS oppure indicare
                 manualmente città e CAP.
               </p>
 
@@ -2716,16 +2770,14 @@ export default function Home() {
                 </label>
 
                 <input
-                  value={
-                    proCity
-                  }
+                  value={proCity}
                   onChange={
                     e =>
                       setProCity(
                         e.target.value
                       )
                   }
-                  placeholder="Es. Urbino"
+                  placeholder="Es. Bologna"
                 />
 
                 <label>
@@ -2743,7 +2795,7 @@ export default function Home() {
                       )
                   }
                   inputMode="numeric"
-                  placeholder="Es. 61029"
+                  placeholder="Es. 40121"
                 />
 
                 <button
@@ -2765,7 +2817,8 @@ export default function Home() {
 
               <hr
                 style={{
-                  margin: '24px 0',
+                  margin:
+                    '24px 0',
                   border: 0,
                   borderTop:
                     '1px solid #e5e5e5'
@@ -2778,29 +2831,26 @@ export default function Home() {
               </h3>
 
               <div className="actions">
-                {
-                  DISTANCES.map(
-                    value => (
-                      <button
-                        key={value}
-                        className={
-                          maxDistance ===
-                            value
-                            ? 'full'
-                            : 'outline'
-                        }
-                        onClick={
-                          () =>
-                            setRadius(
-                              value
-                            )
-                        }
-                      >
-                        {value} km
-                      </button>
-                    )
+                {DISTANCES.map(
+                  value => (
+                    <button
+                      key={value}
+                      className={
+                        maxDistance ===
+                          value
+                          ? 'full'
+                          : 'outline'
+                      }
+                      onClick={() =>
+                        setRadius(
+                          value
+                        )
+                      }
+                    >
+                      {value} km
+                    </button>
                   )
-                }
+                )}
               </div>
             </div>
 
@@ -2817,59 +2867,54 @@ export default function Home() {
                 Lavori e storico
               </h2>
 
-              {
-                !verified &&
-                (
-                  <div className="notice">
-                    🔒 Il matching è visibile solo dopo la verifica amministratore.
-                  </div>
-                )
-              }
+              {!verified && (
+                <div className="notice">
+                  🔒 Il matching è
+                  visibile solo dopo la
+                  verifica amministratore.
+                </div>
+              )}
 
               <div className="filter">
-                {
-                  [
-                    'tutti',
-                    'aperta',
-                    'accettata',
-                    'completata'
-                  ].map(
-                    filter => (
-                      <button
-                        key={filter}
-                        className={
-                          proFilter ===
-                            filter
-                            ? 'selected'
-                            : ''
-                        }
-                        onClick={
-                          () =>
-                            setProFilter(
-                              filter
-                            )
-                        }
-                      >
-                        {
-                          filter ===
-                            'tutti'
-                            ? 'Tutti'
+                {[
+                  'tutti',
+                  'aperta',
+                  'accettata',
+                  'completata'
+                ].map(
+                  filter => (
+                    <button
+                      key={filter}
+                      className={
+                        proFilter ===
+                          filter
+                          ? 'selected'
+                          : ''
+                      }
+                      onClick={() =>
+                        setProFilter(
+                          filter
+                        )
+                      }
+                    >
+                      {
+                        filter ===
+                          'tutti'
+                          ? 'Tutti'
+                          : filter ===
+                              'aperta'
+                            ? 'Da accettare'
                             : filter ===
-                                'aperta'
-                              ? 'Da accettare'
-                              : filter ===
-                                  'accettata'
-                                ? 'Accettati'
-                                : 'Completati'
-                        }
-                      </button>
-                    )
+                                'accettata'
+                              ? 'Accettati'
+                              : 'Completati'
+                      }
+                    </button>
                   )
-                }
+                )}
               </div>
 
-              {
-                verified &&
+              {verified &&
                 visibleMatching.map(
                   job => (
                     <article
@@ -2886,8 +2931,7 @@ export default function Home() {
 
                           <h3>
                             {
-                              job.category_name
-                              ||
+                              job.category_name ||
                               'Intervento'
                             }
                           </h3>
@@ -2902,35 +2946,32 @@ export default function Home() {
                       </div>
 
                       <p>
-                        {
-                          job.description
-                        }
+                        {job.description}
                       </p>
 
                       <Photo
-                        id={
-                          job.id
-                        }
+                        id={job.id}
                       />
 
                       <p className="muted">
-                        🔒 Indirizzo completo dopo l’accettazione
+                        🔒 Indirizzo e
+                        telefono disponibili
+                        dopo l’accettazione
                       </p>
 
                       {
-                        job.distance_km
-                        != null &&
-                        (
+                        job.distance_km !=
+                          null && (
                           <p>
                             📍{' '}
                             {
                               Number(
                                 job.distance_km
+                              ).toFixed(
+                                1
                               )
-                                .toFixed(1)
-                            } km
-                            {' · '}
-                            ⏱{' '}
+                            }{' '}
+                            km · ⏱{' '}
                             {
                               etaLabel(
                                 job.eta_minutes
@@ -2947,11 +2988,10 @@ export default function Home() {
                           availability ===
                             'offline'
                         }
-                        onClick={
-                          () =>
-                            acceptJob(
-                              job.id
-                            )
+                        onClick={() =>
+                          acceptJob(
+                            job.id
+                          )
                         }
                       >
                         {
@@ -2963,218 +3003,95 @@ export default function Home() {
                       </button>
                     </article>
                   )
-                )
-              }
+                )}
 
-              {
-                verified &&
+              {verified &&
                 visibleAccepted.map(
-                  job => {
-                    if (
-                      job.status ===
-                      'completata'
-                    ) {
-                      return (
-                        <article
-                          className="card job"
-                          key={
-                            `a-${job.id}`
-                          }
-                        >
-                          <div
-                            style={{
-                              display:
-                                'flex',
-                              justifyContent:
-                                'space-between',
-                              alignItems:
-                                'flex-start',
-                              gap: 10
-                            }}
-                          >
-                            <div>
-                              <span className="status">
-                                ✅ COMPLETATA
-                              </span>
-
-                              <h3>
-                                {
-                                  job.category_name
-                                  ||
-                                  'Intervento'
-                                }
-                              </h3>
-                            </div>
-
-                            <span
-                              className="muted"
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 700
-                              }}
-                            >
-                              {
-                                job.urgency
-                                  ?.toUpperCase()
-                              }
-                            </span>
-                          </div>
-
-                          <p
-                            style={{
-                              marginBottom: 8
-                            }}
-                          >
-                            {
-                              job.description
-                            }
-                          </p>
-
-                          <details>
-                            <summary
-                              style={{
-                                cursor:
-                                  'pointer',
-                                fontWeight: 800,
-                                fontSize: 13,
-                                padding:
-                                  '6px 0'
-                              }}
-                            >
-                              Mostra dettagli
-                            </summary>
-
-                            <Photo
-                              id={
-                                job.id
-                              }
-                            />
-
-                            {
-                              job.address &&
-                              (
-                                <div className="success">
-                                  📍{' '}
-                                  <b>
-                                    Indirizzo intervento
-                                  </b>
-
-                                  <br />
-
-                                  {
-                                    job.address
-                                  }
-                                </div>
-                              )
-                            }
-
-                            <div className="actions">
-                              <button
-                                className="full"
-                                onClick={
-                                  () =>
-                                    openChat(
-                                      job.id,
-                                      job.category_name
-                                      ||
-                                      'Intervento'
-                                    )
-                                }
-                              >
-                                💬 Chat
-                              </button>
-                            </div>
-                          </details>
-                        </article>
-                      );
-                    }
-
-                    return (
-                      <article
-                        className="card job"
-                        key={
-                          `a-${job.id}`
-                        }
-                      >
-                        <span className="status">
-                          {
-                            statusLabel(
-                              job.status
-                            )
-                          }
-                        </span>
-
-                        <h3>
-                          {
-                            job.category_name
-                            ||
-                            'Intervento'
-                          }
-                        </h3>
-
-                        <p>
-                          {
-                            job.description
-                          }
-                        </p>
-
-                        <Photo
-                          id={
-                            job.id
-                          }
-                        />
-
+                  job => (
+                    <article
+                      className="card job"
+                      key={
+                        `a-${job.id}`
+                      }
+                    >
+                      <span className="status">
                         {
-                          job.address &&
-                          (
-                            <div className="success">
-                              📍{' '}
-                              <b>
-                                Indirizzo intervento
-                              </b>
-
-                              <br />
-
-                              {
-                                job.address
-                              }
-                            </div>
+                          statusLabel(
+                            job.status
                           )
                         }
+                      </span>
 
-                        <div className="actions">
-                          <button
-                            className="full"
-                            onClick={
-                              () =>
-                                openChat(
-                                  job.id,
-                                  job.category_name
-                                  ||
-                                  'Intervento'
-                                )
-                            }
-                          >
-                            💬 Chat
-                          </button>
+                      <h3>
+                        {
+                          job.category_name ||
+                          'Intervento'
+                        }
+                      </h3>
 
-                          <button
-                            className="outline"
-                            onClick={
-                              () =>
+                      <p>
+                        {job.description}
+                      </p>
+
+                      <Photo
+                        id={job.id}
+                      />
+
+                      {job.address && (
+                        <div className="success">
+                          📍{' '}
+                          <b>
+                            Indirizzo intervento
+                          </b>
+
+                          <br />
+
+                          {job.address}
+                        </div>
+                      )}
+
+                      <ContactButtons
+                        jobId={
+                          String(
+                            job.id
+                          )
+                        }
+                        viewer="professionista"
+                      />
+
+                      <div className="actions">
+                        <button
+                          className="full"
+                          onClick={() =>
+                            openChat(
+                              job.id,
+                              job.category_name ||
+                              'Intervento'
+                            )
+                          }
+                        >
+                          💬 Chat
+                        </button>
+
+                        {
+                          job.status !==
+                            'completata' && (
+                            <button
+                              className="outline"
+                              onClick={() =>
                                 completeJob(
                                   job.id
                                 )
-                            }
-                          >
-                            ✓ Completa
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  }
-                )
-              }
+                              }
+                            >
+                              ✓ Completa
+                            </button>
+                          )
+                        }
+                      </div>
+                    </article>
+                  )
+                )}
             </div>
 
             <div
@@ -3195,119 +3112,60 @@ export default function Home() {
                   ? (
                     <div className="card">
                       <p className="muted">
-                        Non hai ancora recensioni.
+                        Non hai ancora
+                        recensioni.
                       </p>
                     </div>
                   )
-                  : (
-                    <div
-                      className="card"
-                      style={{
-                        padding: 0,
-                        overflow:
-                          'hidden'
-                      }}
-                    >
-                      {
-                        reviews.map(
-                          (
-                            review,
-                            index
-                          ) => (
-                            <div
-                              key={
-                                review.review_id
-                              }
-                              style={{
-                                padding:
-                                  '12px 14px',
+                  : reviews.map(
+                      review => (
+                        <div
+                          className="card"
+                          key={
+                            review.review_id
+                          }
+                        >
+                          <b>
+                            {
+                              review.client_name ||
+                              'Cliente'
+                            }
+                          </b>
 
-                                borderBottom:
-                                  index <
-                                  reviews.length - 1
-                                    ? '1px solid #e3e5e8'
-                                    : 'none'
-                              }}
-                            >
-                              <div
-                                style={{
-                                  display:
-                                    'flex',
+                          <p>
+                            {
+                              '⭐'.repeat(
+                                Number(
+                                  review.rating ||
+                                  0
+                                )
+                              )
+                            }
+                          </p>
 
-                                  justifyContent:
-                                    'space-between',
-
-                                  alignItems:
-                                    'center',
-
-                                  gap: 10
-                                }}
-                              >
-                                <b
-                                  style={{
-                                    fontSize: 13
-                                  }}
-                                >
-                                  {
-                                    review.client_name
-                                    ||
-                                    'Cliente'
-                                  }
-                                </b>
-
-                                <span
-                                  style={{
-                                    fontSize: 13,
-                                    whiteSpace:
-                                      'nowrap'
-                                  }}
-                                >
-                                  {
-                                    '⭐'.repeat(
-                                      Number(
-                                        review.rating
-                                        || 0
-                                      )
-                                    )
-                                  }
-                                </span>
-                              </div>
-
-                              <p
-                                className="muted"
-                                style={{
-                                  margin:
-                                    '5px 0 0',
-
-                                  fontSize: 12,
-
-                                  lineHeight:
-                                    1.35
-                                }}
-                              >
-                                {
-                                  review.comment
-                                  ||
-                                  'Nessun commento.'
-                                }
-                              </p>
-                            </div>
-                          )
-                        )
-                      }
-                    </div>
-                  )
+                          <p className="muted">
+                            {
+                              review.comment ||
+                              'Nessun commento.'
+                            }
+                          </p>
+                        </div>
+                      )
+                    )
               }
             </div>
           </section>
         </div>
 
         <LegalFooter />
-
         <ChatModal />
       </main>
     );
   }
+
+  /*
+   * AREA CLIENTE
+   */
 
   return (
     <main>
@@ -3333,21 +3191,19 @@ export default function Home() {
             : (
               <button
                 className="outline"
-                onClick={
-                  () => {
-                    setAuthMode(
-                      'login'
-                    );
+                onClick={() => {
+                  setAuthMode(
+                    'login'
+                  );
 
-                    setAcceptedLegal(
-                      false
-                    );
+                  setAcceptedLegal(
+                    false
+                  );
 
-                    setAuthOpen(
-                      true
-                    );
-                  }
-                }
+                  setAuthOpen(
+                    true
+                  );
+                }}
               >
                 Accedi / Registrati
               </button>
@@ -3372,7 +3228,9 @@ export default function Home() {
             </h1>
 
             <p>
-              Trova un professionista verificato, disponibile e vicino a te.
+              Trova un professionista
+              verificato, disponibile e
+              vicino a te.
             </p>
           </div>
 
@@ -3386,68 +3244,54 @@ export default function Home() {
             </h2>
 
             <div className="grid">
-              {
-                CATEGORIES.map(
-                  (
-                    [
-                      name,
-                      icon
-                    ]
-                  ) => (
-                    <button
-                      key={name}
-                      className={
-                        cat ===
-                          name
-                          ? 'cat selected'
-                          : 'cat'
-                      }
-                      onClick={
-                        () =>
-                          setCat(
-                            name
-                          )
-                      }
-                    >
-                      <strong>
-                        {icon}
-                      </strong>
+              {CATEGORIES.map(
+                ([name, icon]) => (
+                  <button
+                    key={name}
+                    className={
+                      cat === name
+                        ? 'cat selected'
+                        : 'cat'
+                    }
+                    onClick={() =>
+                      setCat(name)
+                    }
+                  >
+                    <strong>
+                      {icon}
+                    </strong>
 
-                      {name}
-                    </button>
-                  )
+                    {name}
+                  </button>
                 )
-              }
+              )}
             </div>
 
             <div className="urg">
-              {
-                [
-                  'SUBITO',
-                  'OGGI',
-                  '48H'
-                ].map(
-                  value => (
-                    <button
-                      key={value}
-                      className={
-                        urgency ===
-                          value
-                          ? 'selected'
-                          : ''
-                      }
-                      onClick={
-                        () =>
-                          setUrgency(
-                            value
-                          )
-                      }
-                    >
-                      {value}
-                    </button>
-                  )
+              {[
+                'SUBITO',
+                'OGGI',
+                '48H'
+              ].map(
+                value => (
+                  <button
+                    key={value}
+                    className={
+                      urgency ===
+                        value
+                        ? 'selected'
+                        : ''
+                    }
+                    onClick={() =>
+                      setUrgency(
+                        value
+                      )
+                    }
+                  >
+                    {value}
+                  </button>
                 )
-              }
+              )}
             </div>
 
             <label>
@@ -3456,9 +3300,7 @@ export default function Home() {
 
             <textarea
               rows={4}
-              value={
-                description
-              }
+              value={description}
               onChange={
                 e =>
                   setDescription(
@@ -3481,48 +3323,44 @@ export default function Home() {
             />
 
             <div className="small muted">
-              Facoltativa · massimo 10 MB
+              Facoltativa · massimo
+              10 MB
             </div>
 
-            {
-              photoPreview &&
-              (
-                <>
-                  <img
-                    className="photo"
-                    src={
-                      photoPreview
-                    }
-                    alt="Anteprima"
-                  />
+            {photoPreview && (
+              <>
+                <img
+                  className="photo"
+                  src={
+                    photoPreview
+                  }
+                  alt="Anteprima"
+                />
 
-                  <button
-                    className="danger"
-                    onClick={
-                      clearPhoto
-                    }
-                  >
-                    Rimuovi foto
-                  </button>
-                </>
-              )
-            }
+                <button
+                  className="danger"
+                  onClick={
+                    clearPhoto
+                  }
+                >
+                  Rimuovi foto
+                </button>
+              </>
+            )}
 
             <label>
               📍 Indirizzo intervento
             </label>
 
             <input
-              value={
-                address
-              }
+              value={address}
               onChange={
                 e =>
                   setAddress(
                     e.target.value
                   )
               }
-              placeholder="Es. Via Roma 15, Urbino"
+              placeholder="Es. Via Roma 15, Bologna"
             />
 
             <div className="actions">
@@ -3533,9 +3371,7 @@ export default function Home() {
                     const p =
                       await getPosition();
 
-                    setCoords(
-                      p
-                    );
+                    setCoords(p);
 
                     setMessage(
                       p
@@ -3554,12 +3390,8 @@ export default function Home() {
 
               <button
                 className="full"
-                disabled={
-                  busy
-                }
-                onClick={
-                  submitJob
-                }
+                disabled={busy}
+                onClick={submitJob}
               >
                 {
                   busy
@@ -3569,91 +3401,144 @@ export default function Home() {
               </button>
             </div>
 
-            {
-              message &&
-              (
-                <div className="success">
-                  {message}
-                </div>
-              )
-            }
+            {message && (
+              <div className="success">
+                {message}
+              </div>
+            )}
 
-            {
-              bestMatch &&
-              (
-                <div
-                  className="card"
-                  style={{
-                    marginTop: 16,
-                    borderColor:
-                      '#48b779'
-                  }}
-                >
-                  <span className="tag">
-                    Professionista compatibile
-                  </span>
+            {bestMatch && (
+              <div
+                className="card"
+                style={{
+                  marginTop: 16,
+                  borderColor:
+                    '#48b779'
+                }}
+              >
+                <span className="tag">
+                  Professionista compatibile
+                </span>
 
-                  <h3>
-                    {
-                      bestMatch.professional_name
-                    }
-                  </h3>
+                <h3>
+                  {
+                    bestMatch.professional_name
+                  }
+                </h3>
 
-                  <p>
-                    🎯{' '}
-                    {
-                      bestMatch.match_score
-                    }/100
-                    {' · '}
-                    ⭐{' '}
-                    {
-                      Number(
-                        bestMatch.average_rating
-                        || 0
-                      )
-                        .toFixed(1)
-                    }
-                    {' · '}
-                    {
-                      bestMatch.review_count
-                      || 0
-                    } recensioni
-                  </p>
+                <p>
+                  🎯{' '}
+                  {
+                    bestMatch.match_score
+                  }/100 · ⭐{' '}
+                  {
+                    Number(
+                      bestMatch.average_rating ||
+                      0
+                    ).toFixed(1)
+                  }{' '}
+                  ·{' '}
+                  {
+                    bestMatch.review_count ||
+                    0
+                  }{' '}
+                  recensioni
+                </p>
 
-                  <p>
-                    {
-                      availabilityLabel(
-                        bestMatch.availability_status
-                      )
-                    }
+                <p>
+                  {
+                    availabilityLabel(
+                      bestMatch.availability_status
+                    )
+                  }{' '}
+                  · 📍{' '}
+                  {
+                    bestMatch.distance_km !=
+                      null
+                      ? Number(
+                          bestMatch.distance_km
+                        ).toFixed(
+                          1
+                        )
+                      : '—'
+                  }{' '}
+                  km
+                </p>
 
-                    {' · '}
-
-                    📍{' '}
-
-                    {
-                      bestMatch.distance_km
-                      != null
-                        ? Number(
-                            bestMatch.distance_km
-                          )
-                            .toFixed(1)
-                        : '—'
-                    } km
-                  </p>
-                </div>
-              )
-            }
+                <p className="muted">
+                  🔒 Il numero di telefono
+                  sarà disponibile solo
+                  dopo che il professionista
+                  avrà accettato il lavoro.
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
         {
           user &&
-          role ===
-            'cliente' &&
-          (
+          role === 'cliente' && (
             <section className="section">
               <span className="tag">
+                Il mio profilo
+              </span>
+
+              <h2>
+                I miei contatti
+              </h2>
+
+              <div className="card">
+                <p className="muted">
+                  Il numero viene mostrato
+                  esclusivamente al
+                  professionista che ha
+                  accettato il tuo
+                  intervento.
+                </p>
+
+                <label>
+                  📱 Numero di telefono
+                </label>
+
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={
+                    clientPhone
+                  }
+                  onChange={
+                    e =>
+                      setClientPhone(
+                        e.target.value
+                      )
+                  }
+                  placeholder="+39 333 1234567"
+                />
+
+                <button
+                  className="full"
+                  style={{
+                    marginTop: 12
+                  }}
+                  disabled={busy}
+                  onClick={
+                    saveClientPhone
+                  }
+                >
+                  Salva numero
+                </button>
+              </div>
+
+              <span
+                className="tag"
+                style={{
+                  marginTop: 30,
+                  display:
+                    'inline-block'
+                }}
+              >
                 Storico cliente
               </span>
 
@@ -3676,211 +3561,205 @@ export default function Home() {
               </div>
 
               <div className="filter">
-                {
-                  [
-                    'tutti',
-                    'aperta',
-                    'accettata',
-                    'completata',
-                    'annullata'
-                  ].map(
-                    filter => (
-                      <button
-                        key={filter}
-                        className={
-                          clientFilter ===
-                            filter
-                            ? 'selected'
-                            : ''
-                        }
-                        onClick={
-                          () =>
-                            setClientFilter(
-                              filter
-                            )
-                        }
-                      >
-                        {
-                          filter ===
-                            'tutti'
-                            ? 'Tutti'
-                            : filter
-                        }
-                      </button>
-                    )
-                  )
-                }
-              </div>
-
-              {
-                filteredClient.map(
-                  job => (
-                    <article
-                      className="card job"
-                      key={
-                        job.id
+                {[
+                  'tutti',
+                  'aperta',
+                  'accettata',
+                  'completata',
+                  'annullata'
+                ].map(
+                  filter => (
+                    <button
+                      key={filter}
+                      className={
+                        clientFilter ===
+                          filter
+                          ? 'selected'
+                          : ''
+                      }
+                      onClick={() =>
+                        setClientFilter(
+                          filter
+                        )
                       }
                     >
-                      <span className="status">
-                        {
-                          statusLabel(
-                            job.status
-                          )
-                        }
-                      </span>
-
-                      <h3>
-                        {
-                          job.category_name
-                          ||
-                          'Intervento'
-                        }
-                      </h3>
-
-                      <p>
-                        {
-                          job.description
-                        }
-                      </p>
-
-                      <Photo
-                        id={
-                          job.id
-                        }
-                      />
-
                       {
-                        job.address &&
-                        (
-                          <div className="notice">
-                            📍{' '}
-                            <b>
-                              Indirizzo intervento
-                            </b>
-
-                            <br />
-
-                            {
-                              job.address
-                            }
-                          </div>
-                        )
+                        filter ===
+                          'tutti'
+                          ? 'Tutti'
+                          : filter
                       }
-
-                      <p>
-                        <b>
-                          Urgenza:
-                        </b>{' '}
-
-                        {
-                          job.urgency
-                            ?.toUpperCase()
-                        }
-                      </p>
-
-                      {
-                        job.professional_name &&
-                        (
-                          <div className="success">
-                            ✅{' '}
-                            {
-                              job.professional_name
-                            }
-                          </div>
-                        )
-                      }
-
-                      <div className="actions">
-                        {
-                          job.status ===
-                            'aperta' &&
-                          (
-                            <button
-                              className="danger"
-                              onClick={
-                                () =>
-                                  cancelJob(
-                                    job.id
-                                  )
-                              }
-                            >
-                              ❌ Annulla richiesta
-                            </button>
-                          )
-                        }
-
-                        {
-                          (
-                            job.status ===
-                              'accettata'
-                            ||
-                            job.status ===
-                              'completata'
-                          ) &&
-                          (
-                            <button
-                              className="full"
-                              onClick={
-                                () =>
-                                  openChat(
-                                    job.id,
-                                    job.professional_name
-                                    ||
-                                    'Intervento'
-                                  )
-                              }
-                            >
-                              💬 Chat
-                            </button>
-                          )
-                        }
-
-                        {
-                          job.status ===
-                            'accettata' &&
-                          (
-                            <button
-                              className="outline"
-                              onClick={
-                                () =>
-                                  completeJob(
-                                    job.id
-                                  )
-                              }
-                            >
-                              ✓ Completa
-                            </button>
-                          )
-                        }
-
-                        {
-                          job.status ===
-                            'completata' &&
-                          !job.reviewed &&
-                          (
-                            <button
-                              className="outline"
-                              onClick={
-                                () => {
-                                  setReviewJobId(
-                                    job.id
-                                  );
-
-                                  setRating(
-                                    5
-                                  );
-                                }
-                              }
-                            >
-                              ⭐ Recensisci
-                            </button>
-                          )
-                        }
-                      </div>
-                    </article>
+                    </button>
                   )
+                )}
+              </div>
+
+              {filteredClient.map(
+                job => (
+                  <article
+                    className="card job"
+                    key={job.id}
+                  >
+                    <span className="status">
+                      {
+                        statusLabel(
+                          job.status
+                        )
+                      }
+                    </span>
+
+                    <h3>
+                      {
+                        job.category_name ||
+                        'Intervento'
+                      }
+                    </h3>
+
+                    <p>
+                      {job.description}
+                    </p>
+
+                    <Photo
+                      id={job.id}
+                    />
+
+                    {job.address && (
+                      <div className="notice">
+                        📍{' '}
+                        <b>
+                          Indirizzo intervento
+                        </b>
+
+                        <br />
+
+                        {job.address}
+                      </div>
+                    )}
+
+                    <p>
+                      <b>
+                        Urgenza:
+                      </b>{' '}
+                      {
+                        job.urgency
+                          ?.toUpperCase()
+                      }
+                    </p>
+
+                    {
+                      job.professional_name && (
+                        <div className="success">
+                          ✅{' '}
+                          {
+                            job.professional_name
+                          }
+                        </div>
+                      )
+                    }
+
+                    {
+                      (
+                        job.status ===
+                          'accettata' ||
+                        job.status ===
+                          'in_corso' ||
+                        job.status ===
+                          'completata'
+                      ) && (
+                        <ContactButtons
+                          jobId={
+                            String(
+                              job.id
+                            )
+                          }
+                          viewer="cliente"
+                        />
+                      )
+                    }
+
+                    <div className="actions">
+                      {
+                        job.status ===
+                          'aperta' && (
+                          <button
+                            className="danger"
+                            onClick={() =>
+                              cancelJob(
+                                job.id
+                              )
+                            }
+                          >
+                            ❌ Annulla richiesta
+                          </button>
+                        )
+                      }
+
+                      {
+                        (
+                          job.status ===
+                            'accettata' ||
+                          job.status ===
+                            'in_corso' ||
+                          job.status ===
+                            'completata'
+                        ) && (
+                          <button
+                            className="full"
+                            onClick={() =>
+                              openChat(
+                                job.id,
+                                job.professional_name ||
+                                'Intervento'
+                              )
+                            }
+                          >
+                            💬 Chat
+                          </button>
+                        )
+                      }
+
+                      {
+                        (
+                          job.status ===
+                            'accettata' ||
+                          job.status ===
+                            'in_corso'
+                        ) && (
+                          <button
+                            className="outline"
+                            onClick={() =>
+                              completeJob(
+                                job.id
+                              )
+                            }
+                          >
+                            ✓ Completa
+                          </button>
+                        )
+                      }
+
+                      {
+                        job.status ===
+                          'completata' &&
+                        !job.reviewed && (
+                          <button
+                            className="outline"
+                            onClick={() => {
+                              setReviewJobId(
+                                job.id
+                              );
+
+                              setRating(5);
+                            }}
+                          >
+                            ⭐ Recensisci
+                          </button>
+                        )
+                      }
+                    </div>
+                  </article>
                 )
-              }
+              )}
             </section>
           )
         }
@@ -3888,399 +3767,366 @@ export default function Home() {
 
       <LegalFooter />
 
-      {
-        authOpen &&
-        (
-          <div className="modal">
-            <form
-              className="modalBox"
-              onSubmit={
-                authSubmit
-              }
+      {authOpen && (
+        <div className="modal">
+          <form
+            className="modalBox"
+            onSubmit={authSubmit}
+          >
+            <button
+              type="button"
+              className="x"
+              onClick={() => {
+                setAuthOpen(false);
+                setAcceptedLegal(
+                  false
+                );
+              }}
             >
+              ×
+            </button>
+
+            <h2>
+              {
+                authMode ===
+                  'signup'
+                  ? 'Crea account'
+                  : 'Bentornato'
+              }
+            </h2>
+
+            <div className="actions">
               <button
                 type="button"
-                className="x"
-                onClick={
-                  () => {
-                    setAuthOpen(
-                      false
-                    );
-
-                    setAcceptedLegal(
-                      false
-                    );
-                  }
-                }
-              >
-                ×
-              </button>
-
-              <h2>
-                {
+                className={
                   authMode ===
-                    'signup'
-                    ? 'Crea account'
-                    : 'Bentornato'
+                    'login'
+                    ? 'full'
+                    : 'outline'
                 }
-              </h2>
+                onClick={() => {
+                  setAuthMode(
+                    'login'
+                  );
 
-              <div className="actions">
-                <button
-                  type="button"
-                  className={
-                    authMode ===
-                      'login'
-                      ? 'full'
-                      : 'outline'
-                  }
-                  onClick={
-                    () => {
-                      setAuthMode(
-                        'login'
-                      );
-
-                      setAcceptedLegal(
-                        false
-                      );
-                    }
-                  }
-                >
-                  Accedi
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    authMode ===
-                      'signup'
-                      ? 'full'
-                      : 'outline'
-                  }
-                  onClick={
-                    () => {
-                      setAuthMode(
-                        'signup'
-                      );
-
-                      setAcceptedLegal(
-                        false
-                      );
-                    }
-                  }
-                >
-                  Registrati
-                </button>
-              </div>
-
-              {
-                authMode ===
-                  'signup' &&
-                (
-                  <>
-                    <label>
-                      Nome e cognome
-                    </label>
-
-                    <input
-                      required
-                      value={
-                        authName
-                      }
-                      onChange={
-                        e =>
-                          setAuthName(
-                            e.target.value
-                          )
-                      }
-                    />
-
-                    <label>
-                      Tipo account
-                    </label>
-
-                    <select
-                      value={
-                        signupRole
-                      }
-                      onChange={
-                        e =>
-                          setSignupRole(
-                            e.target.value
-                          )
-                      }
-                    >
-                      <option value="cliente">
-                        Cliente
-                      </option>
-
-                      <option value="professionista">
-                        Professionista
-                      </option>
-                    </select>
-                  </>
-                )
-              }
-
-              <label>
-                Email
-              </label>
-
-              <input
-                type="email"
-                required
-                value={
-                  email
-                }
-                onChange={
-                  e =>
-                    setEmail(
-                      e.target.value
-                    )
-                }
-              />
-
-              <label>
-                Password
-              </label>
-
-              <input
-                type="password"
-                minLength={
-                  6
-                }
-                required
-                value={
-                  password
-                }
-                onChange={
-                  e =>
-                    setPassword(
-                      e.target.value
-                    )
-                }
-              />
-
-              {
-                authMode ===
-                  'login' &&
-                (
-                  <button
-                    type="button"
-                    className="outline"
-                    disabled={
-                      busy
-                    }
-                    style={{
-                      marginTop: 12,
-                      width: '100%'
-                    }}
-                    onClick={
-                      forgotPassword
-                    }
-                  >
-                    🔑 Password dimenticata?
-                  </button>
-                )
-              }
-
-              {
-                authMode ===
-                  'signup' &&
-                (
-                  <label
-                    style={{
-                      display:
-                        'flex',
-                      alignItems:
-                        'flex-start',
-                      gap: 10,
-                      marginTop: 16,
-                      fontWeight: 600,
-                      fontSize: 13,
-                      lineHeight: 1.45,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      required
-                      checked={
-                        acceptedLegal
-                      }
-                      onChange={
-                        e =>
-                          setAcceptedLegal(
-                            e.target.checked
-                          )
-                      }
-                      style={{
-                        width: 18,
-                        height: 18,
-                        minWidth: 18,
-                        padding: 0,
-                        margin:
-                          '1px 0 0'
-                      }}
-                    />
-
-                    <span>
-                      Dichiaro di aver letto e accetto i{' '}
-
-                      <a
-                        href="/termini"
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={
-                          e =>
-                            e.stopPropagation()
-                        }
-                      >
-                        Termini e condizioni
-                      </a>
-
-                      {' '}e dichiaro di aver letto la{' '}
-
-                      <a
-                        href="/privacy"
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={
-                          e =>
-                            e.stopPropagation()
-                        }
-                      >
-                        Privacy Policy
-                      </a>
-                      .
-                    </span>
-                  </label>
-                )
-              }
+                  setAcceptedLegal(
+                    false
+                  );
+                }}
+              >
+                Accedi
+              </button>
 
               <button
-                className="full"
-                style={{
-                  marginTop: 14
+                type="button"
+                className={
+                  authMode ===
+                    'signup'
+                    ? 'full'
+                    : 'outline'
+                }
+                onClick={() => {
+                  setAuthMode(
+                    'signup'
+                  );
+
+                  setAcceptedLegal(
+                    false
+                  );
                 }}
-                disabled={
-                  busy ||
-                  (
-                    authMode ===
-                      'signup' &&
-                    !acceptedLegal
-                  )
-                }
               >
-                {
-                  busy
-                    ? 'Attendi...'
-                    : authMode ===
-                        'signup'
-                      ? 'Crea account'
-                      : 'Accedi'
-                }
+                Registrati
               </button>
-            </form>
-          </div>
-        )
-      }
+            </div>
+
+            {
+              authMode ===
+                'signup' && (
+                <>
+                  <label>
+                    Nome e cognome
+                  </label>
+
+                  <input
+                    required
+                    value={
+                      authName
+                    }
+                    onChange={
+                      e =>
+                        setAuthName(
+                          e.target.value
+                        )
+                    }
+                  />
+
+                  <label>
+                    Tipo account
+                  </label>
+
+                  <select
+                    value={
+                      signupRole
+                    }
+                    onChange={
+                      e =>
+                        setSignupRole(
+                          e.target.value
+                        )
+                    }
+                  >
+                    <option value="cliente">
+                      Cliente
+                    </option>
+
+                    <option value="professionista">
+                      Professionista
+                    </option>
+                  </select>
+                </>
+              )
+            }
+
+            <label>
+              Email
+            </label>
+
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={
+                e =>
+                  setEmail(
+                    e.target.value
+                  )
+              }
+            />
+
+            <label>
+              Password
+            </label>
+
+            <input
+              type="password"
+              minLength={6}
+              required
+              value={
+                password
+              }
+              onChange={
+                e =>
+                  setPassword(
+                    e.target.value
+                  )
+              }
+            />
+
+            {
+              authMode ===
+                'login' && (
+                <button
+                  type="button"
+                  className="outline"
+                  disabled={busy}
+                  style={{
+                    marginTop: 12,
+                    width: '100%'
+                  }}
+                  onClick={
+                    forgotPassword
+                  }
+                >
+                  🔑 Password dimenticata?
+                </button>
+              )
+            }
+
+            {
+              authMode ===
+                'signup' && (
+                <label
+                  style={{
+                    display:
+                      'flex',
+                    alignItems:
+                      'flex-start',
+                    gap: 10,
+                    marginTop: 16,
+                    fontWeight: 600,
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    cursor:
+                      'pointer'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    required
+                    checked={
+                      acceptedLegal
+                    }
+                    onChange={
+                      e =>
+                        setAcceptedLegal(
+                          e.target.checked
+                        )
+                    }
+                    style={{
+                      width: 18,
+                      height: 18,
+                      minWidth: 18,
+                      padding: 0,
+                      margin:
+                        '1px 0 0'
+                    }}
+                  />
+
+                  <span>
+                    Dichiaro di aver letto
+                    e accetto i{' '}
+
+                    <a
+                      href="/termini"
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={
+                        e =>
+                          e.stopPropagation()
+                      }
+                    >
+                      Termini e condizioni
+                    </a>
+
+                    {' '}e dichiaro di aver
+                    letto la{' '}
+
+                    <a
+                      href="/privacy"
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={
+                        e =>
+                          e.stopPropagation()
+                      }
+                    >
+                      Privacy Policy
+                    </a>
+                    .
+                  </span>
+                </label>
+              )
+            }
+
+            <button
+              className="full"
+              style={{
+                marginTop: 14
+              }}
+              disabled={
+                busy ||
+                (
+                  authMode ===
+                    'signup' &&
+                  !acceptedLegal
+                )
+              }
+            >
+              {
+                busy
+                  ? 'Attendi...'
+                  : authMode ===
+                      'signup'
+                    ? 'Crea account'
+                    : 'Accedi'
+              }
+            </button>
+          </form>
+        </div>
+      )}
 
       <ChatModal />
 
-      {
-        reviewJobId &&
-        (
-          <div className="modal">
-            <form
-              className="modalBox"
-              onSubmit={
-                submitReview
+      {reviewJobId && (
+        <div className="modal">
+          <form
+            className="modalBox"
+            onSubmit={
+              submitReview
+            }
+          >
+            <button
+              type="button"
+              className="x"
+              onClick={() =>
+                setReviewJobId(
+                  null
+                )
               }
             >
-              <button
-                type="button"
-                className="x"
-                onClick={
-                  () =>
-                    setReviewJobId(
-                      null
-                    )
-                }
-              >
-                ×
-              </button>
+              ×
+            </button>
 
-              <span className="tag">
-                Recensione
-              </span>
+            <span className="tag">
+              Recensione
+            </span>
 
-              <h2>
-                Valuta l’intervento
-              </h2>
+            <h2>
+              Valuta l’intervento
+            </h2>
 
-              <div className="actions">
-                {
-                  [
-                    1,
-                    2,
-                    3,
-                    4,
-                    5
-                  ].map(
-                    stars => (
-                      <button
-                        type="button"
-                        key={stars}
-                        className={
-                          rating ===
-                            stars
-                            ? 'full'
-                            : 'outline'
-                        }
-                        onClick={
-                          () =>
-                            setRating(
-                              stars
-                            )
-                        }
-                      >
-                        {stars} ⭐
-                      </button>
-                    )
+            <div className="actions">
+              {[1, 2, 3, 4, 5].map(
+                stars => (
+                  <button
+                    type="button"
+                    key={stars}
+                    className={
+                      rating ===
+                        stars
+                        ? 'full'
+                        : 'outline'
+                    }
+                    onClick={() =>
+                      setRating(
+                        stars
+                      )
+                    }
+                  >
+                    {stars} ⭐
+                  </button>
+                )
+              )}
+            </div>
+
+            <label>
+              Commento
+            </label>
+
+            <textarea
+              rows={4}
+              value={
+                reviewComment
+              }
+              onChange={
+                e =>
+                  setReviewComment(
+                    e.target.value
                   )
-                }
-              </div>
+              }
+            />
 
-              <label>
-                Commento
-              </label>
-
-              <textarea
-                rows={4}
-                value={
-                  reviewComment
-                }
-                onChange={
-                  e =>
-                    setReviewComment(
-                      e.target.value
-                    )
-                }
-              />
-
-              <button
-                className="full"
-                style={{
-                  marginTop: 12
-                }}
-              >
-                Invia recensione
-              </button>
-            </form>
-          </div>
-        )
-      }
+            <button
+              className="full"
+              style={{
+                marginTop: 12
+              }}
+            >
+              Invia recensione
+            </button>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
