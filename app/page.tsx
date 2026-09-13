@@ -26,7 +26,13 @@ const CATEGORIES = [
   ['Altro', '🏠']
 ];
 
-const DISTANCES = [10, 20, 30, 50, 100];
+const DISTANCES = [
+  10,
+  20,
+  30,
+  50,
+  100
+];
 
 type ContactDetails = {
   client_name?: string | null;
@@ -35,13 +41,20 @@ type ContactDetails = {
   professional_phone?: string | null;
 };
 
-function slugify(value: string) {
+function slugify(
+  value: string
+) {
   return value
     .toLowerCase()
-    .replaceAll(' ', '-');
+    .replaceAll(
+      ' ',
+      '-'
+    );
 }
 
-function availabilityLabel(value: string) {
+function availabilityLabel(
+  value: string
+) {
   if (value === 'ora') {
     return '🟢 Disponibile ora';
   }
@@ -57,7 +70,9 @@ function availabilityLabel(value: string) {
   return '⚫ Offline';
 }
 
-function statusLabel(value: string) {
+function statusLabel(
+  value: string
+) {
   if (value === 'aperta') {
     return '🔴 RICERCA IN CORSO';
   }
@@ -82,11 +97,16 @@ function statusLabel(value: string) {
     return '⚫ ANNULLATA';
   }
 
-  return String(value || '').toUpperCase();
+  return String(
+    value || ''
+  ).toUpperCase();
 }
 
 function etaLabel(
-  value: number | null | undefined
+  value:
+    | number
+    | null
+    | undefined
 ) {
   if (value == null) {
     return 'Tempo non disponibile';
@@ -96,27 +116,43 @@ function etaLabel(
     return `Circa ${value} min`;
   }
 
-  const h = Math.floor(value / 60);
-  const m = value % 60;
+  const h =
+    Math.floor(
+      value / 60
+    );
+
+  const m =
+    value % 60;
 
   return m
     ? `Circa ${h} h ${m} min`
     : `Circa ${h} h`;
 }
 
-function whatsappNumber(phone: string) {
-  let value = phone.replace(/\D/g, '');
+function whatsappNumber(
+  phone: string
+) {
+  let value =
+    phone.replace(
+      /\D/g,
+      ''
+    );
 
-  if (value.startsWith('00')) {
-    value = value.slice(2);
+  if (
+    value.startsWith(
+      '00'
+    )
+  ) {
+    value =
+      value.slice(2);
   }
 
-  // Numero mobile italiano inserito senza +39
   if (
     value.length === 10 &&
     value.startsWith('3')
   ) {
-    value = `39${value}`;
+    value =
+      `39${value}`;
   }
 
   return value;
@@ -132,17 +168,22 @@ function LegalFooter() {
       <div
         style={{
           marginTop: 8,
-          display: 'flex',
-          justifyContent: 'center',
+          display:
+            'flex',
+          justifyContent:
+            'center',
           gap: 16,
-          flexWrap: 'wrap'
+          flexWrap:
+            'wrap'
         }}
       >
         <a
           href="/privacy"
           style={{
-            color: 'inherit',
-            fontWeight: 700
+            color:
+              'inherit',
+            fontWeight:
+              700
           }}
         >
           Privacy
@@ -151,8 +192,10 @@ function LegalFooter() {
         <a
           href="/termini"
           style={{
-            color: 'inherit',
-            fontWeight: 700
+            color:
+              'inherit',
+            fontWeight:
+              700
           }}
         >
           Termini e condizioni
@@ -163,49 +206,84 @@ function LegalFooter() {
 }
 
 export default function Home() {
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [
+    user,
+    setUser
+  ] =
+    useState<User | null>(
+      null
+    );
 
-  const [role, setRole] =
+  const [
+    role,
+    setRole
+  ] =
     useState('');
 
-  const [fullName, setFullName] =
+  const [
+    fullName,
+    setFullName
+  ] =
     useState('');
 
-  const [clientPhone, setClientPhone] =
+  const [
+    clientPhone,
+    setClientPhone
+  ] =
     useState('');
 
   const [
     contactDetails,
     setContactDetails
   ] =
-    useState<Record<string, ContactDetails>>(
-      {}
-    );
+    useState<
+      Record<
+        string,
+        ContactDetails
+      >
+    >({});
 
-  const [message, setMessage] =
+  const [
+    message,
+    setMessage
+  ] =
     useState('');
 
-  const [busy, setBusy] =
+  const [
+    busy,
+    setBusy
+  ] =
     useState(false);
 
-  const [live, setLive] =
+  const [
+    live,
+    setLive
+  ] =
     useState(false);
 
-  const [categories, setCategories] =
-    useState<any[]>([]);
+  const [
+    categories,
+    setCategories
+  ] =
+    useState<any[]>(
+      []
+    );
 
   const [
     selectedProCats,
     setSelectedProCats
   ] =
-    useState<string[]>([]);
+    useState<string[]>(
+      []
+    );
 
   const [
     availability,
     setAvailability
   ] =
-    useState('offline');
+    useState(
+      'offline'
+    );
 
   const [
     maxDistance,
@@ -217,10 +295,17 @@ export default function Home() {
     identity,
     setIdentity
   ] =
-    useState<any>({});
+    useState<any>(
+      {}
+    );
 
-  const [setup, setSetup] =
-    useState<any>(null);
+  const [
+    setup,
+    setSetup
+  ] =
+    useState<any>(
+      null
+    );
 
   const [
     proCity,
@@ -240,44 +325,67 @@ export default function Home() {
   ] =
     useState(false);
 
-  const [reviews, setReviews] =
-    useState<any[]>([]);
+  const [
+    reviews,
+    setReviews
+  ] =
+    useState<any[]>(
+      []
+    );
 
   const [
     clientJobs,
     setClientJobs
   ] =
-    useState<any[]>([]);
+    useState<any[]>(
+      []
+    );
 
   const [
     matchingJobs,
     setMatchingJobs
   ] =
-    useState<any[]>([]);
+    useState<any[]>(
+      []
+    );
 
   const [
     acceptedJobs,
     setAcceptedJobs
   ] =
-    useState<any[]>([]);
+    useState<any[]>(
+      []
+    );
 
   const [
     clientFilter,
     setClientFilter
   ] =
-    useState('tutti');
+    useState(
+      'tutti'
+    );
 
   const [
     proFilter,
     setProFilter
   ] =
-    useState('tutti');
+    useState(
+      'tutti'
+    );
 
-  const [cat, setCat] =
+  const [
+    cat,
+    setCat
+  ] =
     useState('');
 
-  const [urgency, setUrgency] =
-    useState('SUBITO');
+  const [
+    urgency,
+    setUrgency
+  ] =
+    useState(
+      'SUBITO'
+    );
 
   const [
     description,
@@ -291,17 +399,26 @@ export default function Home() {
   ] =
     useState('');
 
-  const [coords, setCoords] =
+  const [
+    coords,
+    setCoords
+  ] =
     useState<{
-      latitude: number;
-      longitude: number;
-    } | null>(null);
+      latitude:
+        number;
+      longitude:
+        number;
+    } | null>(
+      null
+    );
 
   const [
     photoFile,
     setPhotoFile
   ] =
-    useState<File | null>(null);
+    useState<File | null>(
+      null
+    );
 
   const [
     photoPreview,
@@ -314,14 +431,19 @@ export default function Home() {
     setJobPhotos
   ] =
     useState<
-      Record<string, string | null>
+      Record<
+        string,
+        string | null
+      >
     >({});
 
   const [
     bestMatch,
     setBestMatch
   ] =
-    useState<any>(null);
+    useState<any>(
+      null
+    );
 
   const [
     authOpen,
@@ -333,13 +455,17 @@ export default function Home() {
     authMode,
     setAuthMode
   ] =
-    useState('login');
+    useState(
+      'login'
+    );
 
   const [
     signupRole,
     setSignupRole
   ] =
-    useState('cliente');
+    useState(
+      'cliente'
+    );
 
   const [
     authName,
@@ -347,7 +473,10 @@ export default function Home() {
   ] =
     useState('');
 
-  const [email, setEmail] =
+  const [
+    email,
+    setEmail
+  ] =
     useState('');
 
   const [
@@ -366,7 +495,9 @@ export default function Home() {
     chatJobId,
     setChatJobId
   ] =
-    useState<string | null>(null);
+    useState<
+      string | null
+    >(null);
 
   const [
     chatTitle,
@@ -378,20 +509,27 @@ export default function Home() {
     messages,
     setMessages
   ] =
-    useState<any[]>([]);
+    useState<any[]>(
+      []
+    );
 
   const chatInputRef =
-    useRef<HTMLInputElement | null>(
-      null
-    );
+    useRef<
+      HTMLInputElement | null
+    >(null);
 
   const [
     reviewJobId,
     setReviewJobId
   ] =
-    useState<string | null>(null);
+    useState<
+      string | null
+    >(null);
 
-  const [rating, setRating] =
+  const [
+    rating,
+    setRating
+  ] =
     useState(5);
 
   const [
@@ -400,104 +538,152 @@ export default function Home() {
   ] =
     useState('');
 
-  useEffect(() => {
-    supabase.auth
-      .getUser()
-      .then(({ data }) => {
-        setUser(data.user);
-
-        if (data.user) {
-          void loadProfile(data.user.id);
-        }
-      });
-
-    const { data } =
-      supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          const currentUser =
-            session?.user ?? null;
-
-          setUser(currentUser);
-
-          if (currentUser) {
-            void loadProfile(
-              currentUser.id
+  useEffect(
+    () => {
+      supabase.auth
+        .getUser()
+        .then(
+          ({
+            data
+          }) => {
+            setUser(
+              data.user
             );
-          } else {
-            resetState();
-          }
-        }
-      );
-
-    return () =>
-      data.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user || !role) {
-      return;
-    }
-
-    const channel =
-      supabase
-        .channel(
-          `lavorosubito-${user.id}`
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'jobs'
-          },
-          async () => {
-            if (role === 'cliente') {
-              await loadClientJobs();
-            } else {
-              await loadMatchingJobs();
-              await loadAcceptedJobs();
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages'
-          },
-          async payload => {
-            const row: any =
-              payload.new;
 
             if (
-              chatJobId &&
-              row?.job_id === chatJobId
+              data.user
             ) {
-              await loadChat(
-                chatJobId
+              void loadProfile(
+                data.user.id
               );
             }
           }
-        )
-        .subscribe(status => {
-          setLive(
-            status === 'SUBSCRIBED'
+        );
+
+      const {
+        data
+      } =
+        supabase.auth
+          .onAuthStateChange(
+            (
+              _event,
+              session
+            ) => {
+              const currentUser =
+                session?.user ??
+                null;
+
+              setUser(
+                currentUser
+              );
+
+              if (
+                currentUser
+              ) {
+                void loadProfile(
+                  currentUser.id
+                );
+              } else {
+                resetState();
+              }
+            }
           );
-        });
 
-    return () => {
-      setLive(false);
+      return () =>
+        data.subscription
+          .unsubscribe();
+    },
+    []
+  );
 
-      void supabase.removeChannel(
-        channel
-      );
-    };
-  }, [
-    user?.id,
-    role,
-    chatJobId
-  ]);
+  useEffect(
+    () => {
+      if (
+        !user ||
+        !role
+      ) {
+        return;
+      }
+
+      const channel =
+        supabase
+          .channel(
+            `lavorosubito-${user.id}`
+          )
+          .on(
+            'postgres_changes',
+            {
+              event:
+                '*',
+              schema:
+                'public',
+              table:
+                'jobs'
+            },
+            async () => {
+              if (
+                role ===
+                'cliente'
+              ) {
+                await loadClientJobs();
+              } else {
+                await loadMatchingJobs();
+                await loadAcceptedJobs();
+              }
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event:
+                'INSERT',
+              schema:
+                'public',
+              table:
+                'messages'
+            },
+            async payload => {
+              const row:
+                any =
+                  payload.new;
+
+              if (
+                chatJobId &&
+                row?.job_id ===
+                  chatJobId
+              ) {
+                await loadChat(
+                  chatJobId
+                );
+              }
+            }
+          )
+          .subscribe(
+            status => {
+              setLive(
+                status ===
+                  'SUBSCRIBED'
+              );
+            }
+          );
+
+      return () => {
+        setLive(
+          false
+        );
+
+        void supabase
+          .removeChannel(
+            channel
+          );
+      };
+    },
+    [
+      user?.id,
+      role,
+      chatJobId
+    ]
+  );
 
   function resetState() {
     setRole('');
@@ -505,29 +691,64 @@ export default function Home() {
     setClientPhone('');
     setMessage('');
 
-    setClientJobs([]);
-    setMatchingJobs([]);
-    setAcceptedJobs([]);
+    setClientJobs(
+      []
+    );
 
-    setContactDetails({});
+    setMatchingJobs(
+      []
+    );
 
-    setSelectedProCats([]);
-    setAvailability('offline');
+    setAcceptedJobs(
+      []
+    );
 
-    setIdentity({});
-    setSetup(null);
+    setContactDetails(
+      {}
+    );
+
+    setSelectedProCats(
+      []
+    );
+
+    setAvailability(
+      'offline'
+    );
+
+    setIdentity(
+      {}
+    );
+
+    setSetup(
+      null
+    );
 
     setProCity('');
     setProPostalCode('');
-    setLocationBusy(false);
 
-    setReviews([]);
-    setBestMatch(null);
+    setLocationBusy(
+      false
+    );
 
-    setAcceptedLegal(false);
+    setReviews(
+      []
+    );
 
-    setChatJobId(null);
-    setMessages([]);
+    setBestMatch(
+      null
+    );
+
+    setAcceptedLegal(
+      false
+    );
+
+    setChatJobId(
+      null
+    );
+
+    setMessages(
+      []
+    );
   }
 
   async function loadProfile(
@@ -535,40 +756,57 @@ export default function Home() {
   ) {
     const profile =
       await supabase
-        .from('profiles')
+        .from(
+          'profiles'
+        )
         .select(
           'role,full_name,phone'
         )
-        .eq('id', id)
+        .eq(
+          'id',
+          id
+        )
         .maybeSingle();
 
     const detected =
-      profile.data?.role ===
+      profile.data
+        ?.role ===
       'professionista'
         ? 'professionista'
         : 'cliente';
 
-    setRole(detected);
+    setRole(
+      detected
+    );
 
     setFullName(
-      profile.data?.full_name ?? ''
+      profile.data
+        ?.full_name ??
+        ''
     );
 
     if (
-      detected === 'cliente'
+      detected ===
+      'cliente'
     ) {
       setClientPhone(
-        profile.data?.phone ?? ''
+        profile.data
+          ?.phone ??
+          ''
       );
     }
 
     const catResponse =
       await supabase
-        .from('categories')
+        .from(
+          'categories'
+        )
         .select(
           'id,name,slug'
         )
-        .order('name');
+        .order(
+          'name'
+        );
 
     setCategories(
       Array.isArray(
@@ -579,16 +817,19 @@ export default function Home() {
     );
 
     if (
-      detected === 'cliente'
+      detected ===
+      'cliente'
     ) {
       await loadClientJobs();
     } else {
-      await Promise.all([
-        loadProfessional(),
-        loadMatchingJobs(),
-        loadAcceptedJobs(),
-        loadReviews()
-      ]);
+      await Promise.all(
+        [
+          loadProfessional(),
+          loadMatchingJobs(),
+          loadAcceptedJobs(),
+          loadReviews()
+        ]
+      );
     }
   }
 
@@ -598,12 +839,14 @@ export default function Home() {
     }
 
     const phone =
-      clientPhone.trim();
+      clientPhone
+        .trim();
 
     if (!phone) {
       setMessage(
         'Inserisci il tuo numero di telefono.'
       );
+
       return;
     }
 
@@ -616,7 +859,8 @@ export default function Home() {
       await supabase.rpc(
         'update_my_profile_phone',
         {
-          p_phone: phone
+          p_phone:
+            phone
         }
       );
 
@@ -626,6 +870,7 @@ export default function Home() {
       setMessage(
         `Errore: ${error.message}`
       );
+
       return;
     }
 
@@ -644,7 +889,8 @@ export default function Home() {
       await supabase.rpc(
         'job_contact_details',
         {
-          p_job_id: jobId
+          p_job_id:
+            jobId
         }
       );
 
@@ -653,7 +899,9 @@ export default function Home() {
     }
 
     const contact =
-      Array.isArray(data)
+      Array.isArray(
+        data
+      )
         ? data[0]
         : data;
 
@@ -664,6 +912,7 @@ export default function Home() {
     setContactDetails(
       current => ({
         ...current,
+
         [jobId]:
           contact as ContactDetails
       })
@@ -689,7 +938,9 @@ export default function Home() {
       of allowed
     ) {
       await loadJobContact(
-        String(job.id)
+        String(
+          job.id
+        )
       );
     }
   }
@@ -698,33 +949,45 @@ export default function Home() {
     jobId,
     viewer
   }: {
-    jobId: string;
+    jobId:
+      string;
     viewer:
       | 'cliente'
       | 'professionista';
   }) {
     const contact =
-      contactDetails[jobId];
+      contactDetails[
+        jobId
+      ];
 
     if (!contact) {
       return null;
     }
 
     const name =
-      viewer === 'cliente'
-        ? contact.professional_name
-        : contact.client_name;
+      viewer ===
+      'cliente'
+        ? contact
+            .professional_name
+        : contact
+            .client_name;
 
     const phone =
-      viewer === 'cliente'
-        ? contact.professional_phone
-        : contact.client_phone;
+      viewer ===
+      'cliente'
+        ? contact
+            .professional_phone
+        : contact
+            .client_phone;
 
     if (!phone) {
       return (
         <div className="notice">
-          📞 {name || 'Contatto'} non
-          ha ancora inserito un numero
+          📞{' '}
+          {name ||
+            'Contatto'}{' '}
+          non ha ancora
+          inserito un numero
           di telefono.
         </div>
       );
@@ -732,14 +995,17 @@ export default function Home() {
 
     const wa =
       whatsappNumber(
-        String(phone)
+        String(
+          phone
+        )
       );
 
     return (
       <div
         className="card"
         style={{
-          marginTop: 12
+          marginTop:
+            12
         }}
       >
         <span className="tag">
@@ -747,21 +1013,28 @@ export default function Home() {
         </span>
 
         <h3>
-          {name || 'Contatto'}
+          {name ||
+            'Contatto'}
         </h3>
 
         <p>
-          📱 <b>{phone}</b>
+          📱{' '}
+          <b>
+            {phone}
+          </b>
         </p>
 
         <p
           className="muted"
           style={{
-            fontSize: 12
+            fontSize:
+              12
           }}
         >
-          Il numero è disponibile solo
-          dopo l’accettazione del lavoro.
+          Il numero è
+          disponibile solo
+          dopo l’accettazione
+          del lavoro.
         </p>
 
         <div className="actions">
@@ -769,8 +1042,10 @@ export default function Home() {
             className="full"
             href={`tel:${phone}`}
             style={{
-              textDecoration: 'none',
-              textAlign: 'center'
+              textDecoration:
+                'none',
+              textAlign:
+                'center'
             }}
           >
             📞 Chiama
@@ -804,26 +1079,30 @@ export default function Home() {
       setupRes,
       availRes
     ] =
-      await Promise.all([
-        supabase.rpc(
-          'my_professional_identity'
-        ),
+      await Promise.all(
+        [
+          supabase.rpc(
+            'my_professional_identity'
+          ),
 
-        supabase.rpc(
-          'my_professional_categories'
-        ),
+          supabase.rpc(
+            'my_professional_categories'
+          ),
 
-        supabase.rpc(
-          'my_professional_setup_status'
-        ),
+          supabase.rpc(
+            'my_professional_setup_status'
+          ),
 
-        supabase.rpc(
-          'my_professional_availability'
-        )
-      ]);
+          supabase.rpc(
+            'my_professional_availability'
+          )
+        ]
+      );
 
     if (
-      Array.isArray(idRes.data) &&
+      Array.isArray(
+        idRes.data
+      ) &&
       idRes.data[0]
     ) {
       setIdentity(
@@ -832,11 +1111,15 @@ export default function Home() {
     }
 
     if (
-      Array.isArray(catRes.data)
+      Array.isArray(
+        catRes.data
+      )
     ) {
       setSelectedProCats(
         catRes.data.map(
-          (row: any) =>
+          (
+            row: any
+          ) =>
             row.category_id
         )
       );
@@ -854,7 +1137,8 @@ export default function Home() {
     }
 
     if (
-      typeof availRes.data ===
+      typeof
+        availRes.data ===
       'string'
     ) {
       setAvailability(
@@ -863,12 +1147,15 @@ export default function Home() {
     }
 
     const {
-      data: authData
+      data:
+        authData
     } =
       await supabase.auth
         .getUser();
 
-    if (authData.user) {
+    if (
+      authData.user
+    ) {
       const pro =
         await supabase
           .from(
@@ -879,13 +1166,16 @@ export default function Home() {
           )
           .eq(
             'id',
-            authData.user.id
+            authData
+              .user
+              .id
           )
           .maybeSingle();
 
       if (
         pro.data
-          ?.max_distance_km != null
+          ?.max_distance_km !=
+        null
       ) {
         setMaxDistance(
           Number(
@@ -910,19 +1200,26 @@ export default function Home() {
       setMessage(
         `Errore richieste: ${error.message}`
       );
+
       return;
     }
 
     const rows =
-      Array.isArray(data)
+      Array.isArray(
+        data
+      )
         ? data
         : [];
 
-    setClientJobs(rows);
+    setClientJobs(
+      rows
+    );
 
     void loadPhotos(
       rows.map(
-        (row: any) =>
+        (
+          row: any
+        ) =>
           row.id
       )
     );
@@ -942,20 +1239,29 @@ export default function Home() {
       );
 
     if (error) {
-      setMatchingJobs([]);
+      setMatchingJobs(
+        []
+      );
+
       return;
     }
 
     const rows =
-      Array.isArray(data)
+      Array.isArray(
+        data
+      )
         ? data
         : [];
 
-    setMatchingJobs(rows);
+    setMatchingJobs(
+      rows
+    );
 
     void loadPhotos(
       rows.map(
-        (row: any) =>
+        (
+          row: any
+        ) =>
           row.id
       )
     );
@@ -971,20 +1277,29 @@ export default function Home() {
       );
 
     if (error) {
-      setAcceptedJobs([]);
+      setAcceptedJobs(
+        []
+      );
+
       return;
     }
 
     const rows =
-      Array.isArray(data)
+      Array.isArray(
+        data
+      )
         ? data
         : [];
 
-    setAcceptedJobs(rows);
+    setAcceptedJobs(
+      rows
+    );
 
     void loadPhotos(
       rows.map(
-        (row: any) =>
+        (
+          row: any
+        ) =>
           row.id
       )
     );
@@ -1003,7 +1318,9 @@ export default function Home() {
       );
 
     setReviews(
-      Array.isArray(data)
+      Array.isArray(
+        data
+      )
         ? data
         : []
     );
@@ -1011,14 +1328,20 @@ export default function Home() {
 
   async function getPosition() {
     return new Promise<{
-      latitude: number;
-      longitude: number;
+      latitude:
+        number;
+      longitude:
+        number;
     } | null>(
       resolve => {
         if (
-          !navigator.geolocation
+          !navigator
+            .geolocation
         ) {
-          resolve(null);
+          resolve(
+            null
+          );
+
           return;
         }
 
@@ -1028,20 +1351,25 @@ export default function Home() {
             p =>
               resolve({
                 latitude:
-                  p.coords.latitude,
+                  p.coords
+                    .latitude,
 
                 longitude:
-                  p.coords.longitude
+                  p.coords
+                    .longitude
               }),
 
             () =>
-              resolve(null),
+              resolve(
+                null
+              ),
 
             {
               enableHighAccuracy:
                 true,
 
-              timeout: 12000,
+              timeout:
+                12000,
 
               maximumAge:
                 60000
@@ -1064,33 +1392,43 @@ export default function Home() {
     }
 
     if (
-      !file.type.startsWith(
-        'image/'
-      )
+      !file.type
+        .startsWith(
+          'image/'
+        )
     ) {
       setMessage(
         'Seleziona un’immagine.'
       );
+
       return;
     }
 
     if (
       file.size >
-      10 * 1024 * 1024
+      10 *
+        1024 *
+        1024
     ) {
       setMessage(
         'La foto supera 10 MB.'
       );
+
       return;
     }
 
-    if (photoPreview) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
+    if (
+      photoPreview
+    ) {
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
     }
 
-    setPhotoFile(file);
+    setPhotoFile(
+      file
+    );
 
     setPhotoPreview(
       URL.createObjectURL(
@@ -1100,14 +1438,22 @@ export default function Home() {
   }
 
   function clearPhoto() {
-    if (photoPreview) {
-      URL.revokeObjectURL(
-        photoPreview
-      );
+    if (
+      photoPreview
+    ) {
+      URL
+        .revokeObjectURL(
+          photoPreview
+        );
     }
 
-    setPhotoFile(null);
-    setPhotoPreview('');
+    setPhotoFile(
+      null
+    );
+
+    setPhotoPreview(
+      ''
+    );
   }
 
   async function uploadPhoto(
@@ -1124,8 +1470,8 @@ export default function Home() {
       (
         photoFile.name
           .split('.')
-          .pop()
-        || 'jpg'
+          .pop() ||
+        'jpg'
       )
         .replace(
           /[^a-zA-Z0-9]/g,
@@ -1134,7 +1480,9 @@ export default function Home() {
         .toLowerCase();
 
     const path =
-      `${user.id}/${jobId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      `${user.id}/${jobId}/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`;
 
     const upload =
       await supabase
@@ -1149,14 +1497,18 @@ export default function Home() {
             contentType:
               photoFile.type,
 
-            upsert: false
+            upsert:
+              false
           }
         );
 
-    if (upload.error) {
+    if (
+      upload.error
+    ) {
       setMessage(
         `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
+
       return;
     }
 
@@ -1164,21 +1516,27 @@ export default function Home() {
       await supabase.rpc(
         'set_my_job_photo',
         {
-          p_job_id: jobId,
-          p_photo_url: path
+          p_job_id:
+            jobId,
+
+          p_photo_url:
+            path
         }
       );
 
     if (
       save.error ||
-      save.data === false
+      save.data ===
+        false
     ) {
       await supabase
         .storage
         .from(
           'job-photos'
         )
-        .remove([path]);
+        .remove(
+          [path]
+        );
 
       setMessage(
         `Richiesta creata, foto non collegata: ${save.error?.message ?? 'errore'}`
@@ -1200,11 +1558,14 @@ export default function Home() {
       return;
     }
 
-    const { data } =
+    const {
+      data
+    } =
       await supabase.rpc(
         'get_job_photo_url',
         {
-          p_job_id: jobId
+          p_job_id:
+            jobId
         }
       );
 
@@ -1212,7 +1573,9 @@ export default function Home() {
       setJobPhotos(
         current => ({
           ...current,
-          [jobId]: null
+
+          [jobId]:
+            null
         })
       );
 
@@ -1226,7 +1589,9 @@ export default function Home() {
           'job-photos'
         )
         .download(
-          String(data)
+          String(
+            data
+          )
         );
 
     if (
@@ -1236,7 +1601,9 @@ export default function Home() {
       setJobPhotos(
         current => ({
           ...current,
-          [jobId]: null
+
+          [jobId]:
+            null
         })
       );
 
@@ -1248,9 +1615,10 @@ export default function Home() {
         ...current,
 
         [jobId]:
-          URL.createObjectURL(
-            download.data
-          )
+          URL
+            .createObjectURL(
+              download.data
+            )
       })
     );
   }
@@ -1262,19 +1630,24 @@ export default function Home() {
       const id
       of ids
     ) {
-      await loadPhoto(id);
+      await loadPhoto(
+        id
+      );
     }
   }
 
   async function submitJob() {
     if (
       !cat ||
-      !description.trim() ||
-      !address.trim()
+      !description
+        .trim() ||
+      !address
+        .trim()
     ) {
       setMessage(
         'Completa categoria, descrizione e indirizzo.'
       );
+
       return;
     }
 
@@ -1300,7 +1673,9 @@ export default function Home() {
 
     setBusy(true);
     setMessage('');
-    setBestMatch(null);
+    setBestMatch(
+      null
+    );
 
     let position =
       coords;
@@ -1310,7 +1685,9 @@ export default function Home() {
         await getPosition();
 
       if (position) {
-        setCoords(position);
+        setCoords(
+          position
+        );
       }
     }
 
@@ -1319,14 +1696,20 @@ export default function Home() {
         .from(
           'categories'
         )
-        .select('id')
+        .select(
+          'id'
+        )
         .eq(
           'slug',
-          slugify(cat)
+          slugify(
+            cat
+          )
         )
         .maybeSingle();
 
-    if (!category.data) {
+    if (
+      !category.data
+    ) {
       setBusy(false);
 
       setMessage(
@@ -1338,13 +1721,17 @@ export default function Home() {
 
     const insert =
       await supabase
-        .from('jobs')
+        .from(
+          'jobs'
+        )
         .insert({
           client_id:
             user.id,
 
           category_id:
-            category.data.id,
+            category
+              .data
+              .id,
 
           urgency:
             urgency
@@ -1355,19 +1742,22 @@ export default function Home() {
               .trim(),
 
           address:
-            address.trim(),
+            address
+              .trim(),
 
           latitude:
             position
-              ?.latitude
-            ?? null,
+              ?.latitude ??
+            null,
 
           longitude:
             position
-              ?.longitude
-            ?? null
+              ?.longitude ??
+            null
         })
-        .select('id')
+        .select(
+          'id'
+        )
         .single();
 
     if (
@@ -1385,7 +1775,9 @@ export default function Home() {
 
     const jobId =
       String(
-        insert.data.id
+        insert
+          .data
+          .id
       );
 
     await uploadPhoto(
@@ -1403,7 +1795,8 @@ export default function Home() {
       await supabase.rpc(
         'find_verified_professionals_for_job',
         {
-          p_job_id: jobId
+          p_job_id:
+            jobId
         }
       );
 
@@ -1411,15 +1804,20 @@ export default function Home() {
       Array.isArray(
         matching.data
       ) &&
-      matching.data.length
-        ? matching.data[0]
+      matching.data
+        .length
+        ? matching
+            .data[0]
         : null;
 
-    setBestMatch(first);
+    setBestMatch(
+      first
+    );
 
     try {
       const {
-        data: sessionData
+        data:
+          sessionData
       } =
         await supabase.auth
           .getSession();
@@ -1429,52 +1827,62 @@ export default function Home() {
           .session
           ?.access_token;
 
-      if (accessToken) {
-        await Promise.allSettled([
-          fetch(
-            '/api/email/new-job',
-            {
-              method: 'POST',
+      if (
+        accessToken
+      ) {
+        await Promise
+          .allSettled([
+            fetch(
+              '/api/email/new-job',
+              {
+                method:
+                  'POST',
 
-              headers: {
-                'Content-Type':
-                  'application/json',
+                headers:
+                  {
+                    'Content-Type':
+                      'application/json',
 
-                Authorization:
-                  `Bearer ${accessToken}`
-              },
+                    Authorization:
+                      `Bearer ${accessToken}`
+                  },
 
-              body:
-                JSON.stringify({
-                  jobId
-                })
-            }
-          ),
+                body:
+                  JSON.stringify(
+                    {
+                      jobId
+                    }
+                  )
+              }
+            ),
 
-          fetch(
-            '/api/push/send',
-            {
-              method: 'POST',
+            fetch(
+              '/api/push/send',
+              {
+                method:
+                  'POST',
 
-              headers: {
-                'Content-Type':
-                  'application/json',
+                headers:
+                  {
+                    'Content-Type':
+                      'application/json',
 
-                Authorization:
-                  `Bearer ${accessToken}`
-              },
+                    Authorization:
+                      `Bearer ${accessToken}`
+                  },
 
-              body:
-                JSON.stringify({
-                  jobId
-                })
-            }
-          )
-        ]);
+                body:
+                  JSON.stringify(
+                    {
+                      jobId
+                    }
+                  )
+              }
+            )
+          ]);
       }
     } catch {
-      // Email/push non devono bloccare
-      // la creazione della richiesta.
+      // notifiche non bloccanti
     }
 
     setMessage(
@@ -1504,7 +1912,8 @@ export default function Home() {
       await supabase.rpc(
         'cancel_my_job',
         {
-          p_job_id: id
+          p_job_id:
+            id
         }
       );
 
@@ -1531,7 +1940,8 @@ export default function Home() {
       await supabase.rpc(
         'accept_verified_job',
         {
-          p_job_id: id
+          p_job_id:
+            id
         }
       );
 
@@ -1543,16 +1953,20 @@ export default function Home() {
           : 'Lavoro già accettato.'
     );
 
-    await Promise.all([
-      loadMatchingJobs(),
-      loadAcceptedJobs()
-    ]);
+    await Promise.all(
+      [
+        loadMatchingJobs(),
+        loadAcceptedJobs()
+      ]
+    );
 
     if (
       data &&
       !error
     ) {
-      await loadJobContact(id);
+      await loadJobContact(
+        id
+      );
     }
 
     setBusy(false);
@@ -1576,7 +1990,8 @@ export default function Home() {
       await supabase.rpc(
         'complete_job',
         {
-          p_job_id: id
+          p_job_id:
+            id
         }
       );
 
@@ -1589,7 +2004,8 @@ export default function Home() {
     );
 
     if (
-      role === 'cliente'
+      role ===
+      'cliente'
     ) {
       await loadClientJobs();
     } else {
@@ -1601,14 +2017,22 @@ export default function Home() {
     id: string,
     title: string
   ) {
-    setChatJobId(id);
-    setChatTitle(title);
+    setChatJobId(
+      id
+    );
 
-    await loadChat(id);
+    setChatTitle(
+      title
+    );
+
+    await loadChat(
+      id
+    );
 
     setTimeout(
       () =>
-        chatInputRef.current
+        chatInputRef
+          .current
           ?.focus(),
       100
     );
@@ -1622,7 +2046,9 @@ export default function Home() {
       error
     } =
       await supabase
-        .from('messages')
+        .from(
+          'messages'
+        )
         .select(
           'id,job_id,sender_id,message,created_at'
         )
@@ -1640,7 +2066,9 @@ export default function Home() {
       );
     } else {
       setMessages(
-        Array.isArray(data)
+        Array.isArray(
+          data
+        )
           ? data
           : []
       );
@@ -1648,9 +2076,11 @@ export default function Home() {
   }
 
   async function sendMessage(
-    event: FormEvent
+    event:
+      FormEvent
   ) {
-    event.preventDefault();
+    event
+      .preventDefault();
 
     if (
       !user ||
@@ -1663,16 +2093,20 @@ export default function Home() {
       chatInputRef
         .current
         ?.value
-        .trim()
-      ?? '';
+        .trim() ??
+      '';
 
     if (!text) {
       return;
     }
 
-    const { error } =
+    const {
+      error
+    } =
       await supabase
-        .from('messages')
+        .from(
+          'messages'
+        )
         .insert({
           job_id:
             chatJobId,
@@ -1688,15 +2122,18 @@ export default function Home() {
       setMessage(
         error.message
       );
+
       return;
     }
 
     if (
-      chatInputRef.current
+      chatInputRef
+        .current
     ) {
       chatInputRef
         .current
-        .value = '';
+        .value =
+        '';
     }
 
     await loadChat(
@@ -1705,18 +2142,23 @@ export default function Home() {
 
     setTimeout(
       () =>
-        chatInputRef.current
+        chatInputRef
+          .current
           ?.focus(),
       50
     );
   }
 
   async function submitReview(
-    event: FormEvent
+    event:
+      FormEvent
   ) {
-    event.preventDefault();
+    event
+      .preventDefault();
 
-    if (!reviewJobId) {
+    if (
+      !reviewJobId
+    ) {
       return;
     }
 
@@ -1735,8 +2177,8 @@ export default function Home() {
 
           p_comment:
             reviewComment
-              .trim()
-            || null
+              .trim() ||
+            null
         }
       );
 
@@ -1748,16 +2190,23 @@ export default function Home() {
           : 'Recensione non inviata.'
     );
 
-    setReviewJobId(null);
-    setReviewComment('');
+    setReviewJobId(
+      null
+    );
+
+    setReviewComment(
+      ''
+    );
 
     await loadClientJobs();
   }
 
   async function authSubmit(
-    event: FormEvent
+    event:
+      FormEvent
   ) {
-    event.preventDefault();
+    event
+      .preventDefault();
 
     if (
       authMode ===
@@ -1767,6 +2216,7 @@ export default function Home() {
       setMessage(
         'Per registrarti devi accettare la Privacy Policy e i Termini e condizioni.'
       );
+
       return;
     }
 
@@ -1774,7 +2224,8 @@ export default function Home() {
     setMessage('');
 
     if (
-      authMode === 'signup'
+      authMode ===
+      'signup'
     ) {
       const {
         error
@@ -1782,14 +2233,16 @@ export default function Home() {
         await supabase.auth
           .signUp({
             email:
-              email.trim(),
+              email
+                .trim(),
 
             password,
 
             options: {
               data: {
                 full_name:
-                  authName.trim(),
+                  authName
+                    .trim(),
 
                 role:
                   signupRole,
@@ -1812,6 +2265,7 @@ export default function Home() {
         );
 
         setBusy(false);
+
         return;
       }
 
@@ -1834,7 +2288,8 @@ export default function Home() {
         await supabase.auth
           .signInWithPassword({
             email:
-              email.trim(),
+              email
+                .trim(),
 
             password
           });
@@ -1844,11 +2299,17 @@ export default function Home() {
           error.message
         );
       } else {
-        setAuthOpen(false);
+        setAuthOpen(
+          false
+        );
 
-        if (data.user) {
+        if (
+          data.user
+        ) {
           await loadProfile(
-            data.user.id
+            data
+              .user
+              .id
           );
         }
       }
@@ -1861,10 +2322,13 @@ export default function Home() {
     const cleanEmail =
       email.trim();
 
-    if (!cleanEmail) {
+    if (
+      !cleanEmail
+    ) {
       setMessage(
         'Inserisci prima la tua email.'
       );
+
       return;
     }
 
@@ -1894,6 +2358,138 @@ export default function Home() {
     );
   }
 
+  /*
+   * CANCELLAZIONE ACCOUNT
+   */
+  async function deleteMyAccount() {
+    if (!user) {
+      return;
+    }
+
+    const firstConfirm =
+      window.confirm(
+        'Vuoi davvero eliminare il tuo account?\n\nQuesta operazione è definitiva e non può essere annullata.'
+      );
+
+    if (
+      !firstConfirm
+    ) {
+      return;
+    }
+
+    const secondConfirm =
+      window.prompt(
+        'Per confermare definitivamente la cancellazione, scrivi ELIMINA'
+      );
+
+    if (
+      secondConfirm !==
+      'ELIMINA'
+    ) {
+      setMessage(
+        'Eliminazione account annullata.'
+      );
+
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+
+    try {
+      const {
+        data:
+          sessionData,
+        error:
+          sessionError
+      } =
+        await supabase.auth
+          .getSession();
+
+      const accessToken =
+        sessionData
+          .session
+          ?.access_token;
+
+      if (
+        sessionError ||
+        !accessToken
+      ) {
+        setMessage(
+          'Sessione non valida. Accedi nuovamente.'
+        );
+
+        setBusy(false);
+
+        return;
+      }
+
+      const response =
+        await fetch(
+          '/api/account/delete',
+          {
+            method:
+              'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${accessToken}`
+            }
+          }
+        );
+
+      let result: {
+        ok?: boolean;
+        error?: string;
+      } = {};
+
+      try {
+        result =
+          await response
+            .json();
+      } catch {
+        result = {};
+      }
+
+      if (
+        !response.ok ||
+        result.ok !==
+          true
+      ) {
+        setMessage(
+          result.error ||
+            'Errore durante l’eliminazione dell’account.'
+        );
+
+        setBusy(false);
+
+        return;
+      }
+
+      await supabase.auth
+        .signOut();
+
+      resetState();
+
+      setUser(
+        null
+      );
+
+      window.location
+        .href =
+        '/';
+    } catch {
+      setMessage(
+        'Errore durante l’eliminazione dell’account.'
+      );
+
+      setBusy(false);
+    }
+  }
+
   async function logout() {
     await supabase.auth
       .signOut();
@@ -1910,24 +2506,28 @@ export default function Home() {
         'update_my_professional_identity',
         {
           p_business_name:
-            identity.business_name
-              ?.trim()
-            || '',
+            identity
+              .business_name
+              ?.trim() ||
+            '',
 
           p_phone:
-            identity.phone
-              ?.trim()
-            || '',
+            identity
+              .phone
+              ?.trim() ||
+            '',
 
           p_vat_number:
-            identity.vat_number
-              ?.trim()
-            || '',
+            identity
+              .vat_number
+              ?.trim() ||
+            '',
 
           p_tax_code:
-            identity.tax_code
-              ?.trim()
-            || ''
+            identity
+              .tax_code
+              ?.trim() ||
+            ''
         }
       );
 
@@ -1944,15 +2544,19 @@ export default function Home() {
 
   async function saveCategories() {
     if (
-      !selectedProCats.length
+      !selectedProCats
+        .length
     ) {
       setMessage(
         'Seleziona almeno una categoria.'
       );
+
       return;
     }
 
-    const { error } =
+    const {
+      error
+    } =
       await supabase.rpc(
         'update_my_categories',
         {
@@ -1972,11 +2576,16 @@ export default function Home() {
   }
 
   async function saveProfessionalCoordinates(
-    latitude: number,
-    longitude: number,
-    successMessage: string
+    latitude:
+      number,
+    longitude:
+      number,
+    successMessage:
+      string
   ) {
-    const { error } =
+    const {
+      error
+    } =
       await supabase.rpc(
         'update_my_professional_location',
         {
@@ -1992,6 +2601,7 @@ export default function Home() {
       setMessage(
         error.message
       );
+
       return false;
     }
 
@@ -2006,7 +2616,10 @@ export default function Home() {
   }
 
   async function setProLocation() {
-    setLocationBusy(true);
+    setLocationBusy(
+      true
+    );
+
     setMessage('');
 
     const p =
@@ -2020,6 +2633,7 @@ export default function Home() {
       setLocationBusy(
         false
       );
+
       return;
     }
 
@@ -2029,7 +2643,9 @@ export default function Home() {
       '✅ Posizione GPS aggiornata.'
     );
 
-    setLocationBusy(false);
+    setLocationBusy(
+      false
+    );
   }
 
   async function setProLocationManual() {
@@ -2037,7 +2653,8 @@ export default function Home() {
       proCity.trim();
 
     const postalCode =
-      proPostalCode.trim();
+      proPostalCode
+        .trim();
 
     if (
       !city &&
@@ -2046,10 +2663,14 @@ export default function Home() {
       setMessage(
         'Inserisci la città o il CAP della tua zona operativa.'
       );
+
       return;
     }
 
-    setLocationBusy(true);
+    setLocationBusy(
+      true
+    );
+
     setMessage('');
 
     try {
@@ -2063,7 +2684,9 @@ export default function Home() {
         );
       }
 
-      if (postalCode) {
+      if (
+        postalCode
+      ) {
         params.set(
           'postalCode',
           postalCode
@@ -2076,52 +2699,70 @@ export default function Home() {
         );
 
       const result =
-        await response.json();
+        await response
+          .json();
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
         setMessage(
           result.error ||
-          'Località non trovata.'
+            'Località non trovata.'
         );
 
-        setLocationBusy(false);
+        setLocationBusy(
+          false
+        );
+
         return;
       }
 
       const latitude =
         Number(
-          result.latitude
+          result
+            .latitude
         );
 
       const longitude =
         Number(
-          result.longitude
+          result
+            .longitude
         );
 
       if (
-        !Number.isFinite(
-          latitude
-        ) ||
-        !Number.isFinite(
-          longitude
-        )
+        !Number
+          .isFinite(
+            latitude
+          ) ||
+        !Number
+          .isFinite(
+            longitude
+          )
       ) {
         setMessage(
           'Coordinate della località non valide.'
         );
 
-        setLocationBusy(false);
+        setLocationBusy(
+          false
+        );
+
         return;
       }
 
       const label =
-        result.displayName ||
+        result
+          .displayName ||
         [
           postalCode,
           city
         ]
-          .filter(Boolean)
-          .join(' ');
+          .filter(
+            Boolean
+          )
+          .join(
+            ' '
+          );
 
       await saveProfessionalCoordinates(
         latitude,
@@ -2134,13 +2775,18 @@ export default function Home() {
       );
     }
 
-    setLocationBusy(false);
+    setLocationBusy(
+      false
+    );
   }
 
   async function setRadius(
-    value: number
+    value:
+      number
   ) {
-    const { error } =
+    const {
+      error
+    } =
       await supabase.rpc(
         'update_my_max_distance',
         {
@@ -2153,10 +2799,13 @@ export default function Home() {
       setMessage(
         error.message
       );
+
       return;
     }
 
-    setMaxDistance(value);
+    setMaxDistance(
+      value
+    );
 
     setMessage(
       `✅ Raggio impostato a ${value} km.`
@@ -2166,13 +2815,17 @@ export default function Home() {
   }
 
   async function setAvail(
-    value: string
+    value:
+      string
   ) {
-    const { error } =
+    const {
+      error
+    } =
       await supabase.rpc(
         'update_my_availability',
         {
-          p_status: value
+          p_status:
+            value
         }
       );
 
@@ -2180,10 +2833,13 @@ export default function Home() {
       setMessage(
         error.message
       );
+
       return;
     }
 
-    setAvailability(value);
+    setAvailability(
+      value
+    );
 
     setMessage(
       `✅ ${availabilityLabel(value)}`
@@ -2202,11 +2858,12 @@ export default function Home() {
           return clientJobs;
         }
 
-        return clientJobs.filter(
-          job =>
-            job.status ===
-            clientFilter
-        );
+        return clientJobs
+          .filter(
+            job =>
+              job.status ===
+              clientFilter
+          );
       },
       [
         clientJobs,
@@ -2215,35 +2872,49 @@ export default function Home() {
     );
 
   const visibleMatching =
-    proFilter === 'tutti' ||
-    proFilter === 'aperta'
+    proFilter ===
+      'tutti' ||
+    proFilter ===
+      'aperta'
       ? matchingJobs
       : [];
 
   const visibleAccepted =
-    proFilter === 'tutti'
+    proFilter ===
+    'tutti'
       ? acceptedJobs
-      : acceptedJobs.filter(
-          job =>
-            job.status ===
-            proFilter
-        );
+      : acceptedJobs
+          .filter(
+            job =>
+              job.status ===
+              proFilter
+          );
 
   const verified =
-    identity.verified === true &&
-    identity.verification_status ===
+    identity
+      .verified ===
+      true &&
+    identity
+      .verification_status ===
       'verificato';
 
   const setupPercentage =
     setup
       ? [
-          setup.has_categories,
-          setup.has_location,
-          setup.has_radius,
-          setup.has_availability
+          setup
+            .has_categories,
+          setup
+            .has_location,
+          setup
+            .has_radius,
+          setup
+            .has_availability
         ]
-          .filter(Boolean)
-          .length * 25
+          .filter(
+            Boolean
+          )
+          .length *
+        25
       : 0;
 
   const averageRating =
@@ -2255,7 +2926,9 @@ export default function Home() {
           ) =>
             sum +
             Number(
-              review.rating || 0
+              review
+                .rating ||
+                0
             ),
           0
         ) /
@@ -2268,7 +2941,9 @@ export default function Home() {
     id: string;
   }) {
     const src =
-      jobPhotos[id];
+      jobPhotos[
+        id
+      ];
 
     return src
       ? (
@@ -2282,7 +2957,9 @@ export default function Home() {
   }
 
   function ChatModal() {
-    if (!chatJobId) {
+    if (
+      !chatJobId
+    ) {
       return null;
     }
 
@@ -2293,7 +2970,9 @@ export default function Home() {
             type="button"
             className="x"
             onClick={() =>
-              setChatJobId(null)
+              setChatJobId(
+                null
+              )
             }
           >
             ×
@@ -2311,11 +2990,13 @@ export default function Home() {
             {messages.map(
               item => (
                 <div
-                  key={item.id}
+                  key={
+                    item.id
+                  }
                   className={
                     `bubble ${
                       item.sender_id ===
-                        user?.id
+                      user?.id
                         ? 'mine'
                         : 'theirs'
                     }`
@@ -2324,14 +3005,16 @@ export default function Home() {
                   <b>
                     {
                       item.sender_id ===
-                        user?.id
+                      user?.id
                         ? 'Tu'
                         : 'Interlocutore'
                     }
                   </b>
 
                   <div>
-                    {item.message}
+                    {
+                      item.message
+                    }
                   </div>
                 </div>
               )
@@ -2354,7 +3037,8 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop: 10
+                marginTop:
+                  10
               }}
             >
               Invia
@@ -2368,17 +3052,21 @@ export default function Home() {
   /*
    * AREA PROFESSIONISTA
    */
-
   if (
     user &&
-    role === 'professionista'
+    role ===
+      'professionista'
   ) {
     return (
       <main>
         <header>
           <div className="logo">
-            <b>L</b>
+            <b>
+              L
+            </b>
+
             Lavoro
+
             <span>
               Subito
             </span>
@@ -2386,7 +3074,9 @@ export default function Home() {
 
           <button
             className="outline"
-            onClick={logout}
+            onClick={
+              logout
+            }
           >
             Esci
           </button>
@@ -2433,7 +3123,9 @@ export default function Home() {
                 </span>
 
                 <strong>
-                  {setupPercentage}%
+                  {
+                    setupPercentage
+                  }%
                 </strong>
               </div>
 
@@ -2443,9 +3135,11 @@ export default function Home() {
                 </span>
 
                 <strong>
-                  {verified
-                    ? '✅'
-                    : '🟡'}
+                  {
+                    verified
+                      ? '✅'
+                      : '🟡'
+                  }
                 </strong>
               </div>
 
@@ -2456,7 +3150,8 @@ export default function Home() {
 
                 <strong>
                   {
-                    matchingJobs.length
+                    matchingJobs
+                      .length
                   }
                 </strong>
               </div>
@@ -2469,9 +3164,10 @@ export default function Home() {
                 <strong>
                   {
                     reviews.length
-                      ? averageRating.toFixed(
-                          1
-                        )
+                      ? averageRating
+                          .toFixed(
+                            1
+                          )
                       : '—'
                   }
                 </strong>
@@ -2481,7 +3177,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2492,8 +3189,9 @@ export default function Home() {
                 {
                   verified
                     ? '✅ Professionista verificato'
-                    : identity.verification_status ===
-                        'rifiutato'
+                    : identity
+                        .verification_status ===
+                      'rifiutato'
                       ? '❌ Verifica rifiutata'
                       : '🟡 In attesa di verifica'
                 }
@@ -2505,16 +3203,23 @@ export default function Home() {
 
               <input
                 value={
-                  identity.business_name
-                  ?? ''
+                  identity
+                    .business_name ??
+                  ''
                 }
                 onChange={
                   e =>
                     setIdentity(
-                      (current: any) => ({
+                      (
+                        current:
+                          any
+                      ) => ({
                         ...current,
+
                         business_name:
-                          e.target.value
+                          e
+                            .target
+                            .value
                       })
                     )
                 }
@@ -2528,16 +3233,23 @@ export default function Home() {
                 type="tel"
                 inputMode="tel"
                 value={
-                  identity.phone
-                  ?? ''
+                  identity
+                    .phone ??
+                  ''
                 }
                 onChange={
                   e =>
                     setIdentity(
-                      (current: any) => ({
+                      (
+                        current:
+                          any
+                      ) => ({
                         ...current,
+
                         phone:
-                          e.target.value
+                          e
+                            .target
+                            .value
                       })
                     )
                 }
@@ -2550,16 +3262,23 @@ export default function Home() {
 
               <input
                 value={
-                  identity.vat_number
-                  ?? ''
+                  identity
+                    .vat_number ??
+                  ''
                 }
                 onChange={
                   e =>
                     setIdentity(
-                      (current: any) => ({
+                      (
+                        current:
+                          any
+                      ) => ({
                         ...current,
+
                         vat_number:
-                          e.target.value
+                          e
+                            .target
+                            .value
                       })
                     )
                 }
@@ -2571,16 +3290,23 @@ export default function Home() {
 
               <input
                 value={
-                  identity.tax_code
-                  ?? ''
+                  identity
+                    .tax_code ??
+                  ''
                 }
                 onChange={
                   e =>
                     setIdentity(
-                      (current: any) => ({
+                      (
+                        current:
+                          any
+                      ) => ({
                         ...current,
+
                         tax_code:
-                          e.target.value
+                          e
+                            .target
+                            .value
                       })
                     )
                 }
@@ -2601,7 +3327,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2625,10 +3352,12 @@ export default function Home() {
                 ].map(
                   value => (
                     <button
-                      key={value}
+                      key={
+                        value
+                      }
                       className={
                         availability ===
-                          value
+                        value
                           ? 'full'
                           : 'outline'
                       }
@@ -2652,7 +3381,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2662,7 +3392,8 @@ export default function Home() {
               <div
                 className="grid"
                 style={{
-                  marginTop: 12
+                  marginTop:
+                    12
                 }}
               >
                 {categories.map(
@@ -2682,14 +3413,16 @@ export default function Home() {
                       onClick={() =>
                         setSelectedProCats(
                           current =>
-                            current.includes(
-                              category.id
-                            )
-                              ? current.filter(
-                                  id =>
-                                    id !==
-                                    category.id
-                                )
+                            current
+                              .includes(
+                                category.id
+                              )
+                              ? current
+                                  .filter(
+                                    id =>
+                                      id !==
+                                      category.id
+                                  )
                               : [
                                   ...current,
                                   category.id
@@ -2706,7 +3439,9 @@ export default function Home() {
                           : ''
                       }
 
-                      {category.name}
+                      {
+                        category.name
+                      }
                     </button>
                   )
                 )}
@@ -2727,7 +3462,8 @@ export default function Home() {
             <div
               className="card"
               style={{
-                marginTop: 16
+                marginTop:
+                  16
               }}
             >
               <span className="tag">
@@ -2739,9 +3475,7 @@ export default function Home() {
               </h3>
 
               <p className="muted">
-                Puoi usare la posizione
-                GPS oppure indicare
-                manualmente città e CAP.
+                Puoi usare la posizione GPS oppure indicare manualmente città e CAP.
               </p>
 
               <button
@@ -2762,7 +3496,8 @@ export default function Home() {
 
               <div
                 style={{
-                  marginTop: 20
+                  marginTop:
+                    20
                 }}
               >
                 <label>
@@ -2770,11 +3505,15 @@ export default function Home() {
                 </label>
 
                 <input
-                  value={proCity}
+                  value={
+                    proCity
+                  }
                   onChange={
                     e =>
                       setProCity(
-                        e.target.value
+                        e
+                          .target
+                          .value
                       )
                   }
                   placeholder="Es. Bologna"
@@ -2791,7 +3530,9 @@ export default function Home() {
                   onChange={
                     e =>
                       setProPostalCode(
-                        e.target.value
+                        e
+                          .target
+                          .value
                       )
                   }
                   inputMode="numeric"
@@ -2804,8 +3545,10 @@ export default function Home() {
                     locationBusy
                   }
                   style={{
-                    marginTop: 12,
-                    width: '100%'
+                    marginTop:
+                      12,
+                    width:
+                      '100%'
                   }}
                   onClick={
                     setProLocationManual
@@ -2819,7 +3562,8 @@ export default function Home() {
                 style={{
                   margin:
                     '24px 0',
-                  border: 0,
+                  border:
+                    0,
                   borderTop:
                     '1px solid #e5e5e5'
                 }}
@@ -2827,17 +3571,22 @@ export default function Home() {
 
               <h3>
                 Raggio massimo:{' '}
-                {maxDistance} km
+                {
+                  maxDistance
+                }{' '}
+                km
               </h3>
 
               <div className="actions">
                 {DISTANCES.map(
                   value => (
                     <button
-                      key={value}
+                      key={
+                        value
+                      }
                       className={
                         maxDistance ===
-                          value
+                        value
                           ? 'full'
                           : 'outline'
                       }
@@ -2847,7 +3596,10 @@ export default function Home() {
                         )
                       }
                     >
-                      {value} km
+                      {
+                        value
+                      }{' '}
+                      km
                     </button>
                   )
                 )}
@@ -2856,7 +3608,8 @@ export default function Home() {
 
             <div
               style={{
-                marginTop: 30
+                marginTop:
+                  30
               }}
             >
               <span className="tag">
@@ -2869,9 +3622,7 @@ export default function Home() {
 
               {!verified && (
                 <div className="notice">
-                  🔒 Il matching è
-                  visibile solo dopo la
-                  verifica amministratore.
+                  🔒 Il matching è visibile solo dopo la verifica amministratore.
                 </div>
               )}
 
@@ -2884,10 +3635,12 @@ export default function Home() {
                 ].map(
                   filter => (
                     <button
-                      key={filter}
+                      key={
+                        filter
+                      }
                       className={
                         proFilter ===
-                          filter
+                        filter
                           ? 'selected'
                           : ''
                       }
@@ -2899,7 +3652,7 @@ export default function Home() {
                     >
                       {
                         filter ===
-                          'tutti'
+                        'tutti'
                           ? 'Tutti'
                           : filter ===
                               'aperta'
@@ -2915,188 +3668,199 @@ export default function Home() {
               </div>
 
               {verified &&
-                visibleMatching.map(
-                  job => (
-                    <article
-                      className="card job"
-                      key={
-                        `m-${job.id}`
-                      }
-                    >
-                      <div className="job-top">
-                        <div>
-                          <span className="status">
-                            🔴 DA ACCETTARE
-                          </span>
-
-                          <h3>
-                            {
-                              job.category_name ||
-                              'Intervento'
-                            }
-                          </h3>
-                        </div>
-
-                        <b>
-                          {
-                            job.urgency
-                              ?.toUpperCase()
-                          }
-                        </b>
-                      </div>
-
-                      <p>
-                        {job.description}
-                      </p>
-
-                      <Photo
-                        id={job.id}
-                      />
-
-                      <p className="muted">
-                        🔒 Indirizzo e
-                        telefono disponibili
-                        dopo l’accettazione
-                      </p>
-
-                      {
-                        job.distance_km !=
-                          null && (
-                          <p>
-                            📍{' '}
-                            {
-                              Number(
-                                job.distance_km
-                              ).toFixed(
-                                1
-                              )
-                            }{' '}
-                            km · ⏱{' '}
-                            {
-                              etaLabel(
-                                job.eta_minutes
-                              )
-                            }
-                          </p>
-                        )
-                      }
-
-                      <button
-                        className="full"
-                        disabled={
-                          busy ||
-                          availability ===
-                            'offline'
-                        }
-                        onClick={() =>
-                          acceptJob(
-                            job.id
-                          )
+                visibleMatching
+                  .map(
+                    job => (
+                      <article
+                        className="card job"
+                        key={
+                          `m-${job.id}`
                         }
                       >
-                        {
-                          availability ===
-                            'offline'
-                            ? 'Sei offline'
-                            : 'Accetta lavoro →'
-                        }
-                      </button>
-                    </article>
-                  )
-                )}
+                        <div className="job-top">
+                          <div>
+                            <span className="status">
+                              🔴 DA ACCETTARE
+                            </span>
 
-              {verified &&
-                visibleAccepted.map(
-                  job => (
-                    <article
-                      className="card job"
-                      key={
-                        `a-${job.id}`
-                      }
-                    >
-                      <span className="status">
-                        {
-                          statusLabel(
-                            job.status
-                          )
-                        }
-                      </span>
+                            <h3>
+                              {
+                                job.category_name ||
+                                'Intervento'
+                              }
+                            </h3>
+                          </div>
 
-                      <h3>
-                        {
-                          job.category_name ||
-                          'Intervento'
-                        }
-                      </h3>
-
-                      <p>
-                        {job.description}
-                      </p>
-
-                      <Photo
-                        id={job.id}
-                      />
-
-                      {job.address && (
-                        <div className="success">
-                          📍{' '}
                           <b>
-                            Indirizzo intervento
+                            {
+                              job.urgency
+                                ?.toUpperCase()
+                            }
                           </b>
-
-                          <br />
-
-                          {job.address}
                         </div>
-                      )}
 
-                      <ContactButtons
-                        jobId={
-                          String(
+                        <p>
+                          {
+                            job.description
+                          }
+                        </p>
+
+                        <Photo
+                          id={
                             job.id
+                          }
+                        />
+
+                        <p className="muted">
+                          🔒 Indirizzo e telefono disponibili dopo l’accettazione
+                        </p>
+
+                        {
+                          job.distance_km !=
+                            null && (
+                            <p>
+                              📍{' '}
+                              {
+                                Number(
+                                  job.distance_km
+                                ).toFixed(
+                                  1
+                                )
+                              }{' '}
+                              km · ⏱{' '}
+                              {
+                                etaLabel(
+                                  job.eta_minutes
+                                )
+                              }
+                            </p>
                           )
                         }
-                        viewer="professionista"
-                      />
 
-                      <div className="actions">
                         <button
                           className="full"
+                          disabled={
+                            busy ||
+                            availability ===
+                              'offline'
+                          }
                           onClick={() =>
-                            openChat(
-                              job.id,
-                              job.category_name ||
-                              'Intervento'
+                            acceptJob(
+                              job.id
                             )
                           }
                         >
-                          💬 Chat
+                          {
+                            availability ===
+                            'offline'
+                              ? 'Sei offline'
+                              : 'Accetta lavoro →'
+                          }
                         </button>
+                      </article>
+                    )
+                  )}
 
-                        {
-                          job.status !==
-                            'completata' && (
-                            <button
-                              className="outline"
-                              onClick={() =>
-                                completeJob(
-                                  job.id
-                                )
-                              }
-                            >
-                              ✓ Completa
-                            </button>
-                          )
+              {verified &&
+                visibleAccepted
+                  .map(
+                    job => (
+                      <article
+                        className="card job"
+                        key={
+                          `a-${job.id}`
                         }
-                      </div>
-                    </article>
-                  )
-                )}
+                      >
+                        <span className="status">
+                          {
+                            statusLabel(
+                              job.status
+                            )
+                          }
+                        </span>
+
+                        <h3>
+                          {
+                            job.category_name ||
+                            'Intervento'
+                          }
+                        </h3>
+
+                        <p>
+                          {
+                            job.description
+                          }
+                        </p>
+
+                        <Photo
+                          id={
+                            job.id
+                          }
+                        />
+
+                        {job.address && (
+                          <div className="success">
+                            📍{' '}
+                            <b>
+                              Indirizzo intervento
+                            </b>
+
+                            <br />
+
+                            {
+                              job.address
+                            }
+                          </div>
+                        )}
+
+                        <ContactButtons
+                          jobId={
+                            String(
+                              job.id
+                            )
+                          }
+                          viewer="professionista"
+                        />
+
+                        <div className="actions">
+                          <button
+                            className="full"
+                            onClick={() =>
+                              openChat(
+                                job.id,
+                                job.category_name ||
+                                  'Intervento'
+                              )
+                            }
+                          >
+                            💬 Chat
+                          </button>
+
+                          {
+                            job.status !==
+                              'completata' && (
+                              <button
+                                className="outline"
+                                onClick={() =>
+                                  completeJob(
+                                    job.id
+                                  )
+                                }
+                              >
+                                ✓ Completa
+                              </button>
+                            )
+                          }
+                        </div>
+                      </article>
+                    )
+                  )}
             </div>
 
             <div
               style={{
-                marginTop: 30
+                marginTop:
+                  30
               }}
             >
               <span className="tag">
@@ -3108,12 +3872,12 @@ export default function Home() {
               </h2>
 
               {
-                reviews.length === 0
+                reviews.length ===
+                0
                   ? (
                     <div className="card">
                       <p className="muted">
-                        Non hai ancora
-                        recensioni.
+                        Non hai ancora recensioni.
                       </p>
                     </div>
                   )
@@ -3154,6 +3918,61 @@ export default function Home() {
                     )
               }
             </div>
+
+            {/* CANCELLAZIONE ACCOUNT PROFESSIONISTA */}
+            <div
+              className="card"
+              style={{
+                marginTop:
+                  32,
+                border:
+                  '1px solid #d92d20'
+              }}
+            >
+              <span
+                className="tag"
+                style={{
+                  color:
+                    '#b42318'
+                }}
+              >
+                Zona pericolosa
+              </span>
+
+              <h3
+                style={{
+                  color:
+                    '#b42318'
+                }}
+              >
+                Elimina il mio account
+              </h3>
+
+              <p className="muted">
+                La cancellazione è definitiva. Il tuo account professionista e i dati collegati verranno eliminati.
+              </p>
+
+              <button
+                type="button"
+                className="danger"
+                disabled={
+                  busy
+                }
+                style={{
+                  width:
+                    '100%'
+                }}
+                onClick={
+                  deleteMyAccount
+                }
+              >
+                {
+                  busy
+                    ? 'Attendi...'
+                    : '🗑 Elimina definitivamente il mio account'
+                }
+              </button>
+            </div>
           </section>
         </div>
 
@@ -3166,13 +3985,16 @@ export default function Home() {
   /*
    * AREA CLIENTE
    */
-
   return (
     <main>
       <header>
         <div className="logo">
-          <b>L</b>
+          <b>
+            L
+          </b>
+
           Lavoro
+
           <span>
             Subito
           </span>
@@ -3183,7 +4005,9 @@ export default function Home() {
             ? (
               <button
                 className="outline"
-                onClick={logout}
+                onClick={
+                  logout
+                }
               >
                 Esci
               </button>
@@ -3228,9 +4052,7 @@ export default function Home() {
             </h1>
 
             <p>
-              Trova un professionista
-              verificato, disponibile e
-              vicino a te.
+              Trova un professionista verificato, disponibile e vicino a te.
             </p>
           </div>
 
@@ -3245,23 +4067,37 @@ export default function Home() {
 
             <div className="grid">
               {CATEGORIES.map(
-                ([name, icon]) => (
+                (
+                  [
+                    name,
+                    icon
+                  ]
+                ) => (
                   <button
-                    key={name}
+                    key={
+                      name
+                    }
                     className={
-                      cat === name
+                      cat ===
+                      name
                         ? 'cat selected'
                         : 'cat'
                     }
                     onClick={() =>
-                      setCat(name)
+                      setCat(
+                        name
+                      )
                     }
                   >
                     <strong>
-                      {icon}
+                      {
+                        icon
+                      }
                     </strong>
 
-                    {name}
+                    {
+                      name
+                    }
                   </button>
                 )
               )}
@@ -3275,10 +4111,12 @@ export default function Home() {
               ].map(
                 value => (
                   <button
-                    key={value}
+                    key={
+                      value
+                    }
                     className={
                       urgency ===
-                        value
+                      value
                         ? 'selected'
                         : ''
                     }
@@ -3288,7 +4126,9 @@ export default function Home() {
                       )
                     }
                   >
-                    {value}
+                    {
+                      value
+                    }
                   </button>
                 )
               )}
@@ -3299,12 +4139,18 @@ export default function Home() {
             </label>
 
             <textarea
-              rows={4}
-              value={description}
+              rows={
+                4
+              }
+              value={
+                description
+              }
               onChange={
                 e =>
                   setDescription(
-                    e.target.value
+                    e
+                      .target
+                      .value
                   )
               }
               placeholder="Es. Perdita d’acqua sotto il lavandino..."
@@ -3323,8 +4169,7 @@ export default function Home() {
             />
 
             <div className="small muted">
-              Facoltativa · massimo
-              10 MB
+              Facoltativa · massimo 10 MB
             </div>
 
             {photoPreview && (
@@ -3353,11 +4198,15 @@ export default function Home() {
             </label>
 
             <input
-              value={address}
+              value={
+                address
+              }
               onChange={
                 e =>
                   setAddress(
-                    e.target.value
+                    e
+                      .target
+                      .value
                   )
               }
               placeholder="Es. Via Roma 15, Bologna"
@@ -3371,7 +4220,9 @@ export default function Home() {
                     const p =
                       await getPosition();
 
-                    setCoords(p);
+                    setCoords(
+                      p
+                    );
 
                     setMessage(
                       p
@@ -3390,8 +4241,12 @@ export default function Home() {
 
               <button
                 className="full"
-                disabled={busy}
-                onClick={submitJob}
+                disabled={
+                  busy
+                }
+                onClick={
+                  submitJob
+                }
               >
                 {
                   busy
@@ -3403,7 +4258,9 @@ export default function Home() {
 
             {message && (
               <div className="success">
-                {message}
+                {
+                  message
+                }
               </div>
             )}
 
@@ -3411,7 +4268,8 @@ export default function Home() {
               <div
                 className="card"
                 style={{
-                  marginTop: 16,
+                  marginTop:
+                    16,
                   borderColor:
                     '#48b779'
                 }}
@@ -3422,24 +4280,31 @@ export default function Home() {
 
                 <h3>
                   {
-                    bestMatch.professional_name
+                    bestMatch
+                      .professional_name
                   }
                 </h3>
 
                 <p>
                   🎯{' '}
                   {
-                    bestMatch.match_score
-                  }/100 · ⭐{' '}
+                    bestMatch
+                      .match_score
+                  }
+                  /100 · ⭐{' '}
                   {
                     Number(
-                      bestMatch.average_rating ||
+                      bestMatch
+                        .average_rating ||
                       0
-                    ).toFixed(1)
+                    ).toFixed(
+                      1
+                    )
                   }{' '}
                   ·{' '}
                   {
-                    bestMatch.review_count ||
+                    bestMatch
+                      .review_count ||
                     0
                   }{' '}
                   recensioni
@@ -3448,15 +4313,18 @@ export default function Home() {
                 <p>
                   {
                     availabilityLabel(
-                      bestMatch.availability_status
+                      bestMatch
+                        .availability_status
                     )
                   }{' '}
                   · 📍{' '}
                   {
-                    bestMatch.distance_km !=
-                      null
+                    bestMatch
+                      .distance_km !=
+                    null
                       ? Number(
-                          bestMatch.distance_km
+                          bestMatch
+                            .distance_km
                         ).toFixed(
                           1
                         )
@@ -3466,10 +4334,7 @@ export default function Home() {
                 </p>
 
                 <p className="muted">
-                  🔒 Il numero di telefono
-                  sarà disponibile solo
-                  dopo che il professionista
-                  avrà accettato il lavoro.
+                  🔒 Il numero di telefono sarà disponibile solo dopo che il professionista avrà accettato il lavoro.
                 </p>
               </div>
             )}
@@ -3478,7 +4343,8 @@ export default function Home() {
 
         {
           user &&
-          role === 'cliente' && (
+          role ===
+            'cliente' && (
             <section className="section">
               <span className="tag">
                 Il mio profilo
@@ -3490,11 +4356,7 @@ export default function Home() {
 
               <div className="card">
                 <p className="muted">
-                  Il numero viene mostrato
-                  esclusivamente al
-                  professionista che ha
-                  accettato il tuo
-                  intervento.
+                  Il numero viene mostrato esclusivamente al professionista che ha accettato il tuo intervento.
                 </p>
 
                 <label>
@@ -3511,7 +4373,9 @@ export default function Home() {
                   onChange={
                     e =>
                       setClientPhone(
-                        e.target.value
+                        e
+                          .target
+                          .value
                       )
                   }
                   placeholder="+39 333 1234567"
@@ -3520,9 +4384,12 @@ export default function Home() {
                 <button
                   className="full"
                   style={{
-                    marginTop: 12
+                    marginTop:
+                      12
                   }}
-                  disabled={busy}
+                  disabled={
+                    busy
+                  }
                   onClick={
                     saveClientPhone
                   }
@@ -3531,10 +4398,66 @@ export default function Home() {
                 </button>
               </div>
 
+              {/* CANCELLAZIONE ACCOUNT CLIENTE */}
+              <div
+                className="card"
+                style={{
+                  marginTop:
+                    16,
+                  border:
+                    '1px solid #d92d20'
+                }}
+              >
+                <span
+                  className="tag"
+                  style={{
+                    color:
+                      '#b42318'
+                  }}
+                >
+                  Zona pericolosa
+                </span>
+
+                <h3
+                  style={{
+                    color:
+                      '#b42318'
+                  }}
+                >
+                  Elimina il mio account
+                </h3>
+
+                <p className="muted">
+                  La cancellazione è definitiva. Il tuo account e i dati collegati verranno eliminati.
+                </p>
+
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={
+                    busy
+                  }
+                  style={{
+                    width:
+                      '100%'
+                  }}
+                  onClick={
+                    deleteMyAccount
+                  }
+                >
+                  {
+                    busy
+                      ? 'Attendi...'
+                      : '🗑 Elimina definitivamente il mio account'
+                  }
+                </button>
+              </div>
+
               <span
                 className="tag"
                 style={{
-                  marginTop: 30,
+                  marginTop:
+                    30,
                   display:
                     'inline-block'
                 }}
@@ -3570,10 +4493,12 @@ export default function Home() {
                 ].map(
                   filter => (
                     <button
-                      key={filter}
+                      key={
+                        filter
+                      }
                       className={
                         clientFilter ===
-                          filter
+                        filter
                           ? 'selected'
                           : ''
                       }
@@ -3585,7 +4510,7 @@ export default function Home() {
                     >
                       {
                         filter ===
-                          'tutti'
+                        'tutti'
                           ? 'Tutti'
                           : filter
                       }
@@ -3594,103 +4519,75 @@ export default function Home() {
                 )}
               </div>
 
-              {filteredClient.map(
-                job => (
-                  <article
-                    className="card job"
-                    key={job.id}
-                  >
-                    <span className="status">
-                      {
-                        statusLabel(
-                          job.status
-                        )
+              {filteredClient
+                .map(
+                  job => (
+                    <article
+                      className="card job"
+                      key={
+                        job.id
                       }
-                    </span>
+                    >
+                      <span className="status">
+                        {
+                          statusLabel(
+                            job.status
+                          )
+                        }
+                      </span>
 
-                    <h3>
-                      {
-                        job.category_name ||
-                        'Intervento'
-                      }
-                    </h3>
+                      <h3>
+                        {
+                          job.category_name ||
+                          'Intervento'
+                        }
+                      </h3>
 
-                    <p>
-                      {job.description}
-                    </p>
+                      <p>
+                        {
+                          job.description
+                        }
+                      </p>
 
-                    <Photo
-                      id={job.id}
-                    />
+                      <Photo
+                        id={
+                          job.id
+                        }
+                      />
 
-                    {job.address && (
-                      <div className="notice">
-                        📍{' '}
-                        <b>
-                          Indirizzo intervento
-                        </b>
+                      {job.address && (
+                        <div className="notice">
+                          📍{' '}
+                          <b>
+                            Indirizzo intervento
+                          </b>
 
-                        <br />
+                          <br />
 
-                        {job.address}
-                      </div>
-                    )}
-
-                    <p>
-                      <b>
-                        Urgenza:
-                      </b>{' '}
-                      {
-                        job.urgency
-                          ?.toUpperCase()
-                      }
-                    </p>
-
-                    {
-                      job.professional_name && (
-                        <div className="success">
-                          ✅{' '}
                           {
-                            job.professional_name
+                            job.address
                           }
                         </div>
-                      )
-                    }
+                      )}
 
-                    {
-                      (
-                        job.status ===
-                          'accettata' ||
-                        job.status ===
-                          'in_corso' ||
-                        job.status ===
-                          'completata'
-                      ) && (
-                        <ContactButtons
-                          jobId={
-                            String(
-                              job.id
-                            )
-                          }
-                          viewer="cliente"
-                        />
-                      )
-                    }
+                      <p>
+                        <b>
+                          Urgenza:
+                        </b>{' '}
+                        {
+                          job.urgency
+                            ?.toUpperCase()
+                        }
+                      </p>
 
-                    <div className="actions">
                       {
-                        job.status ===
-                          'aperta' && (
-                          <button
-                            className="danger"
-                            onClick={() =>
-                              cancelJob(
-                                job.id
-                              )
+                        job.professional_name && (
+                          <div className="success">
+                            ✅{' '}
+                            {
+                              job.professional_name
                             }
-                          >
-                            ❌ Annulla richiesta
-                          </button>
+                          </div>
                         )
                       }
 
@@ -3703,63 +4600,102 @@ export default function Home() {
                           job.status ===
                             'completata'
                         ) && (
-                          <button
-                            className="full"
-                            onClick={() =>
-                              openChat(
-                                job.id,
-                                job.professional_name ||
-                                'Intervento'
-                              )
-                            }
-                          >
-                            💬 Chat
-                          </button>
-                        )
-                      }
-
-                      {
-                        (
-                          job.status ===
-                            'accettata' ||
-                          job.status ===
-                            'in_corso'
-                        ) && (
-                          <button
-                            className="outline"
-                            onClick={() =>
-                              completeJob(
+                          <ContactButtons
+                            jobId={
+                              String(
                                 job.id
                               )
                             }
-                          >
-                            ✓ Completa
-                          </button>
+                            viewer="cliente"
+                          />
                         )
                       }
 
-                      {
-                        job.status ===
-                          'completata' &&
-                        !job.reviewed && (
-                          <button
-                            className="outline"
-                            onClick={() => {
-                              setReviewJobId(
-                                job.id
-                              );
+                      <div className="actions">
+                        {
+                          job.status ===
+                            'aperta' && (
+                            <button
+                              className="danger"
+                              onClick={() =>
+                                cancelJob(
+                                  job.id
+                                )
+                              }
+                            >
+                              ❌ Annulla richiesta
+                            </button>
+                          )
+                        }
 
-                              setRating(5);
-                            }}
-                          >
-                            ⭐ Recensisci
-                          </button>
-                        )
-                      }
-                    </div>
-                  </article>
-                )
-              )}
+                        {
+                          (
+                            job.status ===
+                              'accettata' ||
+                            job.status ===
+                              'in_corso' ||
+                            job.status ===
+                              'completata'
+                          ) && (
+                            <button
+                              className="full"
+                              onClick={() =>
+                                openChat(
+                                  job.id,
+                                  job.professional_name ||
+                                    'Intervento'
+                                )
+                              }
+                            >
+                              💬 Chat
+                            </button>
+                          )
+                        }
+
+                        {
+                          (
+                            job.status ===
+                              'accettata' ||
+                            job.status ===
+                              'in_corso'
+                          ) && (
+                            <button
+                              className="outline"
+                              onClick={() =>
+                                completeJob(
+                                  job.id
+                                )
+                              }
+                            >
+                              ✓ Completa
+                            </button>
+                          )
+                        }
+
+                        {
+                          job.status ===
+                            'completata' &&
+                          !job.reviewed && (
+                            <button
+                              className="outline"
+                              onClick={() => {
+                                setReviewJobId(
+                                  job.id
+                                );
+
+                                setRating(
+                                  5
+                                );
+                              }}
+                            >
+                              ⭐ Recensisci
+                            </button>
+                          )
+                        }
+                      </div>
+                    </article>
+                  )
+                )}
             </section>
           )
         }
@@ -3771,13 +4707,18 @@ export default function Home() {
         <div className="modal">
           <form
             className="modalBox"
-            onSubmit={authSubmit}
+            onSubmit={
+              authSubmit
+            }
           >
             <button
               type="button"
               className="x"
               onClick={() => {
-                setAuthOpen(false);
+                setAuthOpen(
+                  false
+                );
+
                 setAcceptedLegal(
                   false
                 );
@@ -3789,7 +4730,7 @@ export default function Home() {
             <h2>
               {
                 authMode ===
-                  'signup'
+                'signup'
                   ? 'Crea account'
                   : 'Bentornato'
               }
@@ -3800,7 +4741,7 @@ export default function Home() {
                 type="button"
                 className={
                   authMode ===
-                    'login'
+                  'login'
                     ? 'full'
                     : 'outline'
                 }
@@ -3821,7 +4762,7 @@ export default function Home() {
                 type="button"
                 className={
                   authMode ===
-                    'signup'
+                  'signup'
                     ? 'full'
                     : 'outline'
                 }
@@ -3855,7 +4796,9 @@ export default function Home() {
                     onChange={
                       e =>
                         setAuthName(
-                          e.target.value
+                          e
+                            .target
+                            .value
                         )
                     }
                   />
@@ -3871,7 +4814,9 @@ export default function Home() {
                     onChange={
                       e =>
                         setSignupRole(
-                          e.target.value
+                          e
+                            .target
+                            .value
                         )
                     }
                   >
@@ -3894,11 +4839,15 @@ export default function Home() {
             <input
               type="email"
               required
-              value={email}
+              value={
+                email
+              }
               onChange={
                 e =>
                   setEmail(
-                    e.target.value
+                    e
+                      .target
+                      .value
                   )
               }
             />
@@ -3909,7 +4858,9 @@ export default function Home() {
 
             <input
               type="password"
-              minLength={6}
+              minLength={
+                6
+              }
               required
               value={
                 password
@@ -3917,7 +4868,9 @@ export default function Home() {
               onChange={
                 e =>
                   setPassword(
-                    e.target.value
+                    e
+                      .target
+                      .value
                   )
               }
             />
@@ -3928,10 +4881,14 @@ export default function Home() {
                 <button
                   type="button"
                   className="outline"
-                  disabled={busy}
+                  disabled={
+                    busy
+                  }
                   style={{
-                    marginTop: 12,
-                    width: '100%'
+                    marginTop:
+                      12,
+                    width:
+                      '100%'
                   }}
                   onClick={
                     forgotPassword
@@ -3951,11 +4908,16 @@ export default function Home() {
                       'flex',
                     alignItems:
                       'flex-start',
-                    gap: 10,
-                    marginTop: 16,
-                    fontWeight: 600,
-                    fontSize: 13,
-                    lineHeight: 1.45,
+                    gap:
+                      10,
+                    marginTop:
+                      16,
+                    fontWeight:
+                      600,
+                    fontSize:
+                      13,
+                    lineHeight:
+                      1.45,
                     cursor:
                       'pointer'
                   }}
@@ -3969,22 +4931,27 @@ export default function Home() {
                     onChange={
                       e =>
                         setAcceptedLegal(
-                          e.target.checked
+                          e
+                            .target
+                            .checked
                         )
                     }
                     style={{
-                      width: 18,
-                      height: 18,
-                      minWidth: 18,
-                      padding: 0,
+                      width:
+                        18,
+                      height:
+                        18,
+                      minWidth:
+                        18,
+                      padding:
+                        0,
                       margin:
                         '1px 0 0'
                     }}
                   />
 
                   <span>
-                    Dichiaro di aver letto
-                    e accetto i{' '}
+                    Dichiaro di aver letto e accetto i{' '}
 
                     <a
                       href="/termini"
@@ -3998,8 +4965,7 @@ export default function Home() {
                       Termini e condizioni
                     </a>
 
-                    {' '}e dichiaro di aver
-                    letto la{' '}
+                    {' '}e dichiaro di aver letto la{' '}
 
                     <a
                       href="/privacy"
@@ -4021,7 +4987,8 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop: 14
+                marginTop:
+                  14
               }}
               disabled={
                 busy ||
@@ -4076,14 +5043,22 @@ export default function Home() {
             </h2>
 
             <div className="actions">
-              {[1, 2, 3, 4, 5].map(
+              {[
+                1,
+                2,
+                3,
+                4,
+                5
+              ].map(
                 stars => (
                   <button
                     type="button"
-                    key={stars}
+                    key={
+                      stars
+                    }
                     className={
                       rating ===
-                        stars
+                      stars
                         ? 'full'
                         : 'outline'
                     }
@@ -4093,7 +5068,10 @@ export default function Home() {
                       )
                     }
                   >
-                    {stars} ⭐
+                    {
+                      stars
+                    }{' '}
+                    ⭐
                   </button>
                 )
               )}
@@ -4104,14 +5082,18 @@ export default function Home() {
             </label>
 
             <textarea
-              rows={4}
+              rows={
+                4
+              }
               value={
                 reviewComment
               }
               onChange={
                 e =>
                   setReviewComment(
-                    e.target.value
+                    e
+                      .target
+                      .value
                   )
               }
             />
@@ -4119,7 +5101,8 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop: 12
+                marginTop:
+                  12
               }}
             >
               Invia recensione
