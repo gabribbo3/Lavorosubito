@@ -81,12 +81,16 @@ const emptyStats: DashboardStats = {
   jobs_today: 0
 };
 
-function formatDate(value?: string | null) {
+function formatDate(
+  value?: string | null
+) {
   if (!value) {
     return '—';
   }
 
-  return new Date(value).toLocaleString(
+  return new Date(
+    value
+  ).toLocaleString(
     'it-IT',
     {
       dateStyle: 'short',
@@ -152,7 +156,8 @@ function StatCard({
     <div
       style={{
         background: '#fff',
-        border: '1px solid #e4e4e4',
+        border:
+          '1px solid #e4e4e4',
         borderRadius: 16,
         padding: 20
       }}
@@ -192,11 +197,18 @@ export default function AdminPage() {
   const [user, setUser] =
     useState<User | null>(null);
 
-  const [isAdmin, setIsAdmin] =
-    useState<boolean | null>(null);
+  const [
+    isAdmin,
+    setIsAdmin
+  ] =
+    useState<boolean | null>(
+      null
+    );
 
   const [tab, setTab] =
-    useState<Tab>('dashboard');
+    useState<Tab>(
+      'dashboard'
+    );
 
   const [stats, setStats] =
     useState<DashboardStats>(
@@ -210,7 +222,9 @@ export default function AdminPage() {
     professionals,
     setProfessionals
   ] =
-    useState<AdminProfessional[]>([]);
+    useState<
+      AdminProfessional[]
+    >([]);
 
   const [jobs, setJobs] =
     useState<AdminJob[]>([]);
@@ -218,7 +232,10 @@ export default function AdminPage() {
   const [search, setSearch] =
     useState('');
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading
+  ] =
     useState(true);
 
   const [
@@ -231,9 +248,22 @@ export default function AdminPage() {
     actionLoading,
     setActionLoading
   ] =
-    useState<string | null>(null);
+    useState<string | null>(
+      null
+    );
 
-  const [message, setMessage] =
+  const [
+    deletingUser,
+    setDeletingUser
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    message,
+    setMessage
+  ] =
     useState('');
 
   useEffect(() => {
@@ -249,7 +279,8 @@ export default function AdminPage() {
         user: currentUser
       }
     } =
-      await supabase.auth.getUser();
+      await supabase.auth
+        .getUser();
 
     setUser(currentUser);
 
@@ -316,10 +347,11 @@ export default function AdminPage() {
         )
       ]);
 
+    let newMessage = '';
+
     if (statsResponse.error) {
-      setMessage(
-        `Errore dashboard: ${statsResponse.error.message}`
-      );
+      newMessage =
+        `Errore dashboard: ${statsResponse.error.message}`;
     } else {
       const row =
         Array.isArray(
@@ -336,22 +368,22 @@ export default function AdminPage() {
     }
 
     if (usersResponse.error) {
-      setMessage(
-        `Errore utenti: ${usersResponse.error.message}`
-      );
+      newMessage =
+        `Errore utenti: ${usersResponse.error.message}`;
     } else {
       setUsers(
-        (usersResponse.data ??
-          []) as AdminUser[]
+        (
+          usersResponse.data ??
+          []
+        ) as AdminUser[]
       );
     }
 
     if (
       professionalsResponse.error
     ) {
-      setMessage(
-        `Errore professionisti: ${professionalsResponse.error.message}`
-      );
+      newMessage =
+        `Errore professionisti: ${professionalsResponse.error.message}`;
     } else {
       setProfessionals(
         (
@@ -362,14 +394,19 @@ export default function AdminPage() {
     }
 
     if (jobsResponse.error) {
-      setMessage(
-        `Errore lavori: ${jobsResponse.error.message}`
-      );
+      newMessage =
+        `Errore lavori: ${jobsResponse.error.message}`;
     } else {
       setJobs(
-        (jobsResponse.data ??
-          []) as AdminJob[]
+        (
+          jobsResponse.data ??
+          []
+        ) as AdminJob[]
       );
+    }
+
+    if (newMessage) {
+      setMessage(newMessage);
     }
 
     setRefreshing(false);
@@ -445,10 +482,137 @@ export default function AdminPage() {
     setActionLoading(null);
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
+  async function deleteAccount(
+    userId: string,
+    label: string,
+    isAdministrator = false
+  ) {
+    if (
+      isAdministrator ||
+      userId === user?.id
+    ) {
+      setMessage(
+        '⛔ Non è possibile eliminare un account amministratore.'
+      );
 
-    window.location.href = '/';
+      return;
+    }
+
+    const firstConfirmation =
+      window.confirm(
+        `Vuoi davvero eliminare l'account di ${label}?\n\nQuesta operazione è definitiva.`
+      );
+
+    if (!firstConfirmation) {
+      return;
+    }
+
+    const secondConfirmation =
+      window.confirm(
+        `ATTENZIONE\n\nConfermi definitivamente l'eliminazione di ${label}?\n\nL'account e i dati collegati verranno rimossi.`
+      );
+
+    if (!secondConfirmation) {
+      return;
+    }
+
+    setDeletingUser(userId);
+    setMessage('');
+
+    try {
+      const {
+        data: sessionData,
+        error: sessionError
+      } =
+        await supabase.auth
+          .getSession();
+
+      const accessToken =
+        sessionData.session
+          ?.access_token;
+
+      if (
+        sessionError ||
+        !accessToken
+      ) {
+        setMessage(
+          'Errore: sessione amministratore non valida.'
+        );
+
+        setDeletingUser(null);
+        return;
+      }
+
+      const response =
+        await fetch(
+          '/api/admin/delete-user',
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              Authorization:
+                `Bearer ${accessToken}`
+            },
+
+            body:
+              JSON.stringify({
+                userId
+              })
+          }
+        );
+
+      let result: {
+        ok?: boolean;
+        error?: string;
+      } = {};
+
+      try {
+        result =
+          await response.json();
+      } catch {
+        result = {};
+      }
+
+      if (
+        !response.ok ||
+        result.ok !== true
+      ) {
+        setMessage(
+          `Errore eliminazione: ${
+            result.error ||
+            'operazione non riuscita.'
+          }`
+        );
+
+        setDeletingUser(null);
+        return;
+      }
+
+      setMessage(
+        `✅ Account di ${label} eliminato definitivamente.`
+      );
+
+      setSearch('');
+
+      await loadAll();
+    } catch {
+      setMessage(
+        'Errore durante l’eliminazione dell’account.'
+      );
+    }
+
+    setDeletingUser(null);
+  }
+
+  async function logout() {
+    await supabase.auth
+      .signOut();
+
+    window.location.href =
+      '/';
   }
 
   const filteredUsers =
@@ -465,27 +629,37 @@ export default function AdminPage() {
       return users.filter(
         row =>
           String(
-            row.full_name ?? ''
+            row.full_name ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.email ?? ''
+            row.email ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.phone ?? ''
+            row.phone ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.role ?? ''
+            row.role ??
+            ''
           )
             .toLowerCase()
             .includes(q)
       );
-    }, [users, search]);
+    }, [
+      users,
+      search
+    ]);
 
   const filteredProfessionals =
     useMemo(() => {
@@ -501,22 +675,29 @@ export default function AdminPage() {
       return professionals.filter(
         row =>
           String(
-            row.business_name ?? ''
+            row.business_name ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.full_name ?? ''
+            row.full_name ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.email ?? ''
+            row.email ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.phone ?? ''
+            row.phone ??
+            ''
           )
             .toLowerCase()
             .includes(q)
@@ -540,32 +721,44 @@ export default function AdminPage() {
       return jobs.filter(
         row =>
           String(
-            row.client_name ?? ''
+            row.client_name ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.category_name ?? ''
+            row.category_name ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.description ?? ''
+            row.description ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.address ?? ''
+            row.address ??
+            ''
           )
             .toLowerCase()
             .includes(q) ||
+
           String(
-            row.status ?? ''
+            row.status ??
+            ''
           )
             .toLowerCase()
             .includes(q)
       );
-    }, [jobs, search]);
+    }, [
+      jobs,
+      search
+    ]);
 
   if (loading) {
     return (
@@ -574,12 +767,12 @@ export default function AdminPage() {
           style={{
             maxWidth: 900,
             margin: '0 auto',
-            padding: '60px 20px'
+            padding:
+              '60px 20px'
           }}
         >
           <h2>
-            Caricamento pannello
-            amministratore...
+            Caricamento pannello amministratore...
           </h2>
         </div>
       </main>
@@ -593,7 +786,8 @@ export default function AdminPage() {
           style={{
             maxWidth: 700,
             margin: '0 auto',
-            padding: '60px 20px'
+            padding:
+              '60px 20px'
           }}
         >
           <h1>
@@ -621,7 +815,8 @@ export default function AdminPage() {
           style={{
             maxWidth: 700,
             margin: '0 auto',
-            padding: '60px 20px'
+            padding:
+              '60px 20px'
           }}
         >
           <h1>
@@ -644,23 +839,39 @@ export default function AdminPage() {
   const buttonStyle = (
     active: boolean
   ) => ({
-    border: active
-      ? '1px solid #111'
-      : '1px solid #ddd',
+    border:
+      active
+        ? '1px solid #111'
+        : '1px solid #ddd',
 
-    background: active
-      ? '#111'
-      : '#fff',
+    background:
+      active
+        ? '#111'
+        : '#fff',
 
-    color: active
-      ? '#fff'
-      : '#111',
+    color:
+      active
+        ? '#fff'
+        : '#111',
 
     borderRadius: 10,
     padding: '11px 16px',
     fontWeight: 800,
     cursor: 'pointer'
   });
+
+  const deleteButtonStyle = {
+    width: '100%',
+    marginTop: 18,
+    background: '#fff',
+    color: '#b42318',
+    border:
+      '1px solid #b42318',
+    borderRadius: 10,
+    padding: '13px 12px',
+    fontWeight: 800,
+    cursor: 'pointer'
+  };
 
   return (
     <main
@@ -684,7 +895,8 @@ export default function AdminPage() {
             display: 'flex',
             justifyContent:
               'space-between',
-            alignItems: 'center',
+            alignItems:
+              'center',
             gap: 15
           }}
         >
@@ -818,10 +1030,13 @@ export default function AdminPage() {
           <button
             type="button"
             style={buttonStyle(
-              tab === 'dashboard'
+              tab ===
+                'dashboard'
             )}
             onClick={() =>
-              setTab('dashboard')
+              setTab(
+                'dashboard'
+              )
             }
           >
             📊 Dashboard
@@ -871,12 +1086,14 @@ export default function AdminPage() {
             onClick={loadAll}
             disabled={refreshing}
             style={{
-              marginLeft: 'auto',
+              marginLeft:
+                'auto',
               background: '#fff',
               border:
                 '1px solid #111',
               borderRadius: 10,
-              padding: '11px 16px',
+              padding:
+                '11px 16px',
               fontWeight: 800
             }}
           >
@@ -886,7 +1103,8 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {tab !== 'dashboard' && (
+        {tab !==
+          'dashboard' && (
           <div
             style={{
               marginBottom: 22
@@ -915,97 +1133,96 @@ export default function AdminPage() {
           </div>
         )}
 
-        {tab === 'dashboard' && (
-          <>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns:
-                  'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: 15
-              }}
-            >
-              <StatCard
-                title="Utenti"
-                value={
-                  stats.total_users
-                }
-                icon="👥"
-              />
+        {tab ===
+          'dashboard' && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 15
+            }}
+          >
+            <StatCard
+              title="Utenti"
+              value={
+                stats.total_users
+              }
+              icon="👥"
+            />
 
-              <StatCard
-                title="Clienti"
-                value={
-                  stats.total_clients
-                }
-                icon="👤"
-              />
+            <StatCard
+              title="Clienti"
+              value={
+                stats.total_clients
+              }
+              icon="👤"
+            />
 
-              <StatCard
-                title="Professionisti"
-                value={
-                  stats.total_professionals
-                }
-                icon="🛠"
-              />
+            <StatCard
+              title="Professionisti"
+              value={
+                stats.total_professionals
+              }
+              icon="🛠"
+            />
 
-              <StatCard
-                title="Da verificare"
-                value={
-                  stats.pending_professionals
-                }
-                icon="🟡"
-              />
+            <StatCard
+              title="Da verificare"
+              value={
+                stats.pending_professionals
+              }
+              icon="🟡"
+            />
 
-              <StatCard
-                title="Verificati"
-                value={
-                  stats.verified_professionals
-                }
-                icon="✅"
-              />
+            <StatCard
+              title="Verificati"
+              value={
+                stats.verified_professionals
+              }
+              icon="✅"
+            />
 
-              <StatCard
-                title="Lavori totali"
-                value={
-                  stats.total_jobs
-                }
-                icon="📋"
-              />
+            <StatCard
+              title="Lavori totali"
+              value={
+                stats.total_jobs
+              }
+              icon="📋"
+            />
 
-              <StatCard
-                title="Richieste aperte"
-                value={
-                  stats.open_jobs
-                }
-                icon="🔴"
-              />
+            <StatCard
+              title="Richieste aperte"
+              value={
+                stats.open_jobs
+              }
+              icon="🔴"
+            />
 
-              <StatCard
-                title="Lavori attivi"
-                value={
-                  stats.active_jobs
-                }
-                icon="⚡"
-              />
+            <StatCard
+              title="Lavori attivi"
+              value={
+                stats.active_jobs
+              }
+              icon="⚡"
+            />
 
-              <StatCard
-                title="Completati"
-                value={
-                  stats.completed_jobs
-                }
-                icon="🏁"
-              />
+            <StatCard
+              title="Completati"
+              value={
+                stats.completed_jobs
+              }
+              icon="🏁"
+            />
 
-              <StatCard
-                title="Creati oggi"
-                value={
-                  stats.jobs_today
-                }
-                icon="📅"
-              />
-            </div>
-          </>
+            <StatCard
+              title="Creati oggi"
+              value={
+                stats.jobs_today
+              }
+              icon="📅"
+            />
+          </div>
         )}
 
         {tab === 'utenti' && (
@@ -1047,17 +1264,20 @@ export default function AdminPage() {
 
                   <p>
                     <b>Email:</b>{' '}
-                    {row.email || '—'}
+                    {row.email ||
+                      '—'}
                   </p>
 
                   <p>
                     <b>Ruolo:</b>{' '}
-                    {row.role || '—'}
+                    {row.role ||
+                      '—'}
                   </p>
 
                   <p>
                     <b>Telefono:</b>{' '}
-                    {row.phone || '—'}
+                    {row.phone ||
+                      '—'}
                   </p>
 
                   <p>
@@ -1067,10 +1287,41 @@ export default function AdminPage() {
                     )}
                   </p>
 
-                  {row.is_admin && (
-                    <strong>
+                  {row.is_admin ? (
+                    <div
+                      style={{
+                        marginTop: 15,
+                        fontWeight: 800
+                      }}
+                    >
                       🛡 Amministratore
-                    </strong>
+                      protetto
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={
+                        deletingUser ===
+                        row.id
+                      }
+                      onClick={() =>
+                        deleteAccount(
+                          row.id,
+                          row.full_name ||
+                            row.email ||
+                            'questo utente',
+                          row.is_admin
+                        )
+                      }
+                      style={
+                        deleteButtonStyle
+                      }
+                    >
+                      {deletingUser ===
+                      row.id
+                        ? 'Eliminazione...'
+                        : '🗑 Elimina account'}
+                    </button>
                   )}
                 </article>
               )
@@ -1136,12 +1387,14 @@ export default function AdminPage() {
 
                   <p>
                     <b>Email:</b>{' '}
-                    {pro.email || '—'}
+                    {pro.email ||
+                      '—'}
                   </p>
 
                   <p>
                     <b>Telefono:</b>{' '}
-                    {pro.phone || '—'}
+                    {pro.phone ||
+                      '—'}
                   </p>
 
                   <p>
@@ -1159,27 +1412,22 @@ export default function AdminPage() {
                   </p>
 
                   <p>
-                    <b>
-                      Raggio:
-                    </b>{' '}
+                    <b>Raggio:</b>{' '}
                     {pro.max_distance_km ??
                       '—'}{' '}
                     km
                   </p>
 
                   <p>
-                    <b>
-                      Recensioni:
-                    </b>{' '}
+                    <b>Recensioni:</b>{' '}
                     {pro.reviews_count ??
                       0}
                   </p>
 
                   <p>
-                    <b>
-                      Valutazione:
-                    </b>{' '}
-                    {pro.rating ?? '—'}
+                    <b>Valutazione:</b>{' '}
+                    {pro.rating ??
+                      '—'}
                   </p>
 
                   {pro.verification_status ===
@@ -1249,6 +1497,45 @@ export default function AdminPage() {
                       </button>
                     </div>
                   )}
+
+                  {pro.id ===
+                  user.id ? (
+                    <div
+                      style={{
+                        marginTop: 18,
+                        fontWeight: 800
+                      }}
+                    >
+                      🛡 Account
+                      amministratore
+                      protetto
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={
+                        deletingUser ===
+                        pro.id
+                      }
+                      onClick={() =>
+                        deleteAccount(
+                          pro.id,
+                          pro.business_name ||
+                            pro.full_name ||
+                            pro.email ||
+                            'questo professionista'
+                        )
+                      }
+                      style={
+                        deleteButtonStyle
+                      }
+                    >
+                      {deletingUser ===
+                      pro.id
+                        ? 'Eliminazione...'
+                        : '🗑 Elimina professionista'}
+                    </button>
+                  )}
                 </article>
               )
             )}
@@ -1311,20 +1598,20 @@ export default function AdminPage() {
 
                   <p>
                     <b>Urgenza:</b>{' '}
-                    {job.urgency || '—'}
+                    {job.urgency ||
+                      '—'}
                   </p>
 
                   <p>
-                    <b>
-                      Descrizione:
-                    </b>{' '}
+                    <b>Descrizione:</b>{' '}
                     {job.description ||
                       '—'}
                   </p>
 
                   <p>
                     <b>Indirizzo:</b>{' '}
-                    {job.address || '—'}
+                    {job.address ||
+                      '—'}
                   </p>
 
                   <p>
