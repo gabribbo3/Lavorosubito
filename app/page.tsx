@@ -473,6 +473,17 @@ export default function Home() {
   ] =
     useState('');
 
+  /*
+   * NUOVO:
+   * telefono inserito durante
+   * la registrazione cliente.
+   */
+  const [
+    authPhone,
+    setAuthPhone
+  ] =
+    useState('');
+
   const [
     email,
     setEmail
@@ -740,6 +751,10 @@ export default function Home() {
 
     setAcceptedLegal(
       false
+    );
+
+    setAuthPhone(
+      ''
     );
 
     setChatJobId(
@@ -1664,6 +1679,10 @@ export default function Home() {
         false
       );
 
+      setAuthPhone(
+        ''
+      );
+
       setAuthOpen(
         true
       );
@@ -2208,6 +2227,24 @@ export default function Home() {
     event
       .preventDefault();
 
+    /*
+     * Telefono obbligatorio
+     * solo per il cliente.
+     */
+    if (
+      authMode ===
+        'signup' &&
+      signupRole ===
+        'cliente' &&
+      !authPhone.trim()
+    ) {
+      setMessage(
+        'Inserisci il tuo numero di telefono.'
+      );
+
+      return;
+    }
+
     if (
       authMode ===
         'signup' &&
@@ -2247,6 +2284,18 @@ export default function Home() {
                 role:
                   signupRole,
 
+                /*
+                 * Il trigger handle_new_user
+                 * legge questo metadata
+                 * e lo salva in profiles.phone.
+                 */
+                phone:
+                  signupRole ===
+                    'cliente'
+                    ? authPhone
+                        .trim()
+                    : null,
+
                 legal_accepted:
                   true,
 
@@ -2275,6 +2324,10 @@ export default function Home() {
 
       setAcceptedLegal(
         false
+      );
+
+      setAuthPhone(
+        ''
       );
 
       setAuthMode(
@@ -3919,7 +3972,6 @@ export default function Home() {
               }
             </div>
 
-            {/* CANCELLAZIONE ACCOUNT PROFESSIONISTA */}
             <div
               className="card"
               style={{
@@ -4022,6 +4074,10 @@ export default function Home() {
 
                   setAcceptedLegal(
                     false
+                  );
+
+                  setAuthPhone(
+                    ''
                   );
 
                   setAuthOpen(
@@ -4398,7 +4454,6 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* CANCELLAZIONE ACCOUNT CLIENTE */}
               <div
                 className="card"
                 style={{
@@ -4722,6 +4777,10 @@ export default function Home() {
                 setAcceptedLegal(
                   false
                 );
+
+                setAuthPhone(
+                  ''
+                );
               }}
             >
               ×
@@ -4753,6 +4812,10 @@ export default function Home() {
                   setAcceptedLegal(
                     false
                   );
+
+                  setAuthPhone(
+                    ''
+                  );
                 }}
               >
                 Accedi
@@ -4773,6 +4836,10 @@ export default function Home() {
 
                   setAcceptedLegal(
                     false
+                  );
+
+                  setAuthPhone(
+                    ''
                   );
                 }}
               >
@@ -4812,12 +4879,17 @@ export default function Home() {
                       signupRole
                     }
                     onChange={
-                      e =>
+                      e => {
                         setSignupRole(
                           e
                             .target
                             .value
-                        )
+                        );
+
+                        setAuthPhone(
+                          ''
+                        );
+                      }
                     }
                   >
                     <option value="cliente">
@@ -4828,6 +4900,48 @@ export default function Home() {
                       Professionista
                     </option>
                   </select>
+
+                  {
+                    signupRole ===
+                      'cliente' && (
+                      <>
+                        <label>
+                          📱 Numero di telefono
+                        </label>
+
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          required
+                          value={
+                            authPhone
+                          }
+                          onChange={
+                            e =>
+                              setAuthPhone(
+                                e
+                                  .target
+                                  .value
+                              )
+                          }
+                          placeholder="+39 333 1234567"
+                        />
+
+                        <p
+                          className="muted"
+                          style={{
+                            fontSize:
+                              12,
+                            marginTop:
+                              6
+                          }}
+                        >
+                          Il numero verrà mostrato al professionista solo dopo che avrà accettato il tuo intervento.
+                        </p>
+                      </>
+                    )
+                  }
                 </>
               )
             }
@@ -4995,7 +5109,15 @@ export default function Home() {
                 (
                   authMode ===
                     'signup' &&
-                  !acceptedLegal
+                  (
+                    !acceptedLegal ||
+                    (
+                      signupRole ===
+                        'cliente' &&
+                      !authPhone
+                        .trim()
+                    )
+                  )
                 )
               }
             >
