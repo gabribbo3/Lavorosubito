@@ -166,8 +166,7 @@ function StatCard({
     <div
       style={{
         background: '#fff',
-        border:
-          '1px solid #e4e4e4',
+        border: '1px solid #e4e4e4',
         borderRadius: 16,
         padding: 20
       }}
@@ -286,9 +285,37 @@ export default function AdminPage() {
   ] =
     useState('');
 
+  const [
+    lastUpdate,
+    setLastUpdate
+  ] =
+    useState<Date | null>(
+      null
+    );
+
   useEffect(() => {
     void checkAccess();
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      return;
+    }
+
+    const interval =
+      window.setInterval(
+        () => {
+          void loadAll(true);
+        },
+        30000
+      );
+
+    return () => {
+      window.clearInterval(
+        interval
+      );
+    };
+  }, [isAdmin]);
 
   async function checkAccess() {
     setLoading(true);
@@ -346,8 +373,12 @@ export default function AdminPage() {
     setLoading(false);
   }
 
-  async function loadAll() {
-    setRefreshing(true);
+  async function loadAll(
+    silent = false
+  ) {
+    if (!silent) {
+      setRefreshing(true);
+    }
 
     const [
       statsResponse,
@@ -445,7 +476,15 @@ export default function AdminPage() {
       );
     }
 
-    setRefreshing(false);
+    if (!newMessage) {
+      setLastUpdate(
+        new Date()
+      );
+    }
+
+    if (!silent) {
+      setRefreshing(false);
+    }
   }
 
   async function changeVerification(
@@ -737,37 +776,36 @@ export default function AdminPage() {
         return professionals;
       }
 
-      return professionals
-        .filter(
-          row =>
-            String(
-              row.business_name ??
-              ''
-            )
-              .toLowerCase()
-              .includes(q) ||
+      return professionals.filter(
+        row =>
+          String(
+            row.business_name ??
+            ''
+          )
+            .toLowerCase()
+            .includes(q) ||
 
-            String(
-              row.full_name ??
-              ''
-            )
-              .toLowerCase()
-              .includes(q) ||
+          String(
+            row.full_name ??
+            ''
+          )
+            .toLowerCase()
+            .includes(q) ||
 
-            String(
-              row.email ??
-              ''
-            )
-              .toLowerCase()
-              .includes(q) ||
+          String(
+            row.email ??
+            ''
+          )
+            .toLowerCase()
+            .includes(q) ||
 
-            String(
-              row.phone ??
-              ''
-            )
-              .toLowerCase()
-              .includes(q)
-        );
+          String(
+            row.phone ??
+            ''
+          )
+            .toLowerCase()
+            .includes(q)
+      );
     }, [
       professionals,
       search
@@ -867,10 +905,8 @@ export default function AdminPage() {
         <div
           style={{
             maxWidth: 900,
-            margin:
-              '0 auto',
-            padding:
-              '60px 20px'
+            margin: '0 auto',
+            padding: '60px 20px'
           }}
         >
           <h2>
@@ -887,10 +923,8 @@ export default function AdminPage() {
         <div
           style={{
             maxWidth: 700,
-            margin:
-              '0 auto',
-            padding:
-              '60px 20px'
+            margin: '0 auto',
+            padding: '60px 20px'
           }}
         >
           <h1>
@@ -917,10 +951,8 @@ export default function AdminPage() {
         <div
           style={{
             maxWidth: 700,
-            margin:
-              '0 auto',
-            padding:
-              '60px 20px'
+            margin: '0 auto',
+            padding: '60px 20px'
           }}
         >
           <h1>
@@ -959,8 +991,7 @@ export default function AdminPage() {
         : '#111',
 
     borderRadius: 10,
-    padding:
-      '11px 16px',
+    padding: '11px 16px',
     fontWeight: 800,
     cursor: 'pointer'
   });
@@ -973,8 +1004,7 @@ export default function AdminPage() {
     border:
       '1px solid #b42318',
     borderRadius: 10,
-    padding:
-      '13px 12px',
+    padding: '13px 12px',
     fontWeight: 800,
     cursor: 'pointer'
   };
@@ -991,44 +1021,34 @@ export default function AdminPage() {
   return (
     <main
       style={{
-        minHeight:
-          '100vh',
-        background:
-          '#f5f5f5'
+        minHeight: '100vh',
+        background: '#f5f5f5'
       }}
     >
       <header
         style={{
-          background:
-            '#fff',
+          background: '#fff',
           borderBottom:
             '1px solid #e5e5e5',
-          padding:
-            '18px 20px'
+          padding: '18px 20px'
         }}
       >
         <div
           style={{
-            maxWidth:
-              1200,
-            margin:
-              '0 auto',
-            display:
-              'flex',
+            maxWidth: 1200,
+            margin: '0 auto',
+            display: 'flex',
             justifyContent:
               'space-between',
-            alignItems:
-              'center',
+            alignItems: 'center',
             gap: 15
           }}
         >
           <div>
             <div
               style={{
-                fontSize:
-                  25,
-                fontWeight:
-                  900
+                fontSize: 25,
+                fontWeight: 900
               }}
             >
               LavoroSubito
@@ -1041,8 +1061,7 @@ export default function AdminPage() {
 
           <div
             style={{
-              display:
-                'flex',
+              display: 'flex',
               gap: 10
             }}
           >
@@ -1051,16 +1070,13 @@ export default function AdminPage() {
               style={{
                 border:
                   '1px solid #111',
-                borderRadius:
-                  10,
+                borderRadius: 10,
                 padding:
                   '10px 14px',
-                color:
-                  '#111',
+                color: '#111',
                 textDecoration:
                   'none',
-                fontWeight:
-                  700
+                fontWeight: 700
               }}
             >
               Sito
@@ -1068,22 +1084,15 @@ export default function AdminPage() {
 
             <button
               type="button"
-              onClick={
-                logout
-              }
+              onClick={logout}
               style={{
-                background:
-                  '#111',
-                color:
-                  '#fff',
-                border:
-                  'none',
-                borderRadius:
-                  10,
+                background: '#111',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
                 padding:
                   '10px 14px',
-                fontWeight:
-                  700
+                fontWeight: 700
               }}
             >
               Esci
@@ -1094,36 +1103,27 @@ export default function AdminPage() {
 
       <section
         style={{
-          maxWidth:
-            1200,
-          margin:
-            '0 auto',
+          maxWidth: 1200,
+          margin: '0 auto',
           padding:
             '30px 18px 80px'
         }}
       >
         <div
           style={{
-            marginBottom:
-              25
+            marginBottom: 25
           }}
         >
           <div
             style={{
               display:
                 'inline-block',
-              background:
-                '#111',
-              color:
-                '#fff',
-              padding:
-                '7px 12px',
-              borderRadius:
-                999,
-              fontWeight:
-                800,
-              fontSize:
-                12
+              background: '#111',
+              color: '#fff',
+              padding: '7px 12px',
+              borderRadius: 999,
+              fontWeight: 800,
+              fontSize: 12
             }}
           >
             🛡 AMMINISTRATORE
@@ -1131,10 +1131,8 @@ export default function AdminPage() {
 
           <h1
             style={{
-              fontSize:
-                34,
-              marginBottom:
-                6
+              fontSize: 34,
+              marginBottom: 6
             }}
           >
             Centro di controllo
@@ -1142,29 +1140,46 @@ export default function AdminPage() {
 
           <div
             style={{
-              color:
-                '#666'
+              color: '#666'
             }}
           >
             {user.email}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: '#777',
+              fontSize: 13
+            }}
+          >
+            🔄 Aggiornamento automatico ogni 30 secondi
+            {lastUpdate && (
+              <>
+                {' '}• ultimo aggiornamento{' '}
+                {lastUpdate.toLocaleTimeString(
+                  'it-IT',
+                  {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  }
+                )}
+              </>
+            )}
           </div>
         </div>
 
         {message && (
           <div
             style={{
-              background:
-                '#fff',
+              background: '#fff',
               border:
                 '1px solid #ddd',
-              padding:
-                14,
-              borderRadius:
-                12,
-              marginBottom:
-                20,
-              fontWeight:
-                700
+              padding: 14,
+              borderRadius: 12,
+              marginBottom: 20,
+              fontWeight: 700
             }}
           >
             {message}
@@ -1173,23 +1188,18 @@ export default function AdminPage() {
 
         <div
           style={{
-            display:
-              'flex',
+            display: 'flex',
             gap: 10,
-            flexWrap:
-              'wrap',
-            marginBottom:
-              25
+            flexWrap: 'wrap',
+            marginBottom: 25
           }}
         >
           <button
             type="button"
-            style={
-              buttonStyle(
-                tab ===
-                  'dashboard'
-              )
-            }
+            style={buttonStyle(
+              tab ===
+                'dashboard'
+            )}
             onClick={() =>
               setTab(
                 'dashboard'
@@ -1201,16 +1211,11 @@ export default function AdminPage() {
 
           <button
             type="button"
-            style={
-              buttonStyle(
-                tab ===
-                  'utenti'
-              )
-            }
+            style={buttonStyle(
+              tab === 'utenti'
+            )}
             onClick={() =>
-              setTab(
-                'utenti'
-              )
+              setTab('utenti')
             }
           >
             👥 Utenti
@@ -1218,12 +1223,10 @@ export default function AdminPage() {
 
           <button
             type="button"
-            style={
-              buttonStyle(
-                tab ===
-                  'professionisti'
-              )
-            }
+            style={buttonStyle(
+              tab ===
+                'professionisti'
+            )}
             onClick={() =>
               setTab(
                 'professionisti'
@@ -1235,16 +1238,11 @@ export default function AdminPage() {
 
           <button
             type="button"
-            style={
-              buttonStyle(
-                tab ===
-                  'lavori'
-              )
-            }
+            style={buttonStyle(
+              tab === 'lavori'
+            )}
             onClick={() =>
-              setTab(
-                'lavori'
-              )
+              setTab('lavori')
             }
           >
             📋 Lavori
@@ -1252,1032 +1250,806 @@ export default function AdminPage() {
 
           <button
             type="button"
-            onClick={
-              loadAll
+            onClick={() =>
+              void loadAll()
             }
-            disabled={
-              refreshing
-            }
+            disabled={refreshing}
             style={{
-              marginLeft:
-                'auto',
-              background:
-                '#fff',
+              marginLeft: 'auto',
+              background: '#fff',
               border:
                 '1px solid #111',
-              borderRadius:
-                10,
+              borderRadius: 10,
               padding:
                 '11px 16px',
-              fontWeight:
-                800
+              fontWeight: 800
             }}
           >
-            {
-              refreshing
-                ? 'Aggiornamento...'
-                : '↻ Aggiorna'
-            }
+            {refreshing
+              ? 'Aggiornamento...'
+              : '↻ Aggiorna'}
           </button>
         </div>
 
-        {
-          tab !==
-            'dashboard' && (
-            <div
-              style={{
-                marginBottom:
-                  22
-              }}
-            >
-              <input
-                value={
-                  search
-                }
-                onChange={
-                  e =>
-                    setSearch(
-                      e.target
-                        .value
-                    )
-                }
-                placeholder="Cerca..."
-                style={{
-                  width:
-                    '100%',
-                  boxSizing:
-                    'border-box',
-                  padding:
-                    '14px 16px',
-                  borderRadius:
-                    12,
-                  border:
-                    '1px solid #ccc',
-                  fontSize:
-                    16
-                }}
-              />
-            </div>
-          )
-        }
-
-        {
-          tab ===
-            'dashboard' && (
-            <div
-              style={{
-                display:
-                  'grid',
-                gridTemplateColumns:
-                  'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: 15
-              }}
-            >
-              <StatCard
-                title="Utenti"
-                value={
-                  stats
-                    .total_users
-                }
-                icon="👥"
-              />
-
-              <StatCard
-                title="Clienti"
-                value={
-                  stats
-                    .total_clients
-                }
-                icon="👤"
-              />
-
-              <StatCard
-                title="Professionisti"
-                value={
-                  stats
-                    .total_professionals
-                }
-                icon="🛠"
-              />
-
-              <StatCard
-                title="Da verificare"
-                value={
-                  stats
-                    .pending_professionals
-                }
-                icon="🟡"
-              />
-
-              <StatCard
-                title="Verificati"
-                value={
-                  stats
-                    .verified_professionals
-                }
-                icon="✅"
-              />
-
-              <StatCard
-                title="Lavori totali"
-                value={
-                  stats
-                    .total_jobs
-                }
-                icon="📋"
-              />
-
-              <StatCard
-                title="Richieste aperte"
-                value={
-                  stats
-                    .open_jobs
-                }
-                icon="🔴"
-              />
-
-              <StatCard
-                title="Lavori attivi"
-                value={
-                  stats
-                    .active_jobs
-                }
-                icon="⚡"
-              />
-
-              <StatCard
-                title="Completati"
-                value={
-                  stats
-                    .completed_jobs
-                }
-                icon="🏁"
-              />
-
-              <StatCard
-                title="Creati oggi"
-                value={
-                  stats
-                    .jobs_today
-                }
-                icon="📅"
-              />
-            </div>
-          )
-        }
-
-        {
-          tab ===
-            'utenti' && (
-            <div
-              style={{
-                display:
-                  'grid',
-                gap: 14
-              }}
-            >
-              <h2>
-                Utenti (
-                {
-                  filteredUsers
-                    .length
-                }
+        {tab !==
+          'dashboard' && (
+          <div
+            style={{
+              marginBottom: 22
+            }}
+          >
+            <input
+              value={search}
+              onChange={e =>
+                setSearch(
+                  e.target.value
                 )
-              </h2>
-
-              {
-                filteredUsers
-                  .map(
-                    row => (
-                      <article
-                        key={
-                          row.id
-                        }
-                        style={{
-                          background:
-                            '#fff',
-                          border:
-                            '1px solid #ddd',
-                          borderRadius:
-                            16,
-                          padding:
-                            20
-                        }}
-                      >
-                        <h3
-                          style={{
-                            marginTop:
-                              0
-                          }}
-                        >
-                          {
-                            row.full_name ||
-                            'Utente'
-                          }
-                        </h3>
-
-                        <p>
-                          <b>
-                            Email:
-                          </b>{' '}
-                          {
-                            row.email ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Ruolo:
-                          </b>{' '}
-                          {
-                            row.role ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Telefono:
-                          </b>{' '}
-                          {
-                            row.phone ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Registrato:
-                          </b>{' '}
-                          {
-                            formatDate(
-                              row.created_at
-                            )
-                          }
-                        </p>
-
-                        {
-                          row.is_admin
-                            ? (
-                              <div
-                                style={{
-                                  marginTop:
-                                    15,
-                                  fontWeight:
-                                    800
-                                }}
-                              >
-                                🛡 Amministratore protetto
-                              </div>
-                            )
-                            : (
-                              <button
-                                type="button"
-                                disabled={
-                                  deletingUser ===
-                                  row.id
-                                }
-                                onClick={() =>
-                                  deleteAccount(
-                                    row.id,
-                                    row.full_name ||
-                                      row.email ||
-                                      'questo utente',
-                                    row.is_admin
-                                  )
-                                }
-                                style={
-                                  deleteButtonStyle
-                                }
-                              >
-                                {
-                                  deletingUser ===
-                                  row.id
-                                    ? 'Eliminazione...'
-                                    : '🗑 Elimina account'
-                                }
-                              </button>
-                            )
-                        }
-                      </article>
-                    )
-                  )
               }
-            </div>
-          )
-        }
-
-        {
-          tab ===
-            'professionisti' && (
-            <div
+              placeholder="Cerca..."
               style={{
-                display:
-                  'grid',
-                gap: 15
+                width: '100%',
+                boxSizing:
+                  'border-box',
+                padding:
+                  '14px 16px',
+                borderRadius: 12,
+                border:
+                  '1px solid #ccc',
+                fontSize: 16
               }}
-            >
-              <h2>
-                Professionisti (
-                {
-                  filteredProfessionals
-                    .length
-                }
-                )
-              </h2>
+            />
+          </div>
+        )}
 
+        {tab ===
+          'dashboard' && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: 15
+            }}
+          >
+            <StatCard
+              title="Utenti"
+              value={
+                stats.total_users
+              }
+              icon="👥"
+            />
+
+            <StatCard
+              title="Clienti"
+              value={
+                stats.total_clients
+              }
+              icon="👤"
+            />
+
+            <StatCard
+              title="Professionisti"
+              value={
+                stats.total_professionals
+              }
+              icon="🛠"
+            />
+
+            <StatCard
+              title="Da verificare"
+              value={
+                stats.pending_professionals
+              }
+              icon="🟡"
+            />
+
+            <StatCard
+              title="Verificati"
+              value={
+                stats.verified_professionals
+              }
+              icon="✅"
+            />
+
+            <StatCard
+              title="Lavori totali"
+              value={
+                stats.total_jobs
+              }
+              icon="📋"
+            />
+
+            <StatCard
+              title="Richieste aperte"
+              value={
+                stats.open_jobs
+              }
+              icon="🔴"
+            />
+
+            <StatCard
+              title="Lavori attivi"
+              value={
+                stats.active_jobs
+              }
+              icon="⚡"
+            />
+
+            <StatCard
+              title="Completati"
+              value={
+                stats.completed_jobs
+              }
+              icon="🏁"
+            />
+
+            <StatCard
+              title="Creati oggi"
+              value={
+                stats.jobs_today
+              }
+              icon="📅"
+            />
+          </div>
+        )}
+
+        {tab === 'utenti' && (
+          <div
+            style={{
+              display: 'grid',
+              gap: 14
+            }}
+          >
+            <h2>
+              Utenti (
               {
-                filteredProfessionals
-                  .map(
-                    pro => (
-                      <article
-                        key={
+                filteredUsers.length
+              }
+              )
+            </h2>
+
+            {filteredUsers.map(
+              row => (
+                <article
+                  key={row.id}
+                  style={{
+                    background:
+                      '#fff',
+                    border:
+                      '1px solid #ddd',
+                    borderRadius: 16,
+                    padding: 20
+                  }}
+                >
+                  <h3
+                    style={{
+                      marginTop: 0
+                    }}
+                  >
+                    {row.full_name ||
+                      'Utente'}
+                  </h3>
+
+                  <p>
+                    <b>Email:</b>{' '}
+                    {row.email ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Ruolo:</b>{' '}
+                    {row.role ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Telefono:</b>{' '}
+                    {row.phone ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Registrato:</b>{' '}
+                    {formatDate(
+                      row.created_at
+                    )}
+                  </p>
+
+                  {row.is_admin ? (
+                    <div
+                      style={{
+                        marginTop: 15,
+                        fontWeight: 800
+                      }}
+                    >
+                      🛡 Amministratore
+                      protetto
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={
+                        deletingUser ===
+                        row.id
+                      }
+                      onClick={() =>
+                        deleteAccount(
+                          row.id,
+                          row.full_name ||
+                            row.email ||
+                            'questo utente',
+                          row.is_admin
+                        )
+                      }
+                      style={
+                        deleteButtonStyle
+                      }
+                    >
+                      {deletingUser ===
+                      row.id
+                        ? 'Eliminazione...'
+                        : '🗑 Elimina account'}
+                    </button>
+                  )}
+                </article>
+              )
+            )}
+          </div>
+        )}
+
+        {tab ===
+          'professionisti' && (
+          <div
+            style={{
+              display: 'grid',
+              gap: 15
+            }}
+          >
+            <h2>
+              Professionisti (
+              {
+                filteredProfessionals.length
+              }
+              )
+            </h2>
+
+            {filteredProfessionals.map(
+              pro => (
+                <article
+                  key={pro.id}
+                  style={{
+                    background:
+                      '#fff',
+                    border:
+                      '1px solid #ddd',
+                    borderRadius: 16,
+                    padding: 20
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 800,
+                      marginBottom: 10
+                    }}
+                  >
+                    {verificationLabel(
+                      pro.verification_status
+                    )}
+                  </div>
+
+                  <h3
+                    style={{
+                      marginTop: 0
+                    }}
+                  >
+                    {pro.business_name ||
+                      pro.full_name ||
+                      'Professionista'}
+                  </h3>
+
+                  <p>
+                    <b>Nome:</b>{' '}
+                    {pro.full_name ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Email:</b>{' '}
+                    {pro.email ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Telefono:</b>{' '}
+                    {pro.phone ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Partita IVA:</b>{' '}
+                    {pro.vat_number ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>
+                      Codice fiscale:
+                    </b>{' '}
+                    {pro.tax_code ||
+                      '—'}
+                  </p>
+
+                  <p>
+                    <b>Raggio:</b>{' '}
+                    {pro.max_distance_km ??
+                      '—'}{' '}
+                    km
+                  </p>
+
+                  <p>
+                    <b>Recensioni:</b>{' '}
+                    {pro.reviews_count ??
+                      0}
+                  </p>
+
+                  <p>
+                    <b>Valutazione:</b>{' '}
+                    {pro.rating ??
+                      '—'}
+                  </p>
+
+                  {pro.verification_status ===
+                    'da_verificare' && (
+                    <div
+                      style={{
+                        display:
+                          'grid',
+                        gridTemplateColumns:
+                          '1fr 1fr',
+                        gap: 10,
+                        marginTop: 18
+                      }}
+                    >
+                      <button
+                        type="button"
+                        disabled={
+                          actionLoading ===
                           pro.id
                         }
+                        onClick={() =>
+                          changeVerification(
+                            pro.id,
+                            'verificato'
+                          )
+                        }
                         style={{
                           background:
-                            '#fff',
-                          border:
-                            '1px solid #ddd',
+                            '#16864b',
+                          color: '#fff',
+                          border: 'none',
                           borderRadius:
-                            16,
+                            10,
                           padding:
-                            20
+                            '13px 10px',
+                          fontWeight: 800
                         }}
                       >
+                        ✅ Approva
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          actionLoading ===
+                          pro.id
+                        }
+                        onClick={() =>
+                          changeVerification(
+                            pro.id,
+                            'rifiutato'
+                          )
+                        }
+                        style={{
+                          background:
+                            '#b52b27',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius:
+                            10,
+                          padding:
+                            '13px 10px',
+                          fontWeight: 800
+                        }}
+                      >
+                        ❌ Rifiuta
+                      </button>
+                    </div>
+                  )}
+
+                  {pro.id ===
+                  user.id ? (
+                    <div
+                      style={{
+                        marginTop: 18,
+                        fontWeight: 800
+                      }}
+                    >
+                      🛡 Account
+                      amministratore
+                      protetto
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={
+                        deletingUser ===
+                        pro.id
+                      }
+                      onClick={() =>
+                        deleteAccount(
+                          pro.id,
+                          pro.business_name ||
+                            pro.full_name ||
+                            pro.email ||
+                            'questo professionista'
+                        )
+                      }
+                      style={
+                        deleteButtonStyle
+                      }
+                    >
+                      {deletingUser ===
+                      pro.id
+                        ? 'Eliminazione...'
+                        : '🗑 Elimina professionista'}
+                    </button>
+                  )}
+                </article>
+              )
+            )}
+          </div>
+        )}
+
+        {tab === 'lavori' && (
+          <div
+            style={{
+              display: 'grid',
+              gap: 14
+            }}
+          >
+            <h2>
+              Lavori (
+              {
+                filteredJobs.length
+              }
+              )
+            </h2>
+
+            {filteredJobs.map(
+              job => {
+                const opened =
+                  selectedJobId ===
+                  job.id;
+
+                return (
+                  <article
+                    key={job.id}
+                    style={{
+                      background:
+                        '#fff',
+                      border:
+                        opened
+                          ? '2px solid #111'
+                          : '1px solid #ddd',
+                      borderRadius: 16,
+                      padding: 20
+                    }}
+                  >
+                    <div
+                      style={{
+                        display:
+                          'flex',
+                        justifyContent:
+                          'space-between',
+                        gap: 15,
+                        alignItems:
+                          'flex-start',
+                        flexWrap:
+                          'wrap'
+                      }}
+                    >
+                      <div>
                         <div
                           style={{
                             fontWeight:
-                              800,
+                              900,
                             marginBottom:
                               10
                           }}
                         >
-                          {
-                            verificationLabel(
-                              pro.verification_status
-                            )
-                          }
+                          {jobStatusLabel(
+                            job.status
+                          )}
                         </div>
 
                         <h3
                           style={{
-                            marginTop:
-                              0
+                            margin: 0
                           }}
                         >
-                          {
-                            pro.business_name ||
-                            pro.full_name ||
-                            'Professionista'
-                          }
+                          {job.category_name ||
+                            'Categoria'}
                         </h3>
+                      </div>
 
-                        <p>
-                          <b>
-                            Nome:
-                          </b>{' '}
-                          {
-                            pro.full_name ||
-                            '—'
+                      <div
+                        style={{
+                          fontWeight:
+                            900,
+                          background:
+                            '#f0f0f0',
+                          padding:
+                            '8px 12px',
+                          borderRadius:
+                            999
+                        }}
+                      >
+                        {job.urgency
+                          ?.toUpperCase() ||
+                          '—'}
+                      </div>
+                    </div>
+
+                    <p>
+                      <b>Cliente:</b>{' '}
+                      {job.client_name ||
+                        '—'}
+                    </p>
+
+                    <p>
+                      {job.description ||
+                        '—'}
+                    </p>
+
+                    <p
+                      style={{
+                        color:
+                          '#666'
+                      }}
+                    >
+                      📍{' '}
+                      {job.address ||
+                        'Indirizzo non disponibile'}
+                    </p>
+
+                    <p
+                      style={{
+                        color:
+                          '#666'
+                      }}
+                    >
+                      📅{' '}
+                      {formatDate(
+                        job.created_at
+                      )}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedJobId(
+                          opened
+                            ? null
+                            : job.id
+                        )
+                      }
+                      style={{
+                        width:
+                          '100%',
+                        marginTop:
+                          12,
+                        background:
+                          opened
+                            ? '#fff'
+                            : '#111',
+                        color:
+                          opened
+                            ? '#111'
+                            : '#fff',
+                        border:
+                          '1px solid #111',
+                        borderRadius:
+                          10,
+                        padding:
+                          '13px 12px',
+                        fontWeight:
+                          900,
+                        cursor:
+                          'pointer'
+                      }}
+                    >
+                      {opened
+                        ? '▲ Chiudi scheda'
+                        : '▼ Apri scheda'}
+                    </button>
+
+                    {opened && (
+                      <div
+                        style={{
+                          display:
+                            'grid',
+                          gap: 15,
+                          marginTop:
+                            18
+                        }}
+                      >
+                        <div
+                          style={
+                            detailBoxStyle
                           }
-                        </p>
-
-                        <p>
-                          <b>
-                            Email:
-                          </b>{' '}
-                          {
-                            pro.email ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Telefono:
-                          </b>{' '}
-                          {
-                            pro.phone ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Partita IVA:
-                          </b>{' '}
-                          {
-                            pro.vat_number ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Codice fiscale:
-                          </b>{' '}
-                          {
-                            pro.tax_code ||
-                            '—'
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Raggio:
-                          </b>{' '}
-                          {
-                            pro.max_distance_km ??
-                            '—'
-                          }{' '}
-                          km
-                        </p>
-
-                        <p>
-                          <b>
-                            Recensioni:
-                          </b>{' '}
-                          {
-                            pro.reviews_count ??
-                            0
-                          }
-                        </p>
-
-                        <p>
-                          <b>
-                            Valutazione:
-                          </b>{' '}
-                          {
-                            pro.rating ??
-                            '—'
-                          }
-                        </p>
-
-                        {
-                          pro.verification_status ===
-                            'da_verificare' && (
-                            <div
-                              style={{
-                                display:
-                                  'grid',
-                                gridTemplateColumns:
-                                  '1fr 1fr',
-                                gap:
-                                  10,
-                                marginTop:
-                                  18
-                              }}
-                            >
-                              <button
-                                type="button"
-                                disabled={
-                                  actionLoading ===
-                                  pro.id
-                                }
-                                onClick={() =>
-                                  changeVerification(
-                                    pro.id,
-                                    'verificato'
-                                  )
-                                }
-                                style={{
-                                  background:
-                                    '#16864b',
-                                  color:
-                                    '#fff',
-                                  border:
-                                    'none',
-                                  borderRadius:
-                                    10,
-                                  padding:
-                                    '13px 10px',
-                                  fontWeight:
-                                    800
-                                }}
-                              >
-                                ✅ Approva
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={
-                                  actionLoading ===
-                                  pro.id
-                                }
-                                onClick={() =>
-                                  changeVerification(
-                                    pro.id,
-                                    'rifiutato'
-                                  )
-                                }
-                                style={{
-                                  background:
-                                    '#b52b27',
-                                  color:
-                                    '#fff',
-                                  border:
-                                    'none',
-                                  borderRadius:
-                                    10,
-                                  padding:
-                                    '13px 10px',
-                                  fontWeight:
-                                    800
-                                }}
-                              >
-                                ❌ Rifiuta
-                              </button>
-                            </div>
-                          )
-                        }
-
-                        {
-                          pro.id ===
-                            user.id
-                            ? (
-                              <div
-                                style={{
-                                  marginTop:
-                                    18,
-                                  fontWeight:
-                                    800
-                                }}
-                              >
-                                🛡 Account amministratore protetto
-                              </div>
-                            )
-                            : (
-                              <button
-                                type="button"
-                                disabled={
-                                  deletingUser ===
-                                  pro.id
-                                }
-                                onClick={() =>
-                                  deleteAccount(
-                                    pro.id,
-                                    pro.business_name ||
-                                      pro.full_name ||
-                                      pro.email ||
-                                      'questo professionista'
-                                  )
-                                }
-                                style={
-                                  deleteButtonStyle
-                                }
-                              >
-                                {
-                                  deletingUser ===
-                                  pro.id
-                                    ? 'Eliminazione...'
-                                    : '🗑 Elimina professionista'
-                                }
-                              </button>
-                            )
-                        }
-                      </article>
-                    )
-                  )
-              }
-            </div>
-          )
-        }
-
-        {
-          tab ===
-            'lavori' && (
-            <div
-              style={{
-                display:
-                  'grid',
-                gap: 14
-              }}
-            >
-              <h2>
-                Lavori (
-                {
-                  filteredJobs
-                    .length
-                }
-                )
-              </h2>
-
-              {
-                filteredJobs
-                  .map(
-                    job => {
-                      const opened =
-                        selectedJobId ===
-                        job.id;
-
-                      return (
-                        <article
-                          key={
-                            job.id
-                          }
-                          style={{
-                            background:
-                              '#fff',
-                            border:
-                              opened
-                                ? '2px solid #111'
-                                : '1px solid #ddd',
-                            borderRadius:
-                              16,
-                            padding:
-                              20
-                          }}
                         >
-                          <div
+                          <h3
                             style={{
-                              display:
-                                'flex',
-                              justifyContent:
-                                'space-between',
-                              gap:
-                                15,
-                              alignItems:
-                                'flex-start',
-                              flexWrap:
-                                'wrap'
+                              marginTop:
+                                0
                             }}
                           >
-                            <div>
-                              <div
-                                style={{
-                                  fontWeight:
-                                    900,
-                                  marginBottom:
-                                    10
-                                }}
-                              >
-                                {
-                                  jobStatusLabel(
-                                    job.status
-                                  )
-                                }
-                              </div>
+                            👤 Cliente
+                          </h3>
 
-                              <h3
-                                style={{
-                                  margin:
-                                    0
-                                }}
-                              >
-                                {
-                                  job.category_name ||
-                                  'Categoria'
-                                }
-                              </h3>
-                            </div>
+                          <p>
+                            <b>Nome:</b>{' '}
+                            {job.client_name ||
+                              '—'}
+                          </p>
 
-                            <div
+                          <p>
+                            <b>Email:</b>{' '}
+                            {job.client_email ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Telefono:</b>{' '}
+                            {job.client_phone ||
+                              '—'}
+                          </p>
+
+                          <small>
+                            ID cliente:{' '}
+                            {job.client_id}
+                          </small>
+                        </div>
+
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop:
+                                0
+                            }}
+                          >
+                            🛠 Professionista assegnato
+                          </h3>
+
+                          {job.professional_id ? (
+                            <>
+                              <p>
+                                <b>Nome:</b>{' '}
+                                {job.professional_name ||
+                                  '—'}
+                              </p>
+
+                              <p>
+                                <b>Email:</b>{' '}
+                                {job.professional_email ||
+                                  '—'}
+                              </p>
+
+                              <p>
+                                <b>Telefono:</b>{' '}
+                                {job.professional_phone ||
+                                  '—'}
+                              </p>
+
+                              <small>
+                                ID professionista:{' '}
+                                {job.professional_id}
+                              </small>
+                            </>
+                          ) : (
+                            <p
                               style={{
-                                fontWeight:
-                                  900,
-                                background:
-                                  '#f0f0f0',
-                                padding:
-                                  '8px 12px',
-                                borderRadius:
-                                  999
+                                marginBottom:
+                                  0,
+                                color:
+                                  '#666'
                               }}
                             >
-                              {
-                                job.urgency
-                                  ?.toUpperCase() ||
-                                '—'
-                              }
-                            </div>
+                              Nessun professionista ha ancora accettato questo intervento.
+                            </p>
+                          )}
+                        </div>
+
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop:
+                                0
+                            }}
+                          >
+                            📋 Dettagli intervento
+                          </h3>
+
+                          <p>
+                            <b>Stato:</b>{' '}
+                            {jobStatusLabel(
+                              job.status
+                            )}
+                          </p>
+
+                          <p>
+                            <b>Categoria:</b>{' '}
+                            {job.category_name ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Urgenza:</b>{' '}
+                            {job.urgency
+                              ?.toUpperCase() ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Descrizione:</b>
+                          </p>
+
+                          <div
+                            style={{
+                              whiteSpace:
+                                'pre-wrap',
+                              lineHeight:
+                                1.5
+                            }}
+                          >
+                            {job.description ||
+                              '—'}
                           </div>
 
                           <p>
-                            <b>
-                              Cliente:
-                            </b>{' '}
-                            {
-                              job.client_name ||
-                              '—'
-                            }
+                            <b>Indirizzo:</b>{' '}
+                            {job.address ||
+                              '—'}
                           </p>
 
                           <p>
-                            {
-                              job.description ||
-                              '—'
-                            }
+                            <b>Creato:</b>{' '}
+                            {formatDate(
+                              job.created_at
+                            )}
                           </p>
 
-                          <p
-                            style={{
-                              color:
-                                '#666'
-                            }}
-                          >
-                            📍{' '}
-                            {
-                              job.address ||
-                              'Indirizzo non disponibile'
-                            }
-                          </p>
-
-                          <p
-                            style={{
-                              color:
-                                '#666'
-                            }}
-                          >
-                            📅{' '}
-                            {
-                              formatDate(
-                                job.created_at
-                              )
-                            }
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedJobId(
-                                opened
-                                  ? null
-                                  : job.id
-                              )
-                            }
-                            style={{
-                              width:
-                                '100%',
-                              marginTop:
-                                12,
-                              background:
-                                opened
-                                  ? '#fff'
-                                  : '#111',
-                              color:
-                                opened
-                                  ? '#111'
-                                  : '#fff',
-                              border:
-                                '1px solid #111',
-                              borderRadius:
-                                10,
-                              padding:
-                                '13px 12px',
-                              fontWeight:
-                                900,
-                              cursor:
-                                'pointer'
-                            }}
-                          >
-                            {
-                              opened
-                                ? '▲ Chiudi scheda'
-                                : '▼ Apri scheda'
-                            }
-                          </button>
-
-                          {
-                            opened && (
-                              <div
-                                style={{
-                                  display:
-                                    'grid',
-                                  gap:
-                                    15,
-                                  marginTop:
-                                    18
-                                }}
-                              >
-                                <div
-                                  style={
-                                    detailBoxStyle
-                                  }
-                                >
-                                  <h3
-                                    style={{
-                                      marginTop:
-                                        0
-                                    }}
-                                  >
-                                    👤 Cliente
-                                  </h3>
-
-                                  <p>
-                                    <b>
-                                      Nome:
-                                    </b>{' '}
-                                    {
-                                      job.client_name ||
-                                      '—'
-                                    }
-                                  </p>
-
-                                  <p>
-                                    <b>
-                                      Email:
-                                    </b>{' '}
-                                    {
-                                      job.client_email ||
-                                      '—'
-                                    }
-                                  </p>
-
-                                  <p>
-                                    <b>
-                                      Telefono:
-                                    </b>{' '}
-                                    {
-                                      job.client_phone ||
-                                      '—'
-                                    }
-                                  </p>
-
-                                  <small>
-                                    ID cliente:{' '}
-                                    {
-                                      job.client_id
-                                    }
-                                  </small>
-                                </div>
-
-                                <div
-                                  style={
-                                    detailBoxStyle
-                                  }
-                                >
-                                  <h3
-                                    style={{
-                                      marginTop:
-                                        0
-                                    }}
-                                  >
-                                    🛠 Professionista assegnato
-                                  </h3>
-
-                                  {
-                                    job.professional_id
-                                      ? (
-                                        <>
-                                          <p>
-                                            <b>
-                                              Nome:
-                                            </b>{' '}
-                                            {
-                                              job.professional_name ||
-                                              '—'
-                                            }
-                                          </p>
-
-                                          <p>
-                                            <b>
-                                              Email:
-                                            </b>{' '}
-                                            {
-                                              job.professional_email ||
-                                              '—'
-                                            }
-                                          </p>
-
-                                          <p>
-                                            <b>
-                                              Telefono:
-                                            </b>{' '}
-                                            {
-                                              job.professional_phone ||
-                                              '—'
-                                            }
-                                          </p>
-
-                                          <small>
-                                            ID professionista:{' '}
-                                            {
-                                              job.professional_id
-                                            }
-                                          </small>
-                                        </>
-                                      )
-                                      : (
-                                        <p
-                                          style={{
-                                            marginBottom:
-                                              0,
-                                            color:
-                                              '#666'
-                                          }}
-                                        >
-                                          Nessun professionista ha ancora accettato questo intervento.
-                                        </p>
-                                      )
-                                  }
-                                </div>
-
-                                <div
-                                  style={
-                                    detailBoxStyle
-                                  }
-                                >
-                                  <h3
-                                    style={{
-                                      marginTop:
-                                        0
-                                    }}
-                                  >
-                                    📋 Dettagli intervento
-                                  </h3>
-
-                                  <p>
-                                    <b>
-                                      Stato:
-                                    </b>{' '}
-                                    {
-                                      jobStatusLabel(
-                                        job.status
-                                      )
-                                    }
-                                  </p>
-
-                                  <p>
-                                    <b>
-                                      Categoria:
-                                    </b>{' '}
-                                    {
-                                      job.category_name ||
-                                      '—'
-                                    }
-                                  </p>
-
-                                  <p>
-                                    <b>
-                                      Urgenza:
-                                    </b>{' '}
-                                    {
-                                      job.urgency
-                                        ?.toUpperCase() ||
-                                      '—'
-                                    }
-                                  </p>
-
-                                  <p>
-                                    <b>
-                                      Descrizione:
-                                    </b>
-                                  </p>
-
-                                  <div
-                                    style={{
-                                      whiteSpace:
-                                        'pre-wrap',
-                                      lineHeight:
-                                        1.5
-                                    }}
-                                  >
-                                    {
-                                      job.description ||
-                                      '—'
-                                    }
-                                  </div>
-
-                                  <p>
-                                    <b>
-                                      Indirizzo:
-                                    </b>{' '}
-                                    {
-                                      job.address ||
-                                      '—'
-                                    }
-                                  </p>
-
-                                  <p>
-                                    <b>
-                                      Creato:
-                                    </b>{' '}
-                                    {
-                                      formatDate(
-                                        job.created_at
-                                      )
-                                    }
-                                  </p>
-
-                                  <small>
-                                    ID lavoro:{' '}
-                                    {
-                                      job.id
-                                    }
-                                  </small>
-                                </div>
-                              </div>
-                            )
-                          }
-                        </article>
-                      );
-                    }
-                  )
+                          <small>
+                            ID lavoro:{' '}
+                            {job.id}
+                          </small>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
               }
-            </div>
-          )
-        }
+            )}
+          </div>
+        )}
       </section>
     </main>
   );
