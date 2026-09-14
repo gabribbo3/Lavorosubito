@@ -52,6 +52,27 @@ function slugify(
     );
 }
 
+
+function reportGoogleAdsLeadConversion() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const googleWindow = window as typeof window & {
+    gtag?: (...args: any[]) => void;
+  };
+
+  if (typeof googleWindow.gtag !== 'function') {
+    return;
+  }
+
+  googleWindow.gtag('event', 'conversion', {
+    send_to: 'AW-18451155996/NaTnCIGM2vcCEJymdE5',
+    value: 1.0,
+    currency: 'EUR'
+  });
+}
+
 function availabilityLabel(
   value: string
 ) {
@@ -1798,6 +1819,13 @@ export default function Home() {
           .data
           .id
       );
+
+    /*
+     * Google Ads:
+     * registra una conversione solo dopo che
+     * la richiesta è stata creata correttamente.
+     */
+    reportGoogleAdsLeadConversion();
 
     await uploadPhoto(
       jobId
