@@ -39,6 +39,19 @@ type AdminUser = {
   created_at: string;
 };
 
+type AdminClientJob = {
+  id: string;
+  category_name: string | null;
+  urgency: string | null;
+  description: string | null;
+  address: string | null;
+  status: string | null;
+  created_at: string;
+  professional_id: string | null;
+  professional_name: string | null;
+  professional_phone: string | null;
+};
+
 type AdminProfessional = {
   id: string;
   email: string | null;
@@ -269,6 +282,33 @@ export default function AdminPage() {
 
   const [jobs, setJobs] =
     useState<AdminJob[]>([]);
+
+  const [
+    selectedUserId,
+    setSelectedUserId
+  ] =
+    useState<string | null>(
+      null
+    );
+
+  const [
+    clientJobs,
+    setClientJobs
+  ] =
+    useState<
+      Record<
+        string,
+        AdminClientJob[]
+      >
+    >({});
+
+  const [
+    loadingClientJobs,
+    setLoadingClientJobs
+  ] =
+    useState<string | null>(
+      null
+    );
 
   const [
     selectedProfessionalId,
@@ -525,6 +565,67 @@ export default function AdminPage() {
     }
   }
 
+  async function openUserDetails(
+    userId: string
+  ) {
+    if (
+      selectedUserId === userId
+    ) {
+      setSelectedUserId(null);
+      return;
+    }
+
+    setSelectedUserId(
+      userId
+    );
+
+    setLoadingClientJobs(
+      userId
+    );
+
+    setMessage('');
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        'admin_client_jobs',
+        {
+          p_client_id:
+            userId
+        }
+      );
+
+    if (error) {
+      setMessage(
+        `Errore caricamento storico cliente: ${error.message}`
+      );
+
+      setLoadingClientJobs(
+        null
+      );
+
+      return;
+    }
+
+    setClientJobs(
+      current => ({
+        ...current,
+
+        [userId]:
+          (
+            data ??
+            []
+          ) as AdminClientJob[]
+      })
+    );
+
+    setLoadingClientJobs(
+      null
+    );
+  }
+
   async function changeVerification(
     professionalId: string,
     status:
@@ -736,6 +837,24 @@ export default function AdminPage() {
       );
 
       setSearch('');
+
+      if (
+        selectedUserId ===
+        userId
+      ) {
+        setSelectedUserId(
+          null
+        );
+      }
+
+      if (
+        selectedProfessionalId ===
+        userId
+      ) {
+        setSelectedProfessionalId(
+          null
+        );
+      }
 
       await loadAll();
     } catch {
@@ -1455,86 +1574,366 @@ export default function AdminPage() {
             </h2>
 
             {filteredUsers.map(
-              row => (
-                <article
-                  key={row.id}
-                  style={{
-                    background:
-                      '#fff',
-                    border:
-                      '1px solid #ddd',
-                    borderRadius: 16,
-                    padding: 20
-                  }}
-                >
-                  <h3
+              row => {
+                const opened =
+                  selectedUserId ===
+                  row.id;
+
+                const history =
+                  clientJobs[
+                    row.id
+                  ] ?? [];
+
+                return (
+                  <article
+                    key={row.id}
                     style={{
-                      marginTop: 0
+                      background:
+                        '#fff',
+
+                      border:
+                        opened
+                          ? '2px solid #111'
+                          : '1px solid #ddd',
+
+                      borderRadius:
+                        16,
+
+                      padding:
+                        20
                     }}
                   >
-                    {row.full_name ||
-                      'Utente'}
-                  </h3>
-
-                  <p>
-                    <b>Email:</b>{' '}
-                    {row.email || '—'}
-                  </p>
-
-                  <p>
-                    <b>Ruolo:</b>{' '}
-                    {row.role || '—'}
-                  </p>
-
-                  <p>
-                    <b>Telefono:</b>{' '}
-                    {row.phone || '—'}
-                  </p>
-
-                  <p>
-                    <b>Registrato:</b>{' '}
-                    {formatDate(
-                      row.created_at
-                    )}
-                  </p>
-
-                  {row.is_admin ? (
-                    <div
+                    <h3
                       style={{
-                        marginTop: 15,
-                        fontWeight: 800
+                        marginTop:
+                          0
                       }}
                     >
-                      🛡 Amministratore protetto
-                    </div>
-                  ) : (
+                      {row.full_name ||
+                        'Utente'}
+                    </h3>
+
+                    <p>
+                      <b>Email:</b>{' '}
+                      {row.email ||
+                        '—'}
+                    </p>
+
+                    <p>
+                      <b>Ruolo:</b>{' '}
+                      {row.role ||
+                        '—'}
+                    </p>
+
+                    <p>
+                      <b>Telefono:</b>{' '}
+                      {row.phone ||
+                        '—'}
+                    </p>
+
+                    <p>
+                      <b>Registrato:</b>{' '}
+                      {formatDate(
+                        row.created_at
+                      )}
+                    </p>
+
                     <button
                       type="button"
-                      disabled={
-                        deletingUser ===
-                        row.id
-                      }
                       onClick={() =>
-                        deleteAccount(
-                          row.id,
-                          row.full_name ||
-                            row.email ||
-                            'questo utente',
-                          row.is_admin
+                        void openUserDetails(
+                          row.id
                         )
                       }
-                      style={
-                        deleteButtonStyle
-                      }
+                      style={{
+                        width:
+                          '100%',
+                        marginTop:
+                          12,
+                        background:
+                          opened
+                            ? '#fff'
+                            : '#111',
+                        color:
+                          opened
+                            ? '#111'
+                            : '#fff',
+                        border:
+                          '1px solid #111',
+                        borderRadius:
+                          10,
+                        padding:
+                          '13px 12px',
+                        fontWeight:
+                          900,
+                        cursor:
+                          'pointer'
+                      }}
                     >
-                      {deletingUser ===
-                      row.id
-                        ? 'Eliminazione...'
-                        : '🗑 Elimina account'}
+                      {opened
+                        ? '▲ Chiudi scheda'
+                        : '▼ Apri scheda'}
                     </button>
-                  )}
-                </article>
-              )
+
+                    {opened && (
+                      <div
+                        style={{
+                          display:
+                            'grid',
+                          gap:
+                            15,
+                          marginTop:
+                            18
+                        }}
+                      >
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop:
+                                0
+                            }}
+                          >
+                            👤 Dati cliente
+                          </h3>
+
+                          <p>
+                            <b>Nome:</b>{' '}
+                            {row.full_name ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Email:</b>{' '}
+                            {row.email ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Telefono:</b>{' '}
+                            {row.phone ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Ruolo:</b>{' '}
+                            {row.role ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>Registrato:</b>{' '}
+                            {formatDate(
+                              row.created_at
+                            )}
+                          </p>
+
+                          <small>
+                            ID utente:{' '}
+                            {row.id}
+                          </small>
+                        </div>
+
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop:
+                                0
+                            }}
+                          >
+                            📋 Storico richieste
+                          </h3>
+
+                          {loadingClientJobs ===
+                          row.id ? (
+                            <p>
+                              Caricamento storico...
+                            </p>
+                          ) : history.length ===
+                            0 ? (
+                            <p
+                              style={{
+                                color:
+                                  '#666'
+                              }}
+                            >
+                              Nessuna richiesta trovata.
+                            </p>
+                          ) : (
+                            <div
+                              style={{
+                                display:
+                                  'grid',
+                                gap:
+                                  12
+                              }}
+                            >
+                              {history.map(
+                                job => (
+                                  <div
+                                    key={
+                                      job.id
+                                    }
+                                    style={{
+                                      border:
+                                        '1px solid #ddd',
+                                      borderRadius:
+                                        12,
+                                      padding:
+                                        14,
+                                      background:
+                                        '#fff'
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontWeight:
+                                          900,
+                                        marginBottom:
+                                          8
+                                      }}
+                                    >
+                                      {jobStatusLabel(
+                                        job.status
+                                      )}
+                                    </div>
+
+                                    <p>
+                                      <b>Categoria:</b>{' '}
+                                      {job.category_name ||
+                                        '—'}
+                                    </p>
+
+                                    <p>
+                                      <b>Urgenza:</b>{' '}
+                                      {job.urgency
+                                        ?.toUpperCase() ||
+                                        '—'}
+                                    </p>
+
+                                    <p>
+                                      <b>Descrizione:</b>{' '}
+                                      {job.description ||
+                                        '—'}
+                                    </p>
+
+                                    <p>
+                                      <b>Indirizzo:</b>{' '}
+                                      {job.address ||
+                                        '—'}
+                                    </p>
+
+                                    <p>
+                                      <b>Data:</b>{' '}
+                                      {formatDate(
+                                        job.created_at
+                                      )}
+                                    </p>
+
+                                    {job.professional_id ? (
+                                      <div
+                                        style={{
+                                          marginTop:
+                                            12,
+                                          padding:
+                                            12,
+                                          background:
+                                            '#f5f5f5',
+                                          borderRadius:
+                                            10
+                                        }}
+                                      >
+                                        <b>
+                                          🛠 Professionista assegnato
+                                        </b>
+
+                                        <p>
+                                          {job.professional_name ||
+                                            '—'}
+                                        </p>
+
+                                        <p
+                                          style={{
+                                            marginBottom:
+                                              0
+                                          }}
+                                        >
+                                          ☎️{' '}
+                                          {job.professional_phone ||
+                                            '—'}
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <p
+                                        style={{
+                                          color:
+                                            '#777'
+                                        }}
+                                      >
+                                        Nessun professionista assegnato.
+                                      </p>
+                                    )}
+
+                                    <small>
+                                      ID lavoro:{' '}
+                                      {job.id}
+                                    </small>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {row.is_admin ? (
+                          <div
+                            style={{
+                              fontWeight:
+                                800
+                            }}
+                          >
+                            🛡 Amministratore protetto
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={
+                              deletingUser ===
+                              row.id
+                            }
+                            onClick={() =>
+                              deleteAccount(
+                                row.id,
+
+                                row.full_name ||
+                                  row.email ||
+                                  'questo utente',
+
+                                row.is_admin
+                              )
+                            }
+                            style={
+                              deleteButtonStyle
+                            }
+                          >
+                            {deletingUser ===
+                            row.id
+                              ? 'Eliminazione...'
+                              : '🗑 Elimina account'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              }
             )}
           </div>
         )}
