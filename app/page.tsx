@@ -67,7 +67,7 @@ function reportGoogleAdsLeadConversion() {
   }
 
   googleWindow.gtag('event', 'conversion', {
-    send_to: 'AW-18451155996/NaTnCIGM2vcCEJymdE5',
+    send_to: 'AW-18451155996/NeTbCIGN2vccEJyYmd5E',
     value: 1.0,
     currency: 'EUR'
   });
