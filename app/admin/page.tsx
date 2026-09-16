@@ -113,6 +113,17 @@ type AdminJobMessage = {
   created_at: string;
 };
 
+type AdminJobReview = {
+  review_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  client_id: string;
+  client_name: string | null;
+  professional_id: string;
+  professional_name: string | null;
+};
+
 const emptyStats: DashboardStats = {
   total_users: 0,
   total_clients: 0,
@@ -146,7 +157,6 @@ function availabilityLabel(status?: string | null) {
   if (status === '1-2h') return '🟡 Entro 1–2 ore';
   if (status === 'oggi') return '🟠 Disponibile oggi';
   if (status === 'offline') return '⚫ Offline';
-
   return status || '—';
 }
 
@@ -157,12 +167,13 @@ function jobStatusLabel(status?: string | null) {
   if (status === 'in_corso') return '🔵 In corso';
   if (status === 'completata') return '✅ Completata';
   if (status === 'annullata') return '⚫ Annullata';
-
   return status || '—';
 }
 
 function senderRoleLabel(role?: string | null) {
-  if (role === 'client' || role === 'cliente') return '👤 Cliente';
+  if (role === 'client' || role === 'cliente') {
+    return '👤 Cliente';
+  }
 
   if (
     role === 'professional' ||
@@ -215,10 +226,12 @@ function StatCard({
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
+
   const [isAdmin, setIsAdmin] =
     useState<boolean | null>(null);
 
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] =
+    useState<Tab>('dashboard');
 
   const [stats, setStats] =
     useState<DashboardStats>(emptyStats);
@@ -247,9 +260,7 @@ export default function AdminPage() {
   ] = useState<string | null>(null);
 
   const [professionalJobs, setProfessionalJobs] =
-    useState<
-      Record<string, AdminProfessionalJob[]>
-    >({});
+    useState<Record<string, AdminProfessionalJob[]>>({});
 
   const [
     loadingProfessionalJobs,
@@ -262,11 +273,20 @@ export default function AdminPage() {
   const [jobMessages, setJobMessages] =
     useState<Record<string, AdminJobMessage[]>>({});
 
+  const [jobReviews, setJobReviews] =
+    useState<Record<string, AdminJobReview | null>>({});
+
   const [loadingJobMessages, setLoadingJobMessages] =
     useState<string | null>(null);
 
+  const [loadingJobReview, setLoadingJobReview] =
+    useState<string | null>(null);
+
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [refreshing, setRefreshing] =
     useState(false);
 
@@ -276,7 +296,8 @@ export default function AdminPage() {
   const [deletingUser, setDeletingUser] =
     useState<string | null>(null);
 
-  const [message, setMessage] = useState('');
+  const [message, setMessage] =
+    useState('');
 
   const [lastUpdate, setLastUpdate] =
     useState<Date | null>(null);
@@ -488,32 +509,70 @@ export default function AdminPage() {
     }
 
     setSelectedJobId(jobId);
+
     setLoadingJobMessages(jobId);
+    setLoadingJobReview(jobId);
+
     setMessage('');
 
-    const { data, error } = await supabase.rpc(
-      'admin_job_messages',
-      {
-        p_job_id: jobId
-      }
-    );
+    const [
+      messagesResult,
+      reviewResult
+    ] = await Promise.all([
+      supabase.rpc(
+        'admin_job_messages',
+        {
+          p_job_id: jobId
+        }
+      ),
 
-    if (error) {
-      setMessage(
-        `Errore caricamento conversazione: ${error.message}`
+      supabase.rpc(
+        'admin_job_review',
+        {
+          p_job_id: jobId
+        }
+      )
+    ]);
+
+    const errors: string[] = [];
+
+    if (messagesResult.error) {
+      errors.push(
+        `Errore caricamento conversazione: ${messagesResult.error.message}`
       );
+    } else {
+      setJobMessages(current => ({
+        ...current,
 
-      setLoadingJobMessages(null);
-      return;
+        [jobId]:
+          (messagesResult.data ??
+            []) as AdminJobMessage[]
+      }));
     }
 
-    setJobMessages(current => ({
-      ...current,
-      [jobId]:
-        (data ?? []) as AdminJobMessage[]
-    }));
+    if (reviewResult.error) {
+      errors.push(
+        `Errore caricamento recensione: ${reviewResult.error.message}`
+      );
+    } else {
+      const rows =
+        (reviewResult.data ??
+          []) as AdminJobReview[];
+
+      setJobReviews(current => ({
+        ...current,
+        [jobId]: rows[0] ?? null
+      }));
+    }
+
+    if (errors.length > 0) {
+      setMessage(
+        errors.join(' • ')
+      );
+    }
 
     setLoadingJobMessages(null);
+    setLoadingJobReview(null);
   }
 
   async function changeVerification(
@@ -584,15 +643,17 @@ export default function AdminPage() {
       return;
     }
 
-    const firstConfirmation = window.confirm(
-      `Vuoi davvero eliminare l'account di ${label}?\n\nQuesta operazione è definitiva.`
-    );
+    const firstConfirmation =
+      window.confirm(
+        `Vuoi davvero eliminare l'account di ${label}?\n\nQuesta operazione è definitiva.`
+      );
 
     if (!firstConfirmation) return;
 
-    const secondConfirmation = window.confirm(
-      `ATTENZIONE\n\nConfermi definitivamente l'eliminazione di ${label}?\n\nL'account e i dati collegati verranno rimossi.`
-    );
+    const secondConfirmation =
+      window.confirm(
+        `ATTENZIONE\n\nConfermi definitivamente l'eliminazione di ${label}?\n\nL'account e i dati collegati verranno rimossi.`
+      );
 
     if (!secondConfirmation) return;
 
@@ -645,7 +706,8 @@ export default function AdminPage() {
       } = {};
 
       try {
-        result = await response.json();
+        result =
+          await response.json();
       } catch {
         result = {};
       }
@@ -695,7 +757,6 @@ export default function AdminPage() {
 
   async function logout() {
     await supabase.auth.signOut();
-
     window.location.href = '/';
   }
 
@@ -928,6 +989,7 @@ export default function AdminPage() {
   ) => ({
     width: '100%',
     marginTop: 12,
+
     background: opened
       ? '#fff'
       : '#111',
@@ -1069,8 +1131,7 @@ export default function AdminPage() {
               fontSize: 13
             }}
           >
-            🔄 Aggiornamento automatico ogni
-            30 secondi
+            🔄 Aggiornamento automatico ogni 30 secondi
 
             {lastUpdate && (
               <>
@@ -1488,41 +1549,31 @@ export default function AdminPage() {
                                   </div>
 
                                   <p>
-                                    <b>
-                                      Categoria:
-                                    </b>{' '}
+                                    <b>Categoria:</b>{' '}
                                     {job.category_name ||
                                       '—'}
                                   </p>
 
                                   <p>
-                                    <b>
-                                      Urgenza:
-                                    </b>{' '}
+                                    <b>Urgenza:</b>{' '}
                                     {job.urgency?.toUpperCase() ||
                                       '—'}
                                   </p>
 
                                   <p>
-                                    <b>
-                                      Descrizione:
-                                    </b>{' '}
+                                    <b>Descrizione:</b>{' '}
                                     {job.description ||
                                       '—'}
                                   </p>
 
                                   <p>
-                                    <b>
-                                      Indirizzo:
-                                    </b>{' '}
+                                    <b>Indirizzo:</b>{' '}
                                     {job.address ||
                                       '—'}
                                   </p>
 
                                   <p>
-                                    <b>
-                                      Data:
-                                    </b>{' '}
+                                    <b>Data:</b>{' '}
                                     {formatDate(
                                       job.created_at
                                     )}
@@ -1539,8 +1590,7 @@ export default function AdminPage() {
                                       }}
                                     >
                                       <b>
-                                        🛠 Professionista
-                                        assegnato
+                                        🛠 Professionista assegnato
                                       </b>
 
                                       <p>
@@ -1565,9 +1615,7 @@ export default function AdminPage() {
                                           '#777'
                                       }}
                                     >
-                                      Nessun
-                                      professionista
-                                      assegnato.
+                                      Nessun professionista assegnato.
                                     </p>
                                   )}
 
@@ -1588,8 +1636,7 @@ export default function AdminPage() {
                             fontWeight: 800
                           }}
                         >
-                          🛡 Amministratore
-                          protetto
+                          🛡 Amministratore protetto
                         </div>
                       ) : (
                         <button
@@ -1765,8 +1812,7 @@ export default function AdminPage() {
                               marginTop: 0
                             }}
                           >
-                            👤 Dati
-                            professionista
+                            👤 Dati professionista
                           </h3>
 
                           <p>
@@ -1776,9 +1822,7 @@ export default function AdminPage() {
                           </p>
 
                           <p>
-                            <b>
-                              Attività:
-                            </b>{' '}
+                            <b>Attività:</b>{' '}
                             {pro.business_name ||
                               '—'}
                           </p>
@@ -1790,33 +1834,25 @@ export default function AdminPage() {
                           </p>
 
                           <p>
-                            <b>
-                              Telefono:
-                            </b>{' '}
+                            <b>Telefono:</b>{' '}
                             {pro.phone ||
                               '—'}
                           </p>
 
                           <p>
-                            <b>
-                              Partita IVA:
-                            </b>{' '}
+                            <b>Partita IVA:</b>{' '}
                             {pro.vat_number ||
                               '—'}
                           </p>
 
                           <p>
-                            <b>
-                              Codice fiscale:
-                            </b>{' '}
+                            <b>Codice fiscale:</b>{' '}
                             {pro.tax_code ||
                               '—'}
                           </p>
 
                           <p>
-                            <b>
-                              Registrato:
-                            </b>{' '}
+                            <b>Registrato:</b>{' '}
                             {formatDate(
                               pro.created_at
                             )}
@@ -1838,22 +1874,17 @@ export default function AdminPage() {
                               marginTop: 0
                             }}
                           >
-                            📝 Profilo
-                            professionale
+                            📝 Profilo professionale
                           </h3>
 
                           <p>
-                            <b>
-                              Categorie:
-                            </b>{' '}
+                            <b>Categorie:</b>{' '}
                             {pro.categories ||
                               '—'}
                           </p>
 
                           <p>
-                            <b>
-                              Descrizione:
-                            </b>
+                            <b>Descrizione:</b>
                           </p>
 
                           <div
@@ -1868,26 +1899,20 @@ export default function AdminPage() {
                           </div>
 
                           <p>
-                            <b>
-                              Raggio operativo:
-                            </b>{' '}
+                            <b>Raggio operativo:</b>{' '}
                             {pro.max_distance_km ??
                               '—'}{' '}
                             km
                           </p>
 
                           <p>
-                            <b>
-                              Latitudine:
-                            </b>{' '}
+                            <b>Latitudine:</b>{' '}
                             {pro.latitude ??
                               '—'}
                           </p>
 
                           <p>
-                            <b>
-                              Longitudine:
-                            </b>{' '}
+                            <b>Longitudine:</b>{' '}
                             {pro.longitude ??
                               '—'}
                           </p>
@@ -1914,20 +1939,14 @@ export default function AdminPage() {
                           </p>
 
                           <p>
-                            <b>
-                              Ultimo
-                              aggiornamento:
-                            </b>{' '}
+                            <b>Ultimo aggiornamento:</b>{' '}
                             {formatDate(
                               pro.availability_updated_at
                             )}
                           </p>
 
                           <p>
-                            <b>
-                              Tempo medio
-                              risposta:
-                            </b>{' '}
+                            <b>Tempo medio risposta:</b>{' '}
                             {pro.response_time_minutes !=
                             null
                               ? `${pro.response_time_minutes} min`
@@ -1949,27 +1968,19 @@ export default function AdminPage() {
                           </h3>
 
                           <p>
-                            <b>
-                              Valutazione:
-                            </b>{' '}
+                            <b>Valutazione:</b>{' '}
                             {pro.rating ??
                               '—'}
                           </p>
 
                           <p>
-                            <b>
-                              Numero
-                              recensioni:
-                            </b>{' '}
+                            <b>Numero recensioni:</b>{' '}
                             {pro.reviews_count ??
                               0}
                           </p>
 
                           <p>
-                            <b>
-                              Indice
-                              affidabilità:
-                            </b>{' '}
+                            <b>Indice affidabilità:</b>{' '}
                             {pro.reliability_score ??
                               '—'}
                           </p>
@@ -1985,16 +1996,13 @@ export default function AdminPage() {
                               marginTop: 0
                             }}
                           >
-                            📋 Storico
-                            interventi
+                            📋 Storico interventi
                           </h3>
 
                           {loadingProfessionalJobs ===
                           pro.id ? (
                             <p>
-                              Caricamento
-                              storico
-                              interventi...
+                              Caricamento storico interventi...
                             </p>
                           ) : history.length ===
                             0 ? (
@@ -2004,9 +2012,7 @@ export default function AdminPage() {
                                   '#666'
                               }}
                             >
-                              Nessun intervento
-                              accettato
-                              trovato.
+                              Nessun intervento accettato trovato.
                             </p>
                           ) : (
                             <div
@@ -2043,43 +2049,32 @@ export default function AdminPage() {
                                     </div>
 
                                     <p>
-                                      <b>
-                                        Categoria:
-                                      </b>{' '}
+                                      <b>Categoria:</b>{' '}
                                       {job.category_name ||
                                         '—'}
                                     </p>
 
                                     <p>
-                                      <b>
-                                        Urgenza:
-                                      </b>{' '}
+                                      <b>Urgenza:</b>{' '}
                                       {job.urgency?.toUpperCase() ||
                                         '—'}
                                     </p>
 
                                     <p>
-                                      <b>
-                                        Data
-                                        richiesta:
-                                      </b>{' '}
+                                      <b>Data richiesta:</b>{' '}
                                       {formatDate(
                                         job.job_created_at
                                       )}
                                     </p>
 
                                     <p>
-                                      <b>
-                                        Descrizione:
-                                      </b>{' '}
+                                      <b>Descrizione:</b>{' '}
                                       {job.description ||
                                         '—'}
                                     </p>
 
                                     <p>
-                                      <b>
-                                        Indirizzo:
-                                      </b>{' '}
+                                      <b>Indirizzo:</b>{' '}
                                       {job.address ||
                                         '—'}
                                     </p>
@@ -2098,17 +2093,13 @@ export default function AdminPage() {
                                       </b>
 
                                       <p>
-                                        <b>
-                                          Nome:
-                                        </b>{' '}
+                                        <b>Nome:</b>{' '}
                                         {job.client_name ||
                                           '—'}
                                       </p>
 
                                       <p>
-                                        <b>
-                                          Email:
-                                        </b>{' '}
+                                        <b>Email:</b>{' '}
                                         {job.client_email ||
                                           '—'}
                                       </p>
@@ -2118,9 +2109,7 @@ export default function AdminPage() {
                                           marginBottom: 0
                                         }}
                                       >
-                                        <b>
-                                          Telefono:
-                                        </b>{' '}
+                                        <b>Telefono:</b>{' '}
                                         {job.client_phone ||
                                           '—'}
                                       </p>
@@ -2149,9 +2138,7 @@ export default function AdminPage() {
                                         </div>
 
                                         <p>
-                                          <b>
-                                            Voto:
-                                          </b>{' '}
+                                          <b>Voto:</b>{' '}
                                           {
                                             job.review_rating
                                           }
@@ -2159,9 +2146,7 @@ export default function AdminPage() {
                                         </p>
 
                                         <p>
-                                          <b>
-                                            Commento:
-                                          </b>{' '}
+                                          <b>Commento:</b>{' '}
                                           {job.review_comment ||
                                             'Nessun commento'}
                                         </p>
@@ -2173,9 +2158,7 @@ export default function AdminPage() {
                                               '#666'
                                           }}
                                         >
-                                          <b>
-                                            Data:
-                                          </b>{' '}
+                                          <b>Data:</b>{' '}
                                           {formatDate(
                                             job.review_created_at
                                           )}
@@ -2189,11 +2172,7 @@ export default function AdminPage() {
                                           marginTop: 12
                                         }}
                                       >
-                                        ⭐ Nessuna
-                                        recensione
-                                        ricevuta per
-                                        questo
-                                        intervento.
+                                        ⭐ Nessuna recensione ricevuta per questo intervento.
                                       </p>
                                     )}
 
@@ -2230,18 +2209,14 @@ export default function AdminPage() {
                           </h3>
 
                           <p>
-                            <b>
-                              Stato verifica:
-                            </b>{' '}
+                            <b>Stato verifica:</b>{' '}
                             {verificationLabel(
                               pro.verification_status
                             )}
                           </p>
 
                           <p>
-                            <b>
-                              Flag verificato:
-                            </b>{' '}
+                            <b>Flag verificato:</b>{' '}
                             {pro.verified
                               ? 'Sì'
                               : 'No'}
@@ -2325,9 +2300,7 @@ export default function AdminPage() {
                               fontWeight: 800
                             }}
                           >
-                            🛡 Account
-                            amministratore
-                            protetto
+                            🛡 Account amministratore protetto
                           </div>
                         ) : (
                           <button
@@ -2382,14 +2355,19 @@ export default function AdminPage() {
               const conversation =
                 jobMessages[job.id] ?? [];
 
+              const review =
+                jobReviews[job.id] ?? null;
+
               return (
                 <article
                   key={job.id}
                   style={{
                     background: '#fff',
+
                     border: opened
                       ? '2px solid #111'
                       : '1px solid #ddd',
+
                     borderRadius: 16,
                     padding: 20
                   }}
@@ -2543,32 +2521,25 @@ export default function AdminPage() {
                             marginTop: 0
                           }}
                         >
-                          🛠 Professionista
-                          assegnato
+                          🛠 Professionista assegnato
                         </h3>
 
                         {job.professional_id ? (
                           <>
                             <p>
-                              <b>
-                                Nome:
-                              </b>{' '}
+                              <b>Nome:</b>{' '}
                               {job.professional_name ||
                                 '—'}
                             </p>
 
                             <p>
-                              <b>
-                                Email:
-                              </b>{' '}
+                              <b>Email:</b>{' '}
                               {job.professional_email ||
                                 '—'}
                             </p>
 
                             <p>
-                              <b>
-                                Telefono:
-                              </b>{' '}
+                              <b>Telefono:</b>{' '}
                               {job.professional_phone ||
                                 '—'}
                             </p>
@@ -2588,10 +2559,7 @@ export default function AdminPage() {
                                 '#666'
                             }}
                           >
-                            Nessun
-                            professionista ha
-                            ancora accettato
-                            questo intervento.
+                            Nessun professionista ha ancora accettato questo intervento.
                           </p>
                         )}
                       </div>
@@ -2606,8 +2574,7 @@ export default function AdminPage() {
                             marginTop: 0
                           }}
                         >
-                          📋 Dettagli
-                          intervento
+                          📋 Dettagli intervento
                         </h3>
 
                         <p>
@@ -2618,9 +2585,7 @@ export default function AdminPage() {
                         </p>
 
                         <p>
-                          <b>
-                            Categoria:
-                          </b>{' '}
+                          <b>Categoria:</b>{' '}
                           {job.category_name ||
                             '—'}
                         </p>
@@ -2632,9 +2597,7 @@ export default function AdminPage() {
                         </p>
 
                         <p>
-                          <b>
-                            Descrizione:
-                          </b>
+                          <b>Descrizione:</b>
                         </p>
 
                         <div
@@ -2649,9 +2612,7 @@ export default function AdminPage() {
                         </div>
 
                         <p>
-                          <b>
-                            Indirizzo:
-                          </b>{' '}
+                          <b>Indirizzo:</b>{' '}
                           {job.address ||
                             '—'}
                         </p>
@@ -2678,14 +2639,82 @@ export default function AdminPage() {
                             marginTop: 0
                           }}
                         >
+                          ⭐ Recensione
+                        </h3>
+
+                        {loadingJobReview ===
+                        job.id ? (
+                          <p>
+                            Caricamento recensione...
+                          </p>
+                        ) : review ? (
+                          <div>
+                            <p>
+                              <b>Voto:</b>{' '}
+                              {review.rating}/5
+                            </p>
+
+                            <p>
+                              <b>Commento:</b>{' '}
+                              {review.comment ||
+                                'Nessun commento'}
+                            </p>
+
+                            <p>
+                              <b>Cliente:</b>{' '}
+                              {review.client_name ||
+                                job.client_name ||
+                                '—'}
+                            </p>
+
+                            <p>
+                              <b>Professionista:</b>{' '}
+                              {review.professional_name ||
+                                job.professional_name ||
+                                '—'}
+                            </p>
+
+                            <p
+                              style={{
+                                marginBottom: 0,
+                                color: '#666'
+                              }}
+                            >
+                              <b>Data:</b>{' '}
+                              {formatDate(
+                                review.created_at
+                              )}
+                            </p>
+                          </div>
+                        ) : (
+                          <p
+                            style={{
+                              color: '#666',
+                              marginBottom: 0
+                            }}
+                          >
+                            Nessuna recensione presente per questo intervento.
+                          </p>
+                        )}
+                      </div>
+
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
                           💬 Conversazione
                         </h3>
 
                         {loadingJobMessages ===
                         job.id ? (
                           <p>
-                            Caricamento
-                            conversazione...
+                            Caricamento conversazione...
                           </p>
                         ) : conversation.length ===
                           0 ? (
@@ -2696,9 +2725,7 @@ export default function AdminPage() {
                               marginBottom: 0
                             }}
                           >
-                            Nessun messaggio
-                            presente per questo
-                            intervento.
+                            Nessun messaggio presente per questo intervento.
                           </p>
                         ) : (
                           <div
@@ -2783,7 +2810,9 @@ export default function AdminPage() {
                                         'anywhere'
                                     }}
                                   >
-                                    {chatMessage.message_text}
+                                    {
+                                      chatMessage.message_text
+                                    }
                                   </div>
 
                                   {chatMessage.sender_email && (
