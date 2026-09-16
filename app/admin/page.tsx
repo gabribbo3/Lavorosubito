@@ -19,6 +19,15 @@ type DashboardStats = {
   jobs_today: number;
 };
 
+type SiteVisitStats = {
+  total_page_views: number;
+  unique_visitors: number;
+  page_views_today: number;
+  unique_visitors_today: number;
+  page_views_last_7_days: number;
+  unique_visitors_last_7_days: number;
+};
+
 type AdminUser = {
   id: string;
   email: string | null;
@@ -137,6 +146,15 @@ const emptyStats: DashboardStats = {
   jobs_today: 0
 };
 
+const emptySiteVisitStats: SiteVisitStats = {
+  total_page_views: 0,
+  unique_visitors: 0,
+  page_views_today: 0,
+  unique_visitors_today: 0,
+  page_views_last_7_days: 0,
+  unique_visitors_last_7_days: 0
+};
+
 function formatDate(value?: string | null) {
   if (!value) return '—';
 
@@ -235,6 +253,9 @@ export default function AdminPage() {
 
   const [stats, setStats] =
     useState<DashboardStats>(emptyStats);
+
+  const [siteVisitStats, setSiteVisitStats] =
+    useState<SiteVisitStats>(emptySiteVisitStats);
 
   const [users, setUsers] =
     useState<AdminUser[]>([]);
@@ -364,11 +385,13 @@ export default function AdminPage() {
 
     const [
       statsResponse,
+      analyticsResponse,
       usersResponse,
       professionalsResponse,
       jobsResponse
     ] = await Promise.all([
       supabase.rpc('admin_dashboard_stats'),
+      supabase.rpc('admin_analytics_stats'),
       supabase.rpc('admin_users_list'),
       supabase.rpc('admin_professionals_list'),
       supabase.rpc('admin_jobs_list')
@@ -386,6 +409,38 @@ export default function AdminPage() {
 
       if (row) {
         setStats(row as DashboardStats);
+      }
+    }
+
+    if (analyticsResponse.error) {
+      newMessage =
+        `Errore statistiche visite: ${analyticsResponse.error.message}`;
+    } else {
+      const row = Array.isArray(analyticsResponse.data)
+        ? analyticsResponse.data[0]
+        : analyticsResponse.data;
+
+      if (row) {
+        setSiteVisitStats({
+          total_page_views: Number(
+            row.total_page_views ?? 0
+          ),
+          unique_visitors: Number(
+            row.unique_visitors ?? 0
+          ),
+          page_views_today: Number(
+            row.page_views_today ?? 0
+          ),
+          unique_visitors_today: Number(
+            row.unique_visitors_today ?? 0
+          ),
+          page_views_last_7_days: Number(
+            row.page_views_last_7_days ?? 0
+          ),
+          unique_visitors_last_7_days: Number(
+            row.unique_visitors_last_7_days ?? 0
+          )
+        });
       }
     }
 
@@ -1271,14 +1326,15 @@ export default function AdminPage() {
         )}
 
         {tab === 'dashboard' && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: 15
-            }}
-          >
+          <div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: 15
+              }}
+            >
             <StatCard
               title="Utenti"
               value={stats.total_users}
@@ -1346,6 +1402,73 @@ export default function AdminPage() {
               value={stats.jobs_today}
               icon="📅"
             />
+            </div>
+
+            <div
+              style={{
+                marginTop: 28,
+                marginBottom: 12
+              }}
+            >
+              <h2 style={{ marginBottom: 6 }}>
+                📈 Visite al sito
+              </h2>
+
+              <p
+                style={{
+                  color: '#666',
+                  marginTop: 0
+                }}
+              >
+                I visitatori unici sono stimati tramite
+                un identificatore anonimo salvato nel browser.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns:
+                  'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: 15
+              }}
+            >
+              <StatCard
+                title="Visualizzazioni totali"
+                value={siteVisitStats.total_page_views}
+                icon="👁"
+              />
+
+              <StatCard
+                title="Visitatori unici"
+                value={siteVisitStats.unique_visitors}
+                icon="👥"
+              />
+
+              <StatCard
+                title="Visualizzazioni oggi"
+                value={siteVisitStats.page_views_today}
+                icon="📅"
+              />
+
+              <StatCard
+                title="Visitatori unici oggi"
+                value={siteVisitStats.unique_visitors_today}
+                icon="👤"
+              />
+
+              <StatCard
+                title="Visualizzazioni ultimi 7 giorni"
+                value={siteVisitStats.page_views_last_7_days}
+                icon="📊"
+              />
+
+              <StatCard
+                title="Visitatori unici ultimi 7 giorni"
+                value={siteVisitStats.unique_visitors_last_7_days}
+                icon="👥"
+              />
+            </div>
           </div>
         )}
 
