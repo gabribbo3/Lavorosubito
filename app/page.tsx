@@ -12,7 +12,7 @@ import {
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-const PRIVACY_VERSION = '2026-09-09';
+const PRIVACY_VERSION = '2026-09-16';
 const TERMS_VERSION = '2026-09-09';
 
 const CATEGORIES = [
@@ -182,55 +182,6 @@ function LegalFooter() {
 }
 
 export default function Home() {
-  /*
-   * CONTATORE VISITE LAVOROSUBITO
-   *
-   * - genera un identificatore casuale anonimo
-   * - lo conserva nel browser
-   * - registra una visualizzazione ad ogni nuova
-   *   apertura/montaggio della pagina
-   * - non blocca mai il funzionamento del sito
-   */
-  useEffect(() => {
-    async function recordVisit() {
-      try {
-        const storageKey =
-          'lavorosubito_visitor_id';
-
-        let visitorId =
-          window.localStorage.getItem(
-            storageKey
-          );
-
-        if (!visitorId) {
-          visitorId =
-            window.crypto.randomUUID();
-
-          window.localStorage.setItem(
-            storageKey,
-            visitorId
-          );
-        }
-
-        await supabase.rpc(
-          'record_site_visit',
-          {
-            p_visitor_id: visitorId,
-            p_path:
-              window.location.pathname
-          }
-        );
-      } catch {
-        /*
-         * Il contatore non deve mai
-         * interferire con LavoroSubito.
-         */
-      }
-    }
-
-    void recordVisit();
-  }, []);
-
   const [user, setUser] =
     useState<User | null>(null);
 
