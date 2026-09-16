@@ -103,6 +103,16 @@ type AdminJob = {
   professional_phone: string | null;
 };
 
+type AdminJobMessage = {
+  message_id: string;
+  sender_id: string;
+  sender_name: string | null;
+  sender_email: string | null;
+  sender_role: string | null;
+  message_text: string;
+  created_at: string;
+};
+
 const emptyStats: DashboardStats = {
   total_users: 0,
   total_clients: 0,
@@ -151,6 +161,19 @@ function jobStatusLabel(status?: string | null) {
   return status || '—';
 }
 
+function senderRoleLabel(role?: string | null) {
+  if (role === 'client' || role === 'cliente') return '👤 Cliente';
+
+  if (
+    role === 'professional' ||
+    role === 'professionista'
+  ) {
+    return '🛠 Professionista';
+  }
+
+  return role || 'Utente';
+}
+
 function StatCard({
   title,
   value,
@@ -169,9 +192,13 @@ function StatCard({
         padding: 20
       }}
     >
-      <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
+      <div style={{ fontSize: 28, marginBottom: 8 }}>
+        {icon}
+      </div>
 
-      <div style={{ fontSize: 30, fontWeight: 900 }}>{value}</div>
+      <div style={{ fontSize: 30, fontWeight: 900 }}>
+        {value}
+      </div>
 
       <div
         style={{
@@ -188,15 +215,22 @@ function StatCard({
 
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] =
+    useState<boolean | null>(null);
 
   const [tab, setTab] = useState<Tab>('dashboard');
 
-  const [stats, setStats] = useState<DashboardStats>(emptyStats);
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [stats, setStats] =
+    useState<DashboardStats>(emptyStats);
+
+  const [users, setUsers] =
+    useState<AdminUser[]>([]);
+
   const [professionals, setProfessionals] =
     useState<AdminProfessional[]>([]);
-  const [jobs, setJobs] = useState<AdminJob[]>([]);
+
+  const [jobs, setJobs] =
+    useState<AdminJob[]>([]);
 
   const [selectedUserId, setSelectedUserId] =
     useState<string | null>(null);
@@ -207,21 +241,34 @@ export default function AdminPage() {
   const [loadingClientJobs, setLoadingClientJobs] =
     useState<string | null>(null);
 
-  const [selectedProfessionalId, setSelectedProfessionalId] =
-    useState<string | null>(null);
+  const [
+    selectedProfessionalId,
+    setSelectedProfessionalId
+  ] = useState<string | null>(null);
 
   const [professionalJobs, setProfessionalJobs] =
-    useState<Record<string, AdminProfessionalJob[]>>({});
+    useState<
+      Record<string, AdminProfessionalJob[]>
+    >({});
 
-  const [loadingProfessionalJobs, setLoadingProfessionalJobs] =
-    useState<string | null>(null);
+  const [
+    loadingProfessionalJobs,
+    setLoadingProfessionalJobs
+  ] = useState<string | null>(null);
 
   const [selectedJobId, setSelectedJobId] =
     useState<string | null>(null);
 
+  const [jobMessages, setJobMessages] =
+    useState<Record<string, AdminJobMessage[]>>({});
+
+  const [loadingJobMessages, setLoadingJobMessages] =
+    useState<string | null>(null);
+
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] =
+    useState(false);
 
   const [actionLoading, setActionLoading] =
     useState<string | null>(null);
@@ -230,7 +277,9 @@ export default function AdminPage() {
     useState<string | null>(null);
 
   const [message, setMessage] = useState('');
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+
+  const [lastUpdate, setLastUpdate] =
+    useState<Date | null>(null);
 
   useEffect(() => {
     void checkAccess();
@@ -270,6 +319,7 @@ export default function AdminPage() {
       setMessage(
         `Errore controllo amministratore: ${error.message}`
       );
+
       setIsAdmin(false);
       setLoading(false);
       return;
@@ -287,7 +337,9 @@ export default function AdminPage() {
   }
 
   async function loadAll(silent = false) {
-    if (!silent) setRefreshing(true);
+    if (!silent) {
+      setRefreshing(true);
+    }
 
     const [
       statsResponse,
@@ -320,7 +372,9 @@ export default function AdminPage() {
       newMessage =
         `Errore utenti: ${usersResponse.error.message}`;
     } else {
-      setUsers((usersResponse.data ?? []) as AdminUser[]);
+      setUsers(
+        (usersResponse.data ?? []) as AdminUser[]
+      );
     }
 
     if (professionalsResponse.error) {
@@ -328,7 +382,8 @@ export default function AdminPage() {
         `Errore professionisti: ${professionalsResponse.error.message}`;
     } else {
       setProfessionals(
-        (professionalsResponse.data ?? []) as AdminProfessional[]
+        (professionalsResponse.data ??
+          []) as AdminProfessional[]
       );
     }
 
@@ -336,7 +391,9 @@ export default function AdminPage() {
       newMessage =
         `Errore lavori: ${jobsResponse.error.message}`;
     } else {
-      setJobs((jobsResponse.data ?? []) as AdminJob[]);
+      setJobs(
+        (jobsResponse.data ?? []) as AdminJob[]
+      );
     }
 
     if (newMessage) {
@@ -345,7 +402,9 @@ export default function AdminPage() {
       setLastUpdate(new Date());
     }
 
-    if (!silent) setRefreshing(false);
+    if (!silent) {
+      setRefreshing(false);
+    }
   }
 
   async function openUserDetails(userId: string) {
@@ -369,13 +428,15 @@ export default function AdminPage() {
       setMessage(
         `Errore caricamento storico cliente: ${error.message}`
       );
+
       setLoadingClientJobs(null);
       return;
     }
 
     setClientJobs(current => ({
       ...current,
-      [userId]: (data ?? []) as AdminClientJob[]
+      [userId]:
+        (data ?? []) as AdminClientJob[]
     }));
 
     setLoadingClientJobs(null);
@@ -384,7 +445,9 @@ export default function AdminPage() {
   async function openProfessionalDetails(
     professionalId: string
   ) {
-    if (selectedProfessionalId === professionalId) {
+    if (
+      selectedProfessionalId === professionalId
+    ) {
       setSelectedProfessionalId(null);
       return;
     }
@@ -404,6 +467,7 @@ export default function AdminPage() {
       setMessage(
         `Errore caricamento storico professionista: ${error.message}`
       );
+
       setLoadingProfessionalJobs(null);
       return;
     }
@@ -417,12 +481,49 @@ export default function AdminPage() {
     setLoadingProfessionalJobs(null);
   }
 
+  async function openJobDetails(jobId: string) {
+    if (selectedJobId === jobId) {
+      setSelectedJobId(null);
+      return;
+    }
+
+    setSelectedJobId(jobId);
+    setLoadingJobMessages(jobId);
+    setMessage('');
+
+    const { data, error } = await supabase.rpc(
+      'admin_job_messages',
+      {
+        p_job_id: jobId
+      }
+    );
+
+    if (error) {
+      setMessage(
+        `Errore caricamento conversazione: ${error.message}`
+      );
+
+      setLoadingJobMessages(null);
+      return;
+    }
+
+    setJobMessages(current => ({
+      ...current,
+      [jobId]:
+        (data ?? []) as AdminJobMessage[]
+    }));
+
+    setLoadingJobMessages(null);
+  }
+
   async function changeVerification(
     professionalId: string,
     status: 'verificato' | 'rifiutato'
   ) {
     const action =
-      status === 'verificato' ? 'approvare' : 'rifiutare';
+      status === 'verificato'
+        ? 'approvare'
+        : 'rifiutare';
 
     const confirmed = window.confirm(
       `Confermi di voler ${action} questo professionista?`
@@ -451,6 +552,7 @@ export default function AdminPage() {
       setMessage(
         'Non è stato possibile aggiornare il professionista.'
       );
+
       setActionLoading(null);
       return;
     }
@@ -462,6 +564,7 @@ export default function AdminPage() {
     );
 
     await loadAll();
+
     setActionLoading(null);
   }
 
@@ -470,10 +573,14 @@ export default function AdminPage() {
     label: string,
     isAdministrator = false
   ) {
-    if (isAdministrator || userId === user?.id) {
+    if (
+      isAdministrator ||
+      userId === user?.id
+    ) {
       setMessage(
         '⛔ Non è possibile eliminare un account amministratore.'
       );
+
       return;
     }
 
@@ -501,10 +608,14 @@ export default function AdminPage() {
       const accessToken =
         sessionData.session?.access_token;
 
-      if (sessionError || !accessToken) {
+      if (
+        sessionError ||
+        !accessToken
+      ) {
         setMessage(
           'Errore: sessione amministratore non valida.'
         );
+
         setDeletingUser(null);
         return;
       }
@@ -515,8 +626,11 @@ export default function AdminPage() {
           method: 'POST',
 
           headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`
+            'Content-Type':
+              'application/json',
+
+            Authorization:
+              `Bearer ${accessToken}`
           },
 
           body: JSON.stringify({
@@ -536,13 +650,17 @@ export default function AdminPage() {
         result = {};
       }
 
-      if (!response.ok || result.ok !== true) {
+      if (
+        !response.ok ||
+        result.ok !== true
+      ) {
         setMessage(
           `Errore eliminazione: ${
             result.error ||
             'operazione non riuscita.'
           }`
         );
+
         setDeletingUser(null);
         return;
       }
@@ -553,11 +671,15 @@ export default function AdminPage() {
 
       setSearch('');
 
-      if (selectedUserId === userId) {
+      if (
+        selectedUserId === userId
+      ) {
         setSelectedUserId(null);
       }
 
-      if (selectedProfessionalId === userId) {
+      if (
+        selectedProfessionalId === userId
+      ) {
         setSelectedProfessionalId(null);
       }
 
@@ -573,54 +695,123 @@ export default function AdminPage() {
 
   async function logout() {
     await supabase.auth.signOut();
+
     window.location.href = '/';
   }
 
   const filteredUsers = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q =
+      search.trim().toLowerCase();
 
     if (!q) return users;
 
     return users.filter(row =>
-      String(row.full_name ?? '').toLowerCase().includes(q) ||
-      String(row.email ?? '').toLowerCase().includes(q) ||
-      String(row.phone ?? '').toLowerCase().includes(q) ||
-      String(row.role ?? '').toLowerCase().includes(q)
+      String(row.full_name ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(row.email ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(row.phone ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(row.role ?? '')
+        .toLowerCase()
+        .includes(q)
     );
   }, [users, search]);
 
-  const filteredProfessionals = useMemo(() => {
-    const q = search.trim().toLowerCase();
+  const filteredProfessionals =
+    useMemo(() => {
+      const q =
+        search.trim().toLowerCase();
 
-    if (!q) return professionals;
+      if (!q) return professionals;
 
-    return professionals.filter(pro =>
-      String(pro.business_name ?? '').toLowerCase().includes(q) ||
-      String(pro.full_name ?? '').toLowerCase().includes(q) ||
-      String(pro.email ?? '').toLowerCase().includes(q) ||
-      String(pro.phone ?? '').toLowerCase().includes(q) ||
-      String(pro.categories ?? '').toLowerCase().includes(q) ||
-      String(pro.verification_status ?? '').toLowerCase().includes(q) ||
-      String(pro.availability_status ?? '').toLowerCase().includes(q)
-    );
-  }, [professionals, search]);
+      return professionals.filter(pro =>
+        String(pro.business_name ?? '')
+          .toLowerCase()
+          .includes(q) ||
+
+        String(pro.full_name ?? '')
+          .toLowerCase()
+          .includes(q) ||
+
+        String(pro.email ?? '')
+          .toLowerCase()
+          .includes(q) ||
+
+        String(pro.phone ?? '')
+          .toLowerCase()
+          .includes(q) ||
+
+        String(pro.categories ?? '')
+          .toLowerCase()
+          .includes(q) ||
+
+        String(
+          pro.verification_status ?? ''
+        )
+          .toLowerCase()
+          .includes(q) ||
+
+        String(
+          pro.availability_status ?? ''
+        )
+          .toLowerCase()
+          .includes(q)
+      );
+    }, [professionals, search]);
 
   const filteredJobs = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q =
+      search.trim().toLowerCase();
 
     if (!q) return jobs;
 
     return jobs.filter(job =>
-      String(job.client_name ?? '').toLowerCase().includes(q) ||
-      String(job.client_email ?? '').toLowerCase().includes(q) ||
-      String(job.client_phone ?? '').toLowerCase().includes(q) ||
-      String(job.professional_name ?? '').toLowerCase().includes(q) ||
-      String(job.professional_email ?? '').toLowerCase().includes(q) ||
-      String(job.professional_phone ?? '').toLowerCase().includes(q) ||
-      String(job.category_name ?? '').toLowerCase().includes(q) ||
-      String(job.description ?? '').toLowerCase().includes(q) ||
-      String(job.address ?? '').toLowerCase().includes(q) ||
-      String(job.status ?? '').toLowerCase().includes(q)
+      String(job.client_name ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.client_email ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.client_phone ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.professional_name ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.professional_email ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.professional_phone ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.category_name ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.description ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.address ?? '')
+        .toLowerCase()
+        .includes(q) ||
+
+      String(job.status ?? '')
+        .toLowerCase()
+        .includes(q)
     );
   }, [jobs, search]);
 
@@ -634,7 +825,9 @@ export default function AdminPage() {
             padding: '60px 20px'
           }}
         >
-          <h2>Caricamento pannello amministratore...</h2>
+          <h2>
+            Caricamento pannello amministratore...
+          </h2>
         </div>
       </main>
     );
@@ -653,10 +846,13 @@ export default function AdminPage() {
           <h1>🔐 Accesso richiesto</h1>
 
           <p>
-            Devi accedere con l&apos;account amministratore.
+            Devi accedere con l&apos;account
+            amministratore.
           </p>
 
-          <a href="/">Torna a LavoroSubito</a>
+          <a href="/">
+            Torna a LavoroSubito
+          </a>
         </div>
       </main>
     );
@@ -675,16 +871,21 @@ export default function AdminPage() {
           <h1>⛔ Accesso negato</h1>
 
           <p>
-            Questo account non dispone dei permessi amministratore.
+            Questo account non dispone dei
+            permessi amministratore.
           </p>
 
-          <a href="/">Torna alla home</a>
+          <a href="/">
+            Torna alla home
+          </a>
         </div>
       </main>
     );
   }
 
-  const buttonStyle = (active: boolean) => ({
+  const buttonStyle = (
+    active: boolean
+  ) => ({
     border: active
       ? '1px solid #111'
       : '1px solid #ddd',
@@ -722,11 +923,19 @@ export default function AdminPage() {
     padding: 16
   };
 
-  const openButtonStyle = (opened: boolean) => ({
+  const openButtonStyle = (
+    opened: boolean
+  ) => ({
     width: '100%',
     marginTop: 12,
-    background: opened ? '#fff' : '#111',
-    color: opened ? '#111' : '#fff',
+    background: opened
+      ? '#fff'
+      : '#111',
+
+    color: opened
+      ? '#111'
+      : '#fff',
+
     border: '1px solid #111',
     borderRadius: 10,
     padding: '13px 12px',
@@ -744,7 +953,8 @@ export default function AdminPage() {
       <header
         style={{
           background: '#fff',
-          borderBottom: '1px solid #e5e5e5',
+          borderBottom:
+            '1px solid #e5e5e5',
           padding: '18px 20px'
         }}
       >
@@ -753,7 +963,8 @@ export default function AdminPage() {
             maxWidth: 1200,
             margin: '0 auto',
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent:
+              'space-between',
             alignItems: 'center',
             gap: 15
           }}
@@ -768,7 +979,9 @@ export default function AdminPage() {
               LavoroSubito
             </div>
 
-            <small>Pannello amministratore</small>
+            <small>
+              Pannello amministratore
+            </small>
           </div>
 
           <div
@@ -780,7 +993,8 @@ export default function AdminPage() {
             <a
               href="/"
               style={{
-                border: '1px solid #111',
+                border:
+                  '1px solid #111',
                 borderRadius: 10,
                 padding: '10px 14px',
                 color: '#111',
@@ -816,7 +1030,11 @@ export default function AdminPage() {
           padding: '30px 18px 80px'
         }}
       >
-        <div style={{ marginBottom: 25 }}>
+        <div
+          style={{
+            marginBottom: 25
+          }}
+        >
           <div
             style={{
               display: 'inline-block',
@@ -851,16 +1069,21 @@ export default function AdminPage() {
               fontSize: 13
             }}
           >
-            🔄 Aggiornamento automatico ogni 30 secondi
+            🔄 Aggiornamento automatico ogni
+            30 secondi
 
             {lastUpdate && (
               <>
-                {' '}• ultimo aggiornamento{' '}
-                {lastUpdate.toLocaleTimeString('it-IT', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit'
-                })}
+                {' '}
+                • ultimo aggiornamento{' '}
+                {lastUpdate.toLocaleTimeString(
+                  'it-IT',
+                  {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                  }
+                )}
               </>
             )}
           </div>
@@ -891,39 +1114,57 @@ export default function AdminPage() {
         >
           <button
             type="button"
-            style={buttonStyle(tab === 'dashboard')}
-            onClick={() => setTab('dashboard')}
+            style={buttonStyle(
+              tab === 'dashboard'
+            )}
+            onClick={() =>
+              setTab('dashboard')
+            }
           >
             📊 Dashboard
           </button>
 
           <button
             type="button"
-            style={buttonStyle(tab === 'utenti')}
-            onClick={() => setTab('utenti')}
+            style={buttonStyle(
+              tab === 'utenti'
+            )}
+            onClick={() =>
+              setTab('utenti')
+            }
           >
             👥 Utenti
           </button>
 
           <button
             type="button"
-            style={buttonStyle(tab === 'professionisti')}
-            onClick={() => setTab('professionisti')}
+            style={buttonStyle(
+              tab === 'professionisti'
+            )}
+            onClick={() =>
+              setTab('professionisti')
+            }
           >
             🛠 Professionisti
           </button>
 
           <button
             type="button"
-            style={buttonStyle(tab === 'lavori')}
-            onClick={() => setTab('lavori')}
+            style={buttonStyle(
+              tab === 'lavori'
+            )}
+            onClick={() =>
+              setTab('lavori')
+            }
           >
             📋 Lavori
           </button>
 
           <button
             type="button"
-            onClick={() => void loadAll()}
+            onClick={() =>
+              void loadAll()
+            }
             disabled={refreshing}
             style={{
               marginLeft: 'auto',
@@ -941,17 +1182,27 @@ export default function AdminPage() {
         </div>
 
         {tab !== 'dashboard' && (
-          <div style={{ marginBottom: 22 }}>
+          <div
+            style={{
+              marginBottom: 22
+            }}
+          >
             <input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e =>
+                setSearch(
+                  e.target.value
+                )
+              }
               placeholder="Cerca..."
               style={{
                 width: '100%',
-                boxSizing: 'border-box',
+                boxSizing:
+                  'border-box',
                 padding: '14px 16px',
                 borderRadius: 12,
-                border: '1px solid #ccc',
+                border:
+                  '1px solid #ccc',
                 fontSize: 16
               }}
             />
@@ -981,19 +1232,25 @@ export default function AdminPage() {
 
             <StatCard
               title="Professionisti"
-              value={stats.total_professionals}
+              value={
+                stats.total_professionals
+              }
               icon="🛠"
             />
 
             <StatCard
               title="Da verificare"
-              value={stats.pending_professionals}
+              value={
+                stats.pending_professionals
+              }
               icon="🟡"
             />
 
             <StatCard
               title="Verificati"
-              value={stats.verified_professionals}
+              value={
+                stats.verified_professionals
+              }
               icon="✅"
             />
 
@@ -1017,7 +1274,9 @@ export default function AdminPage() {
 
             <StatCard
               title="Completati"
-              value={stats.completed_jobs}
+              value={
+                stats.completed_jobs
+              }
               icon="🏁"
             />
 
@@ -1030,8 +1289,15 @@ export default function AdminPage() {
         )}
 
         {tab === 'utenti' && (
-          <div style={{ display: 'grid', gap: 14 }}>
-            <h2>Utenti ({filteredUsers.length})</h2>
+          <div
+            style={{
+              display: 'grid',
+              gap: 14
+            }}
+          >
+            <h2>
+              Utenti ({filteredUsers.length})
+            </h2>
 
             {filteredUsers.map(row => {
               const opened =
@@ -1052,33 +1318,47 @@ export default function AdminPage() {
                     padding: 20
                   }}
                 >
-                  <h3 style={{ marginTop: 0 }}>
-                    {row.full_name || 'Utente'}
+                  <h3
+                    style={{
+                      marginTop: 0
+                    }}
+                  >
+                    {row.full_name ||
+                      'Utente'}
                   </h3>
 
                   <p>
-                    <b>Email:</b> {row.email || '—'}
+                    <b>Email:</b>{' '}
+                    {row.email || '—'}
                   </p>
 
                   <p>
-                    <b>Ruolo:</b> {row.role || '—'}
+                    <b>Ruolo:</b>{' '}
+                    {row.role || '—'}
                   </p>
 
                   <p>
-                    <b>Telefono:</b> {row.phone || '—'}
+                    <b>Telefono:</b>{' '}
+                    {row.phone || '—'}
                   </p>
 
                   <p>
                     <b>Registrato:</b>{' '}
-                    {formatDate(row.created_at)}
+                    {formatDate(
+                      row.created_at
+                    )}
                   </p>
 
                   <button
                     type="button"
                     onClick={() =>
-                      void openUserDetails(row.id)
+                      void openUserDetails(
+                        row.id
+                      )
                     }
-                    style={openButtonStyle(opened)}
+                    style={openButtonStyle(
+                      opened
+                    )}
                   >
                     {opened
                       ? '▲ Chiudi scheda'
@@ -1093,151 +1373,231 @@ export default function AdminPage() {
                         marginTop: 18
                       }}
                     >
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
                           👤 Dati cliente
                         </h3>
 
                         <p>
                           <b>Nome:</b>{' '}
-                          {row.full_name || '—'}
+                          {row.full_name ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Email:</b>{' '}
-                          {row.email || '—'}
+                          {row.email ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Telefono:</b>{' '}
-                          {row.phone || '—'}
+                          {row.phone ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Ruolo:</b>{' '}
-                          {row.role || '—'}
+                          {row.role ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Registrato:</b>{' '}
-                          {formatDate(row.created_at)}
+                          {formatDate(
+                            row.created_at
+                          )}
                         </p>
 
                         <small>
-                          ID utente: {row.id}
+                          ID utente:{' '}
+                          {row.id}
                         </small>
                       </div>
 
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
                           📋 Storico richieste
                         </h3>
 
-                        {loadingClientJobs === row.id ? (
-                          <p>Caricamento storico...</p>
-                        ) : history.length === 0 ? (
-                          <p style={{ color: '#666' }}>
-                            Nessuna richiesta trovata.
+                        {loadingClientJobs ===
+                        row.id ? (
+                          <p>
+                            Caricamento
+                            storico...
+                          </p>
+                        ) : history.length ===
+                          0 ? (
+                          <p
+                            style={{
+                              color:
+                                '#666'
+                            }}
+                          >
+                            Nessuna richiesta
+                            trovata.
                           </p>
                         ) : (
                           <div
                             style={{
-                              display: 'grid',
+                              display:
+                                'grid',
                               gap: 12
                             }}
                           >
-                            {history.map(job => (
-                              <div
-                                key={job.id}
-                                style={{
-                                  border: '1px solid #ddd',
-                                  borderRadius: 12,
-                                  padding: 14,
-                                  background: '#fff'
-                                }}
-                              >
+                            {history.map(
+                              job => (
                                 <div
+                                  key={
+                                    job.id
+                                  }
                                   style={{
-                                    fontWeight: 900,
-                                    marginBottom: 8
+                                    border:
+                                      '1px solid #ddd',
+                                    borderRadius: 12,
+                                    padding: 14,
+                                    background:
+                                      '#fff'
                                   }}
                                 >
-                                  {jobStatusLabel(job.status)}
-                                </div>
-
-                                <p>
-                                  <b>Categoria:</b>{' '}
-                                  {job.category_name || '—'}
-                                </p>
-
-                                <p>
-                                  <b>Urgenza:</b>{' '}
-                                  {job.urgency?.toUpperCase() ||
-                                    '—'}
-                                </p>
-
-                                <p>
-                                  <b>Descrizione:</b>{' '}
-                                  {job.description || '—'}
-                                </p>
-
-                                <p>
-                                  <b>Indirizzo:</b>{' '}
-                                  {job.address || '—'}
-                                </p>
-
-                                <p>
-                                  <b>Data:</b>{' '}
-                                  {formatDate(job.created_at)}
-                                </p>
-
-                                {job.professional_id ? (
                                   <div
                                     style={{
-                                      marginTop: 12,
-                                      padding: 12,
-                                      background: '#f5f5f5',
-                                      borderRadius: 10
+                                      fontWeight: 900,
+                                      marginBottom: 8
                                     }}
                                   >
-                                    <b>
-                                      🛠 Professionista assegnato
-                                    </b>
-
-                                    <p>
-                                      {job.professional_name ||
-                                        '—'}
-                                    </p>
-
-                                    <p style={{ marginBottom: 0 }}>
-                                      ☎️{' '}
-                                      {job.professional_phone ||
-                                        '—'}
-                                    </p>
+                                    {jobStatusLabel(
+                                      job.status
+                                    )}
                                   </div>
-                                ) : (
-                                  <p style={{ color: '#777' }}>
-                                    Nessun professionista assegnato.
-                                  </p>
-                                )}
 
-                                <small>
-                                  ID lavoro: {job.id}
-                                </small>
-                              </div>
-                            ))}
+                                  <p>
+                                    <b>
+                                      Categoria:
+                                    </b>{' '}
+                                    {job.category_name ||
+                                      '—'}
+                                  </p>
+
+                                  <p>
+                                    <b>
+                                      Urgenza:
+                                    </b>{' '}
+                                    {job.urgency?.toUpperCase() ||
+                                      '—'}
+                                  </p>
+
+                                  <p>
+                                    <b>
+                                      Descrizione:
+                                    </b>{' '}
+                                    {job.description ||
+                                      '—'}
+                                  </p>
+
+                                  <p>
+                                    <b>
+                                      Indirizzo:
+                                    </b>{' '}
+                                    {job.address ||
+                                      '—'}
+                                  </p>
+
+                                  <p>
+                                    <b>
+                                      Data:
+                                    </b>{' '}
+                                    {formatDate(
+                                      job.created_at
+                                    )}
+                                  </p>
+
+                                  {job.professional_id ? (
+                                    <div
+                                      style={{
+                                        marginTop: 12,
+                                        padding: 12,
+                                        background:
+                                          '#f5f5f5',
+                                        borderRadius: 10
+                                      }}
+                                    >
+                                      <b>
+                                        🛠 Professionista
+                                        assegnato
+                                      </b>
+
+                                      <p>
+                                        {job.professional_name ||
+                                          '—'}
+                                      </p>
+
+                                      <p
+                                        style={{
+                                          marginBottom: 0
+                                        }}
+                                      >
+                                        ☎️{' '}
+                                        {job.professional_phone ||
+                                          '—'}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <p
+                                      style={{
+                                        color:
+                                          '#777'
+                                      }}
+                                    >
+                                      Nessun
+                                      professionista
+                                      assegnato.
+                                    </p>
+                                  )}
+
+                                  <small>
+                                    ID lavoro:{' '}
+                                    {job.id}
+                                  </small>
+                                </div>
+                              )
+                            )}
                           </div>
                         )}
                       </div>
 
                       {row.is_admin ? (
-                        <div style={{ fontWeight: 800 }}>
-                          🛡 Amministratore protetto
+                        <div
+                          style={{
+                            fontWeight: 800
+                          }}
+                        >
+                          🛡 Amministratore
+                          protetto
                         </div>
                       ) : (
                         <button
                           type="button"
-                          disabled={deletingUser === row.id}
+                          disabled={
+                            deletingUser ===
+                            row.id
+                          }
                           onClick={() =>
                             deleteAccount(
                               row.id,
@@ -1247,9 +1607,12 @@ export default function AdminPage() {
                               row.is_admin
                             )
                           }
-                          style={deleteButtonStyle}
+                          style={
+                            deleteButtonStyle
+                          }
                         >
-                          {deletingUser === row.id
+                          {deletingUser ===
+                          row.id
                             ? 'Eliminazione...'
                             : '🗑 Elimina account'}
                         </button>
@@ -1263,524 +1626,761 @@ export default function AdminPage() {
         )}
 
         {tab === 'professionisti' && (
-          <div style={{ display: 'grid', gap: 15 }}>
+          <div
+            style={{
+              display: 'grid',
+              gap: 15
+            }}
+          >
             <h2>
-              Professionisti ({filteredProfessionals.length})
+              Professionisti (
+              {filteredProfessionals.length})
             </h2>
 
-            {filteredProfessionals.map(pro => {
-              const opened =
-                selectedProfessionalId === pro.id;
+            {filteredProfessionals.map(
+              pro => {
+                const opened =
+                  selectedProfessionalId ===
+                  pro.id;
 
-              const history =
-                professionalJobs[pro.id] ?? [];
+                const history =
+                  professionalJobs[
+                    pro.id
+                  ] ?? [];
 
-              return (
-                <article
-                  key={pro.id}
-                  style={{
-                    background: '#fff',
-                    border: opened
-                      ? '2px solid #111'
-                      : '1px solid #ddd',
-                    borderRadius: 16,
-                    padding: 20
-                  }}
-                >
-                  <div
+                return (
+                  <article
+                    key={pro.id}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 15,
-                      alignItems: 'flex-start',
-                      flexWrap: 'wrap'
+                      background:
+                        '#fff',
+                      border: opened
+                        ? '2px solid #111'
+                        : '1px solid #ddd',
+                      borderRadius: 16,
+                      padding: 20
                     }}
                   >
-                    <div>
-                      <div
-                        style={{
-                          fontWeight: 800,
-                          marginBottom: 8
-                        }}
-                      >
-                        {verificationLabel(
-                          pro.verification_status
-                        )}
-                      </div>
-
-                      <h3 style={{ margin: 0 }}>
-                        {pro.business_name ||
-                          pro.full_name ||
-                          'Professionista'}
-                      </h3>
-
-                      <div
-                        style={{
-                          color: '#666',
-                          marginTop: 8
-                        }}
-                      >
-                        {pro.categories ||
-                          'Nessuna categoria'}
-                      </div>
-                    </div>
-
                     <div
                       style={{
-                        background: '#f2f2f2',
-                        padding: '8px 12px',
-                        borderRadius: 999,
-                        fontWeight: 800
-                      }}
-                    >
-                      {availabilityLabel(
-                        pro.availability_status
-                      )}
-                    </div>
-                  </div>
-
-                  <p>
-                    <b>Email:</b> {pro.email || '—'}
-                  </p>
-
-                  <p>
-                    <b>Telefono:</b> {pro.phone || '—'}
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void openProfessionalDetails(pro.id)
-                    }
-                    style={openButtonStyle(opened)}
-                  >
-                    {opened
-                      ? '▲ Chiudi scheda'
-                      : '▼ Apri scheda'}
-                  </button>
-
-                  {opened && (
-                    <div
-                      style={{
-                        display: 'grid',
+                        display: 'flex',
+                        justifyContent:
+                          'space-between',
                         gap: 15,
-                        marginTop: 18
+                        alignItems:
+                          'flex-start',
+                        flexWrap: 'wrap'
                       }}
                     >
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          👤 Dati professionista
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            marginBottom: 8
+                          }}
+                        >
+                          {verificationLabel(
+                            pro.verification_status
+                          )}
+                        </div>
+
+                        <h3
+                          style={{
+                            margin: 0
+                          }}
+                        >
+                          {pro.business_name ||
+                            pro.full_name ||
+                            'Professionista'}
                         </h3>
-
-                        <p>
-                          <b>Nome:</b>{' '}
-                          {pro.full_name || '—'}
-                        </p>
-
-                        <p>
-                          <b>Attività:</b>{' '}
-                          {pro.business_name || '—'}
-                        </p>
-
-                        <p>
-                          <b>Email:</b>{' '}
-                          {pro.email || '—'}
-                        </p>
-
-                        <p>
-                          <b>Telefono:</b>{' '}
-                          {pro.phone || '—'}
-                        </p>
-
-                        <p>
-                          <b>Partita IVA:</b>{' '}
-                          {pro.vat_number || '—'}
-                        </p>
-
-                        <p>
-                          <b>Codice fiscale:</b>{' '}
-                          {pro.tax_code || '—'}
-                        </p>
-
-                        <p>
-                          <b>Registrato:</b>{' '}
-                          {formatDate(pro.created_at)}
-                        </p>
-
-                        <small>
-                          ID professionista: {pro.id}
-                        </small>
-                      </div>
-
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          📝 Profilo professionale
-                        </h3>
-
-                        <p>
-                          <b>Categorie:</b>{' '}
-                          {pro.categories || '—'}
-                        </p>
-
-                        <p>
-                          <b>Descrizione:</b>
-                        </p>
 
                         <div
                           style={{
-                            whiteSpace: 'pre-wrap',
-                            lineHeight: 1.5
+                            color: '#666',
+                            marginTop: 8
                           }}
                         >
-                          {pro.description || '—'}
+                          {pro.categories ||
+                            'Nessuna categoria'}
                         </div>
-
-                        <p>
-                          <b>Raggio operativo:</b>{' '}
-                          {pro.max_distance_km ?? '—'} km
-                        </p>
-
-                        <p>
-                          <b>Latitudine:</b>{' '}
-                          {pro.latitude ?? '—'}
-                        </p>
-
-                        <p>
-                          <b>Longitudine:</b>{' '}
-                          {pro.longitude ?? '—'}
-                        </p>
                       </div>
 
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          ⚡ Disponibilità
-                        </h3>
-
-                        <p>
-                          <b>Stato:</b>{' '}
-                          {availabilityLabel(
-                            pro.availability_status
-                          )}
-                        </p>
-
-                        <p>
-                          <b>Ultimo aggiornamento:</b>{' '}
-                          {formatDate(
-                            pro.availability_updated_at
-                          )}
-                        </p>
-
-                        <p>
-                          <b>Tempo medio risposta:</b>{' '}
-                          {pro.response_time_minutes != null
-                            ? `${pro.response_time_minutes} min`
-                            : '—'}
-                        </p>
+                      <div
+                        style={{
+                          background:
+                            '#f2f2f2',
+                          padding:
+                            '8px 12px',
+                          borderRadius: 999,
+                          fontWeight: 800
+                        }}
+                      >
+                        {availabilityLabel(
+                          pro.availability_status
+                        )}
                       </div>
+                    </div>
 
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          ⭐ Prestazioni
-                        </h3>
+                    <p>
+                      <b>Email:</b>{' '}
+                      {pro.email || '—'}
+                    </p>
 
-                        <p>
-                          <b>Valutazione:</b>{' '}
-                          {pro.rating ?? '—'}
-                        </p>
+                    <p>
+                      <b>Telefono:</b>{' '}
+                      {pro.phone || '—'}
+                    </p>
 
-                        <p>
-                          <b>Numero recensioni:</b>{' '}
-                          {pro.reviews_count ?? 0}
-                        </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void openProfessionalDetails(
+                          pro.id
+                        )
+                      }
+                      style={openButtonStyle(
+                        opened
+                      )}
+                    >
+                      {opened
+                        ? '▲ Chiudi scheda'
+                        : '▼ Apri scheda'}
+                    </button>
 
-                        <p>
-                          <b>Indice affidabilità:</b>{' '}
-                          {pro.reliability_score ?? '—'}
-                        </p>
-                      </div>
-
-                      {/* NUOVA SEZIONE */}
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          📋 Storico interventi
-                        </h3>
-
-                        {loadingProfessionalJobs === pro.id ? (
-                          <p>
-                            Caricamento storico interventi...
-                          </p>
-                        ) : history.length === 0 ? (
-                          <p style={{ color: '#666' }}>
-                            Nessun intervento accettato trovato.
-                          </p>
-                        ) : (
-                          <div
+                    {opened && (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gap: 15,
+                          marginTop: 18
+                        }}
+                      >
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
                             style={{
-                              display: 'grid',
-                              gap: 14
+                              marginTop: 0
                             }}
                           >
-                            {history.map(job => (
-                              <div
-                                key={job.job_id}
-                                style={{
-                                  background: '#fff',
-                                  border: '1px solid #ddd',
-                                  borderRadius: 12,
-                                  padding: 14
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    fontWeight: 900,
-                                    marginBottom: 10
-                                  }}
-                                >
-                                  {jobStatusLabel(
-                                    job.job_status
-                                  )}
-                                </div>
+                            👤 Dati
+                            professionista
+                          </h3>
 
-                                <p>
-                                  <b>Categoria:</b>{' '}
-                                  {job.category_name || '—'}
-                                </p>
+                          <p>
+                            <b>Nome:</b>{' '}
+                            {pro.full_name ||
+                              '—'}
+                          </p>
 
-                                <p>
-                                  <b>Urgenza:</b>{' '}
-                                  {job.urgency?.toUpperCase() ||
-                                    '—'}
-                                </p>
+                          <p>
+                            <b>
+                              Attività:
+                            </b>{' '}
+                            {pro.business_name ||
+                              '—'}
+                          </p>
 
-                                <p>
-                                  <b>Data richiesta:</b>{' '}
-                                  {formatDate(
-                                    job.job_created_at
-                                  )}
-                                </p>
+                          <p>
+                            <b>Email:</b>{' '}
+                            {pro.email ||
+                              '—'}
+                          </p>
 
-                                <p>
-                                  <b>Descrizione:</b>{' '}
-                                  {job.description || '—'}
-                                </p>
+                          <p>
+                            <b>
+                              Telefono:
+                            </b>{' '}
+                            {pro.phone ||
+                              '—'}
+                          </p>
 
-                                <p>
-                                  <b>Indirizzo:</b>{' '}
-                                  {job.address || '—'}
-                                </p>
+                          <p>
+                            <b>
+                              Partita IVA:
+                            </b>{' '}
+                            {pro.vat_number ||
+                              '—'}
+                          </p>
 
-                                <div
-                                  style={{
-                                    marginTop: 12,
-                                    padding: 12,
-                                    background: '#f5f5f5',
-                                    borderRadius: 10
-                                  }}
-                                >
-                                  <b>👤 Cliente</b>
+                          <p>
+                            <b>
+                              Codice fiscale:
+                            </b>{' '}
+                            {pro.tax_code ||
+                              '—'}
+                          </p>
 
-                                  <p>
-                                    <b>Nome:</b>{' '}
-                                    {job.client_name || '—'}
-                                  </p>
+                          <p>
+                            <b>
+                              Registrato:
+                            </b>{' '}
+                            {formatDate(
+                              pro.created_at
+                            )}
+                          </p>
 
-                                  <p>
-                                    <b>Email:</b>{' '}
-                                    {job.client_email || '—'}
-                                  </p>
+                          <small>
+                            ID professionista:{' '}
+                            {pro.id}
+                          </small>
+                        </div>
 
-                                  <p style={{ marginBottom: 0 }}>
-                                    <b>Telefono:</b>{' '}
-                                    {job.client_phone || '—'}
-                                  </p>
-                                </div>
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop: 0
+                            }}
+                          >
+                            📝 Profilo
+                            professionale
+                          </h3>
 
-                                {job.review_rating != null ? (
+                          <p>
+                            <b>
+                              Categorie:
+                            </b>{' '}
+                            {pro.categories ||
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>
+                              Descrizione:
+                            </b>
+                          </p>
+
+                          <div
+                            style={{
+                              whiteSpace:
+                                'pre-wrap',
+                              lineHeight: 1.5
+                            }}
+                          >
+                            {pro.description ||
+                              '—'}
+                          </div>
+
+                          <p>
+                            <b>
+                              Raggio operativo:
+                            </b>{' '}
+                            {pro.max_distance_km ??
+                              '—'}{' '}
+                            km
+                          </p>
+
+                          <p>
+                            <b>
+                              Latitudine:
+                            </b>{' '}
+                            {pro.latitude ??
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>
+                              Longitudine:
+                            </b>{' '}
+                            {pro.longitude ??
+                              '—'}
+                          </p>
+                        </div>
+
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop: 0
+                            }}
+                          >
+                            ⚡ Disponibilità
+                          </h3>
+
+                          <p>
+                            <b>Stato:</b>{' '}
+                            {availabilityLabel(
+                              pro.availability_status
+                            )}
+                          </p>
+
+                          <p>
+                            <b>
+                              Ultimo
+                              aggiornamento:
+                            </b>{' '}
+                            {formatDate(
+                              pro.availability_updated_at
+                            )}
+                          </p>
+
+                          <p>
+                            <b>
+                              Tempo medio
+                              risposta:
+                            </b>{' '}
+                            {pro.response_time_minutes !=
+                            null
+                              ? `${pro.response_time_minutes} min`
+                              : '—'}
+                          </p>
+                        </div>
+
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop: 0
+                            }}
+                          >
+                            ⭐ Prestazioni
+                          </h3>
+
+                          <p>
+                            <b>
+                              Valutazione:
+                            </b>{' '}
+                            {pro.rating ??
+                              '—'}
+                          </p>
+
+                          <p>
+                            <b>
+                              Numero
+                              recensioni:
+                            </b>{' '}
+                            {pro.reviews_count ??
+                              0}
+                          </p>
+
+                          <p>
+                            <b>
+                              Indice
+                              affidabilità:
+                            </b>{' '}
+                            {pro.reliability_score ??
+                              '—'}
+                          </p>
+                        </div>
+
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
+                            style={{
+                              marginTop: 0
+                            }}
+                          >
+                            📋 Storico
+                            interventi
+                          </h3>
+
+                          {loadingProfessionalJobs ===
+                          pro.id ? (
+                            <p>
+                              Caricamento
+                              storico
+                              interventi...
+                            </p>
+                          ) : history.length ===
+                            0 ? (
+                            <p
+                              style={{
+                                color:
+                                  '#666'
+                              }}
+                            >
+                              Nessun intervento
+                              accettato
+                              trovato.
+                            </p>
+                          ) : (
+                            <div
+                              style={{
+                                display:
+                                  'grid',
+                                gap: 14
+                              }}
+                            >
+                              {history.map(
+                                job => (
                                   <div
+                                    key={
+                                      job.job_id
+                                    }
                                     style={{
-                                      marginTop: 12,
-                                      padding: 12,
-                                      background: '#fff',
+                                      background:
+                                        '#fff',
                                       border:
-                                        '1px solid #e2e2e2',
-                                      borderRadius: 10
+                                        '1px solid #ddd',
+                                      borderRadius: 12,
+                                      padding: 14
                                     }}
                                   >
                                     <div
                                       style={{
                                         fontWeight: 900,
-                                        fontSize: 18
+                                        marginBottom: 10
                                       }}
                                     >
-                                      ⭐ Recensione
+                                      {jobStatusLabel(
+                                        job.job_status
+                                      )}
                                     </div>
 
                                     <p>
-                                      <b>Voto:</b>{' '}
-                                      {job.review_rating}/5
+                                      <b>
+                                        Categoria:
+                                      </b>{' '}
+                                      {job.category_name ||
+                                        '—'}
                                     </p>
 
                                     <p>
-                                      <b>Commento:</b>{' '}
-                                      {job.review_comment ||
-                                        'Nessun commento'}
+                                      <b>
+                                        Urgenza:
+                                      </b>{' '}
+                                      {job.urgency?.toUpperCase() ||
+                                        '—'}
                                     </p>
 
-                                    <p
-                                      style={{
-                                        marginBottom: 0,
-                                        color: '#666'
-                                      }}
-                                    >
-                                      <b>Data:</b>{' '}
+                                    <p>
+                                      <b>
+                                        Data
+                                        richiesta:
+                                      </b>{' '}
                                       {formatDate(
-                                        job.review_created_at
+                                        job.job_created_at
                                       )}
                                     </p>
+
+                                    <p>
+                                      <b>
+                                        Descrizione:
+                                      </b>{' '}
+                                      {job.description ||
+                                        '—'}
+                                    </p>
+
+                                    <p>
+                                      <b>
+                                        Indirizzo:
+                                      </b>{' '}
+                                      {job.address ||
+                                        '—'}
+                                    </p>
+
+                                    <div
+                                      style={{
+                                        marginTop: 12,
+                                        padding: 12,
+                                        background:
+                                          '#f5f5f5',
+                                        borderRadius: 10
+                                      }}
+                                    >
+                                      <b>
+                                        👤 Cliente
+                                      </b>
+
+                                      <p>
+                                        <b>
+                                          Nome:
+                                        </b>{' '}
+                                        {job.client_name ||
+                                          '—'}
+                                      </p>
+
+                                      <p>
+                                        <b>
+                                          Email:
+                                        </b>{' '}
+                                        {job.client_email ||
+                                          '—'}
+                                      </p>
+
+                                      <p
+                                        style={{
+                                          marginBottom: 0
+                                        }}
+                                      >
+                                        <b>
+                                          Telefono:
+                                        </b>{' '}
+                                        {job.client_phone ||
+                                          '—'}
+                                      </p>
+                                    </div>
+
+                                    {job.review_rating !=
+                                    null ? (
+                                      <div
+                                        style={{
+                                          marginTop: 12,
+                                          padding: 12,
+                                          background:
+                                            '#fff',
+                                          border:
+                                            '1px solid #e2e2e2',
+                                          borderRadius: 10
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            fontWeight: 900,
+                                            fontSize: 18
+                                          }}
+                                        >
+                                          ⭐ Recensione
+                                        </div>
+
+                                        <p>
+                                          <b>
+                                            Voto:
+                                          </b>{' '}
+                                          {
+                                            job.review_rating
+                                          }
+                                          /5
+                                        </p>
+
+                                        <p>
+                                          <b>
+                                            Commento:
+                                          </b>{' '}
+                                          {job.review_comment ||
+                                            'Nessun commento'}
+                                        </p>
+
+                                        <p
+                                          style={{
+                                            marginBottom: 0,
+                                            color:
+                                              '#666'
+                                          }}
+                                        >
+                                          <b>
+                                            Data:
+                                          </b>{' '}
+                                          {formatDate(
+                                            job.review_created_at
+                                          )}
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <p
+                                        style={{
+                                          color:
+                                            '#777',
+                                          marginTop: 12
+                                        }}
+                                      >
+                                        ⭐ Nessuna
+                                        recensione
+                                        ricevuta per
+                                        questo
+                                        intervento.
+                                      </p>
+                                    )}
+
+                                    <div
+                                      style={{
+                                        marginTop: 12,
+                                        color:
+                                          '#777'
+                                      }}
+                                    >
+                                      <small>
+                                        ID lavoro:{' '}
+                                        {job.job_id}
+                                      </small>
+                                    </div>
                                   </div>
-                                ) : (
-                                  <p
-                                    style={{
-                                      color: '#777',
-                                      marginTop: 12
-                                    }}
-                                  >
-                                    ⭐ Nessuna recensione ricevuta per questo intervento.
-                                  </p>
-                                )}
-
-                                <div
-                                  style={{
-                                    marginTop: 12,
-                                    color: '#777'
-                                  }}
-                                >
-                                  <small>
-                                    ID lavoro: {job.job_id}
-                                  </small>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          🛡 Verifica
-                        </h3>
-
-                        <p>
-                          <b>Stato verifica:</b>{' '}
-                          {verificationLabel(
-                            pro.verification_status
+                                )
+                              )}
+                            </div>
                           )}
-                        </p>
+                        </div>
 
-                        <p>
-                          <b>Flag verificato:</b>{' '}
-                          {pro.verified ? 'Sì' : 'No'}
-                        </p>
-
-                        {pro.verification_status ===
-                          'da_verificare' && (
-                          <div
+                        <div
+                          style={
+                            detailBoxStyle
+                          }
+                        >
+                          <h3
                             style={{
-                              display: 'grid',
-                              gridTemplateColumns:
-                                '1fr 1fr',
-                              gap: 10,
-                              marginTop: 18
+                              marginTop: 0
                             }}
                           >
-                            <button
-                              type="button"
-                              disabled={
-                                actionLoading === pro.id
-                              }
-                              onClick={() =>
-                                changeVerification(
-                                  pro.id,
-                                  'verificato'
-                                )
-                              }
-                              style={{
-                                background: '#16864b',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 10,
-                                padding: '13px 10px',
-                                fontWeight: 800
-                              }}
-                            >
-                              ✅ Approva
-                            </button>
+                            🛡 Verifica
+                          </h3>
 
-                            <button
-                              type="button"
-                              disabled={
-                                actionLoading === pro.id
-                              }
-                              onClick={() =>
-                                changeVerification(
-                                  pro.id,
-                                  'rifiutato'
-                                )
-                              }
+                          <p>
+                            <b>
+                              Stato verifica:
+                            </b>{' '}
+                            {verificationLabel(
+                              pro.verification_status
+                            )}
+                          </p>
+
+                          <p>
+                            <b>
+                              Flag verificato:
+                            </b>{' '}
+                            {pro.verified
+                              ? 'Sì'
+                              : 'No'}
+                          </p>
+
+                          {pro.verification_status ===
+                            'da_verificare' && (
+                            <div
                               style={{
-                                background: '#b52b27',
-                                color: '#fff',
-                                border: 'none',
-                                borderRadius: 10,
-                                padding: '13px 10px',
-                                fontWeight: 800
+                                display:
+                                  'grid',
+                                gridTemplateColumns:
+                                  '1fr 1fr',
+                                gap: 10,
+                                marginTop: 18
                               }}
                             >
-                              ❌ Rifiuta
-                            </button>
+                              <button
+                                type="button"
+                                disabled={
+                                  actionLoading ===
+                                  pro.id
+                                }
+                                onClick={() =>
+                                  changeVerification(
+                                    pro.id,
+                                    'verificato'
+                                  )
+                                }
+                                style={{
+                                  background:
+                                    '#16864b',
+                                  color:
+                                    '#fff',
+                                  border:
+                                    'none',
+                                  borderRadius: 10,
+                                  padding:
+                                    '13px 10px',
+                                  fontWeight: 800
+                                }}
+                              >
+                                ✅ Approva
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  actionLoading ===
+                                  pro.id
+                                }
+                                onClick={() =>
+                                  changeVerification(
+                                    pro.id,
+                                    'rifiutato'
+                                  )
+                                }
+                                style={{
+                                  background:
+                                    '#b52b27',
+                                  color:
+                                    '#fff',
+                                  border:
+                                    'none',
+                                  borderRadius: 10,
+                                  padding:
+                                    '13px 10px',
+                                  fontWeight: 800
+                                }}
+                              >
+                                ❌ Rifiuta
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {pro.id ===
+                        user.id ? (
+                          <div
+                            style={{
+                              fontWeight: 800
+                            }}
+                          >
+                            🛡 Account
+                            amministratore
+                            protetto
                           </div>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={
+                              deletingUser ===
+                              pro.id
+                            }
+                            onClick={() =>
+                              deleteAccount(
+                                pro.id,
+                                pro.business_name ||
+                                  pro.full_name ||
+                                  pro.email ||
+                                  'questo professionista'
+                              )
+                            }
+                            style={
+                              deleteButtonStyle
+                            }
+                          >
+                            {deletingUser ===
+                            pro.id
+                              ? 'Eliminazione...'
+                              : '🗑 Elimina professionista'}
+                          </button>
                         )}
                       </div>
-
-                      {pro.id === user.id ? (
-                        <div style={{ fontWeight: 800 }}>
-                          🛡 Account amministratore protetto
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={deletingUser === pro.id}
-                          onClick={() =>
-                            deleteAccount(
-                              pro.id,
-                              pro.business_name ||
-                                pro.full_name ||
-                                pro.email ||
-                                'questo professionista'
-                            )
-                          }
-                          style={deleteButtonStyle}
-                        >
-                          {deletingUser === pro.id
-                            ? 'Eliminazione...'
-                            : '🗑 Elimina professionista'}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </article>
-              );
-            })}
+                    )}
+                  </article>
+                );
+              }
+            )}
           </div>
         )}
 
         {tab === 'lavori' && (
-          <div style={{ display: 'grid', gap: 14 }}>
-            <h2>Lavori ({filteredJobs.length})</h2>
+          <div
+            style={{
+              display: 'grid',
+              gap: 14
+            }}
+          >
+            <h2>
+              Lavori ({filteredJobs.length})
+            </h2>
 
             {filteredJobs.map(job => {
               const opened =
                 selectedJobId === job.id;
+
+              const conversation =
+                jobMessages[job.id] ?? [];
 
               return (
                 <article
@@ -1797,9 +2397,11 @@ export default function AdminPage() {
                   <div
                     style={{
                       display: 'flex',
-                      justifyContent: 'space-between',
+                      justifyContent:
+                        'space-between',
                       gap: 15,
-                      alignItems: 'flex-start',
+                      alignItems:
+                        'flex-start',
                       flexWrap: 'wrap'
                     }}
                   >
@@ -1810,23 +2412,33 @@ export default function AdminPage() {
                           marginBottom: 10
                         }}
                       >
-                        {jobStatusLabel(job.status)}
+                        {jobStatusLabel(
+                          job.status
+                        )}
                       </div>
 
-                      <h3 style={{ margin: 0 }}>
-                        {job.category_name || 'Categoria'}
+                      <h3
+                        style={{
+                          margin: 0
+                        }}
+                      >
+                        {job.category_name ||
+                          'Categoria'}
                       </h3>
                     </div>
 
                     <div
                       style={{
                         fontWeight: 900,
-                        background: '#f0f0f0',
-                        padding: '8px 12px',
+                        background:
+                          '#f0f0f0',
+                        padding:
+                          '8px 12px',
                         borderRadius: 999
                       }}
                     >
-                      {job.urgency?.toUpperCase() || '—'}
+                      {job.urgency?.toUpperCase() ||
+                        '—'}
                     </div>
                   </div>
 
@@ -1835,26 +2447,41 @@ export default function AdminPage() {
                     {job.client_name || '—'}
                   </p>
 
-                  <p>{job.description || '—'}</p>
+                  <p>
+                    {job.description || '—'}
+                  </p>
 
-                  <p style={{ color: '#666' }}>
+                  <p
+                    style={{
+                      color: '#666'
+                    }}
+                  >
                     📍{' '}
                     {job.address ||
                       'Indirizzo non disponibile'}
                   </p>
 
-                  <p style={{ color: '#666' }}>
-                    📅 {formatDate(job.created_at)}
+                  <p
+                    style={{
+                      color: '#666'
+                    }}
+                  >
+                    📅{' '}
+                    {formatDate(
+                      job.created_at
+                    )}
                   </p>
 
                   <button
                     type="button"
                     onClick={() =>
-                      setSelectedJobId(
-                        opened ? null : job.id
+                      void openJobDetails(
+                        job.id
                       )
                     }
-                    style={openButtonStyle(opened)}
+                    style={openButtonStyle(
+                      opened
+                    )}
                   >
                     {opened
                       ? '▲ Chiudi scheda'
@@ -1869,83 +2496,133 @@ export default function AdminPage() {
                         marginTop: 18
                       }}
                     >
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
                           👤 Cliente
                         </h3>
 
                         <p>
                           <b>Nome:</b>{' '}
-                          {job.client_name || '—'}
+                          {job.client_name ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Email:</b>{' '}
-                          {job.client_email || '—'}
+                          {job.client_email ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Telefono:</b>{' '}
-                          {job.client_phone || '—'}
+                          {job.client_phone ||
+                            '—'}
                         </p>
 
                         <small>
-                          ID cliente: {job.client_id}
+                          ID cliente:{' '}
+                          {job.client_id}
                         </small>
                       </div>
 
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          🛠 Professionista assegnato
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
+                          🛠 Professionista
+                          assegnato
                         </h3>
 
                         {job.professional_id ? (
                           <>
                             <p>
-                              <b>Nome:</b>{' '}
-                              {job.professional_name || '—'}
+                              <b>
+                                Nome:
+                              </b>{' '}
+                              {job.professional_name ||
+                                '—'}
                             </p>
 
                             <p>
-                              <b>Email:</b>{' '}
-                              {job.professional_email || '—'}
+                              <b>
+                                Email:
+                              </b>{' '}
+                              {job.professional_email ||
+                                '—'}
                             </p>
 
                             <p>
-                              <b>Telefono:</b>{' '}
-                              {job.professional_phone || '—'}
+                              <b>
+                                Telefono:
+                              </b>{' '}
+                              {job.professional_phone ||
+                                '—'}
                             </p>
 
                             <small>
                               ID professionista:{' '}
-                              {job.professional_id}
+                              {
+                                job.professional_id
+                              }
                             </small>
                           </>
                         ) : (
                           <p
                             style={{
                               marginBottom: 0,
-                              color: '#666'
+                              color:
+                                '#666'
                             }}
                           >
-                            Nessun professionista ha ancora accettato questo intervento.
+                            Nessun
+                            professionista ha
+                            ancora accettato
+                            questo intervento.
                           </p>
                         )}
                       </div>
 
-                      <div style={detailBoxStyle}>
-                        <h3 style={{ marginTop: 0 }}>
-                          📋 Dettagli intervento
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
+                          📋 Dettagli
+                          intervento
                         </h3>
 
                         <p>
                           <b>Stato:</b>{' '}
-                          {jobStatusLabel(job.status)}
+                          {jobStatusLabel(
+                            job.status
+                          )}
                         </p>
 
                         <p>
-                          <b>Categoria:</b>{' '}
-                          {job.category_name || '—'}
+                          <b>
+                            Categoria:
+                          </b>{' '}
+                          {job.category_name ||
+                            '—'}
                         </p>
 
                         <p>
@@ -1955,31 +2632,179 @@ export default function AdminPage() {
                         </p>
 
                         <p>
-                          <b>Descrizione:</b>
+                          <b>
+                            Descrizione:
+                          </b>
                         </p>
 
                         <div
                           style={{
-                            whiteSpace: 'pre-wrap',
+                            whiteSpace:
+                              'pre-wrap',
                             lineHeight: 1.5
                           }}
                         >
-                          {job.description || '—'}
+                          {job.description ||
+                            '—'}
                         </div>
 
                         <p>
-                          <b>Indirizzo:</b>{' '}
-                          {job.address || '—'}
+                          <b>
+                            Indirizzo:
+                          </b>{' '}
+                          {job.address ||
+                            '—'}
                         </p>
 
                         <p>
                           <b>Creato:</b>{' '}
-                          {formatDate(job.created_at)}
+                          {formatDate(
+                            job.created_at
+                          )}
                         </p>
 
                         <small>
                           ID lavoro: {job.id}
                         </small>
+                      </div>
+
+                      <div
+                        style={
+                          detailBoxStyle
+                        }
+                      >
+                        <h3
+                          style={{
+                            marginTop: 0
+                          }}
+                        >
+                          💬 Conversazione
+                        </h3>
+
+                        {loadingJobMessages ===
+                        job.id ? (
+                          <p>
+                            Caricamento
+                            conversazione...
+                          </p>
+                        ) : conversation.length ===
+                          0 ? (
+                          <p
+                            style={{
+                              color:
+                                '#666',
+                              marginBottom: 0
+                            }}
+                          >
+                            Nessun messaggio
+                            presente per questo
+                            intervento.
+                          </p>
+                        ) : (
+                          <div
+                            style={{
+                              display:
+                                'grid',
+                              gap: 12
+                            }}
+                          >
+                            {conversation.map(
+                              chatMessage => (
+                                <div
+                                  key={
+                                    chatMessage.message_id
+                                  }
+                                  style={{
+                                    background:
+                                      '#fff',
+                                    border:
+                                      '1px solid #ddd',
+                                    borderRadius: 12,
+                                    padding: 14
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display:
+                                        'flex',
+                                      justifyContent:
+                                        'space-between',
+                                      gap: 10,
+                                      alignItems:
+                                        'flex-start',
+                                      flexWrap:
+                                        'wrap',
+                                      marginBottom: 8
+                                    }}
+                                  >
+                                    <div>
+                                      <div
+                                        style={{
+                                          fontWeight: 900
+                                        }}
+                                      >
+                                        {chatMessage.sender_name ||
+                                          chatMessage.sender_email ||
+                                          'Utente'}
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          color:
+                                            '#666',
+                                          fontSize: 13,
+                                          marginTop: 3
+                                        }}
+                                      >
+                                        {senderRoleLabel(
+                                          chatMessage.sender_role
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <small
+                                      style={{
+                                        color:
+                                          '#777'
+                                      }}
+                                    >
+                                      {formatDate(
+                                        chatMessage.created_at
+                                      )}
+                                    </small>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      whiteSpace:
+                                        'pre-wrap',
+                                      lineHeight: 1.5,
+                                      overflowWrap:
+                                        'anywhere'
+                                    }}
+                                  >
+                                    {chatMessage.message_text}
+                                  </div>
+
+                                  {chatMessage.sender_email && (
+                                    <div
+                                      style={{
+                                        marginTop: 8,
+                                        color:
+                                          '#888',
+                                        fontSize: 12
+                                      }}
+                                    >
+                                      {
+                                        chatMessage.sender_email
+                                      }
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
