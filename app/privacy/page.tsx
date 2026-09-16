@@ -36,7 +36,7 @@ export default function PrivacyPage() {
       </h1>
 
       <p>
-        Ultimo aggiornamento: 9 settembre 2026
+        Ultimo aggiornamento: 16 settembre 2026
       </p>
 
       <p>
@@ -47,9 +47,7 @@ export default function PrivacyPage() {
 
       <h2>1. Titolare del trattamento</h2>
 
-      <p>
-        Il titolare del trattamento è:
-      </p>
+      <p>Il titolare del trattamento è:</p>
 
       <p>
         <strong>Mattia Garbugli</strong>
@@ -66,18 +64,14 @@ export default function PrivacyPage() {
       </p>
 
       <ul>
-        <li>
-          dati identificativi, come nome e cognome;
-        </li>
+        <li>dati identificativi, come nome e cognome;</li>
 
         <li>
           indirizzo email e dati necessari per
           l&apos;autenticazione;
         </li>
 
-        <li>
-          numero di telefono;
-        </li>
+        <li>numero di telefono;</li>
 
         <li>
           dati professionali, tra cui nome attività,
@@ -123,20 +117,23 @@ export default function PrivacyPage() {
 
         <li>
           eventuali dati tecnici necessari per
-          l&apos;attivazione delle notifiche.
+          l&apos;attivazione delle notifiche;
+        </li>
+
+        <li>
+          identificatori tecnici pseudonimi o anonimi
+          utilizzati per misurare l&apos;utilizzo della
+          piattaforma, come descritto nella sezione
+          dedicata alle statistiche di utilizzo.
         </li>
       </ul>
 
       <h2>3. Finalità del trattamento</h2>
 
-      <p>
-        I dati personali vengono trattati per:
-      </p>
+      <p>I dati personali vengono trattati per:</p>
 
       <ul>
-        <li>
-          creare e gestire gli account;
-        </li>
+        <li>creare e gestire gli account;</li>
 
         <li>
           permettere ai clienti di pubblicare richieste di
@@ -163,30 +160,28 @@ export default function PrivacyPage() {
           delle fotografie relative agli interventi;
         </li>
 
-        <li>
-          gestire lo stato degli interventi;
-        </li>
+        <li>gestire lo stato degli interventi;</li>
 
-        <li>
-          gestire recensioni e valutazioni;
-        </li>
+        <li>gestire recensioni e valutazioni;</li>
 
-        <li>
-          verificare i profili professionali;
-        </li>
+        <li>verificare i profili professionali;</li>
 
         <li>
           prevenire abusi, frodi e utilizzi impropri della
           piattaforma;
         </li>
 
-        <li>
-          adempiere a obblighi di legge;
-        </li>
+        <li>adempiere a obblighi di legge;</li>
 
         <li>
           migliorare sicurezza, affidabilità e
-          funzionamento del servizio.
+          funzionamento del servizio;
+        </li>
+
+        <li>
+          produrre statistiche aggregate sull&apos;utilizzo
+          della piattaforma, come il numero di
+          visualizzazioni e la stima dei visitatori unici.
         </li>
       </ul>
 
@@ -212,8 +207,9 @@ export default function PrivacyPage() {
 
         <li>
           del legittimo interesse del titolare alla
-          sicurezza, prevenzione degli abusi e corretto
-          funzionamento della piattaforma.
+          sicurezza, prevenzione degli abusi, corretto
+          funzionamento e miglioramento della piattaforma,
+          nei limiti consentiti dalla normativa applicabile.
         </li>
       </ul>
 
@@ -292,7 +288,54 @@ export default function PrivacyPage() {
         di contenuti illeciti, offensivi o abusivi.
       </p>
 
-      <h2>10. Conservazione dei dati</h2>
+      <h2>10. Statistiche di utilizzo e identificatore nel browser</h2>
+
+      <p>
+        LavoroSubito utilizza un identificatore tecnico
+        generato casualmente e memorizzato localmente nel
+        browser dell&apos;utente tramite la tecnologia
+        localStorage.
+      </p>
+
+      <p>
+        Tale identificatore viene utilizzato per ottenere
+        statistiche sull&apos;utilizzo della piattaforma,
+        comprese le visualizzazioni delle pagine e la stima
+        del numero di visitatori unici.
+      </p>
+
+      <p>
+        L&apos;identificatore non contiene direttamente nome,
+        cognome, indirizzo email o numero di telefono
+        dell&apos;utente e non viene utilizzato da
+        LavoroSubito per identificarlo direttamente.
+      </p>
+
+      <p>
+        In occasione della navigazione possono essere
+        registrati l&apos;identificatore tecnico, il percorso
+        della pagina visitata e la data e l&apos;ora della
+        visita.
+      </p>
+
+      <p>
+        L&apos;identificatore può rimanere memorizzato nel
+        browser fino alla cancellazione dei dati locali del
+        sito da parte dell&apos;utente o fino alla sua
+        sostituzione o rimozione.
+      </p>
+
+      <p>
+        La cancellazione dei dati del sito o l&apos;utilizzo
+        di browser, dispositivi o modalità di navigazione
+        differenti può determinare la creazione di un nuovo
+        identificatore. Per questo motivo il numero dei
+        visitatori unici rappresenta una stima e non
+        necessariamente il numero esatto di persone che
+        hanno visitato LavoroSubito.
+      </p>
+
+      <h2>11. Conservazione dei dati</h2>
 
       <p>
         I dati vengono conservati per il tempo necessario
@@ -308,7 +351,7 @@ export default function PrivacyPage() {
         dalla legge.
       </p>
 
-      <h2>11. Fornitori e responsabili esterni</h2>
+      <h2>12. Fornitori e responsabili esterni</h2>
 
       <p>
         Per fornire il servizio, LavoroSubito può utilizzare
@@ -328,7 +371,7 @@ export default function PrivacyPage() {
         le istruzioni e le garanzie applicabili.
       </p>
 
-      <h2>12. Trasferimenti fuori dallo SEE</h2>
+      <h2>13. Trasferimenti fuori dallo SEE</h2>
 
       <p>
         Alcuni fornitori tecnologici potrebbero trattare
@@ -343,7 +386,7 @@ export default function PrivacyPage() {
         adeguatezza o clausole contrattuali standard.
       </p>
 
-      <h2>13. Sicurezza</h2>
+      <h2>14. Sicurezza</h2>
 
       <p>
         LavoroSubito adotta misure tecniche e organizzative
@@ -357,7 +400,7 @@ export default function PrivacyPage() {
         una sicurezza assoluta.
       </p>
 
-      <h2>14. Diritti dell&apos;interessato</h2>
+      <h2>15. Diritti dell&apos;interessato</h2>
 
       <p>
         Nei casi previsti dal Regolamento UE 2016/679
@@ -371,6 +414,7 @@ export default function PrivacyPage() {
         <li>limitazione del trattamento;</li>
         <li>opposizione;</li>
         <li>portabilità dei dati;</li>
+
         <li>
           revoca del consenso, ove il trattamento sia
           basato sul consenso.
@@ -382,7 +426,7 @@ export default function PrivacyPage() {
         <strong>gaf90@hotmail.it</strong>.
       </p>
 
-      <h2>15. Reclamo al Garante</h2>
+      <h2>16. Reclamo al Garante</h2>
 
       <p>
         L&apos;utente ha inoltre il diritto di proporre reclamo
@@ -390,7 +434,7 @@ export default function PrivacyPage() {
         Garante per la protezione dei dati personali.
       </p>
 
-      <h2>16. Minori</h2>
+      <h2>17. Minori</h2>
 
       <p>
         La piattaforma è destinata a persone che possono
@@ -398,7 +442,7 @@ export default function PrivacyPage() {
         la legge applicabile.
       </p>
 
-      <h2>17. Modifiche alla presente informativa</h2>
+      <h2>18. Modifiche alla presente informativa</h2>
 
       <p>
         La presente Privacy Policy può essere aggiornata per
