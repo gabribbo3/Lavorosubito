@@ -26,13 +26,7 @@ const CATEGORIES = [
   ['Altro', '🏠']
 ];
 
-const DISTANCES = [
-  10,
-  20,
-  30,
-  50,
-  100
-];
+const DISTANCES = [10, 20, 30, 50, 100];
 
 type ContactDetails = {
   client_name?: string | null;
@@ -41,17 +35,11 @@ type ContactDetails = {
   professional_phone?: string | null;
 };
 
-function slugify(
-  value: string
-) {
+function slugify(value: string) {
   return value
     .toLowerCase()
-    .replaceAll(
-      ' ',
-      '-'
-    );
+    .replaceAll(' ', '-');
 }
-
 
 function reportGoogleAdsLeadConversion() {
   if (typeof window === 'undefined') {
@@ -73,9 +61,7 @@ function reportGoogleAdsLeadConversion() {
   });
 }
 
-function availabilityLabel(
-  value: string
-) {
+function availabilityLabel(value: string) {
   if (value === 'ora') {
     return '🟢 Disponibile ora';
   }
@@ -91,9 +77,7 @@ function availabilityLabel(
   return '⚫ Offline';
 }
 
-function statusLabel(
-  value: string
-) {
+function statusLabel(value: string) {
   if (value === 'aperta') {
     return '🔴 RICERCA IN CORSO';
   }
@@ -118,16 +102,11 @@ function statusLabel(
     return '⚫ ANNULLATA';
   }
 
-  return String(
-    value || ''
-  ).toUpperCase();
+  return String(value || '').toUpperCase();
 }
 
 function etaLabel(
-  value:
-    | number
-    | null
-    | undefined
+  value: number | null | undefined
 ) {
   if (value == null) {
     return 'Tempo non disponibile';
@@ -137,43 +116,26 @@ function etaLabel(
     return `Circa ${value} min`;
   }
 
-  const h =
-    Math.floor(
-      value / 60
-    );
-
-  const m =
-    value % 60;
+  const h = Math.floor(value / 60);
+  const m = value % 60;
 
   return m
     ? `Circa ${h} h ${m} min`
     : `Circa ${h} h`;
 }
 
-function whatsappNumber(
-  phone: string
-) {
-  let value =
-    phone.replace(
-      /\D/g,
-      ''
-    );
+function whatsappNumber(phone: string) {
+  let value = phone.replace(/\D/g, '');
 
-  if (
-    value.startsWith(
-      '00'
-    )
-  ) {
-    value =
-      value.slice(2);
+  if (value.startsWith('00')) {
+    value = value.slice(2);
   }
 
   if (
     value.length === 10 &&
     value.startsWith('3')
   ) {
-    value =
-      `39${value}`;
+    value = `39${value}`;
   }
 
   return value;
@@ -189,22 +151,17 @@ function LegalFooter() {
       <div
         style={{
           marginTop: 8,
-          display:
-            'flex',
-          justifyContent:
-            'center',
+          display: 'flex',
+          justifyContent: 'center',
           gap: 16,
-          flexWrap:
-            'wrap'
+          flexWrap: 'wrap'
         }}
       >
         <a
           href="/privacy"
           style={{
-            color:
-              'inherit',
-            fontWeight:
-              700
+            color: 'inherit',
+            fontWeight: 700
           }}
         >
           Privacy
@@ -213,10 +170,8 @@ function LegalFooter() {
         <a
           href="/termini"
           style={{
-            color:
-              'inherit',
-            fontWeight:
-              700
+            color: 'inherit',
+            fontWeight: 700
           }}
         >
           Termini e condizioni
@@ -227,564 +182,353 @@ function LegalFooter() {
 }
 
 export default function Home() {
-  const [
-    user,
-    setUser
-  ] =
-    useState<User | null>(
-      null
-    );
+  /*
+   * CONTATORE VISITE LAVOROSUBITO
+   *
+   * - genera un identificatore casuale anonimo
+   * - lo conserva nel browser
+   * - registra una visualizzazione ad ogni nuova
+   *   apertura/montaggio della pagina
+   * - non blocca mai il funzionamento del sito
+   */
+  useEffect(() => {
+    async function recordVisit() {
+      try {
+        const storageKey =
+          'lavorosubito_visitor_id';
 
-  const [
-    role,
-    setRole
-  ] =
+        let visitorId =
+          window.localStorage.getItem(
+            storageKey
+          );
+
+        if (!visitorId) {
+          visitorId =
+            window.crypto.randomUUID();
+
+          window.localStorage.setItem(
+            storageKey,
+            visitorId
+          );
+        }
+
+        await supabase.rpc(
+          'record_site_visit',
+          {
+            p_visitor_id: visitorId,
+            p_path:
+              window.location.pathname
+          }
+        );
+      } catch {
+        /*
+         * Il contatore non deve mai
+         * interferire con LavoroSubito.
+         */
+      }
+    }
+
+    void recordVisit();
+  }, []);
+
+  const [user, setUser] =
+    useState<User | null>(null);
+
+  const [role, setRole] =
     useState('');
 
-  const [
-    fullName,
-    setFullName
-  ] =
+  const [fullName, setFullName] =
     useState('');
 
-  const [
-    clientPhone,
-    setClientPhone
-  ] =
+  const [clientPhone, setClientPhone] =
     useState('');
 
   const [
     contactDetails,
     setContactDetails
-  ] =
-    useState<
-      Record<
-        string,
-        ContactDetails
-      >
-    >({});
+  ] = useState<
+    Record<string, ContactDetails>
+  >({});
 
-  const [
-    message,
-    setMessage
-  ] =
+  const [message, setMessage] =
     useState('');
 
-  const [
-    busy,
-    setBusy
-  ] =
+  const [busy, setBusy] =
     useState(false);
 
-  const [
-    live,
-    setLive
-  ] =
+  const [live, setLive] =
     useState(false);
 
-  const [
-    categories,
-    setCategories
-  ] =
-    useState<any[]>(
-      []
-    );
+  const [categories, setCategories] =
+    useState<any[]>([]);
 
   const [
     selectedProCats,
     setSelectedProCats
-  ] =
-    useState<string[]>(
-      []
-    );
+  ] = useState<string[]>([]);
 
   const [
     availability,
     setAvailability
-  ] =
-    useState(
-      'offline'
-    );
+  ] = useState('offline');
 
   const [
     maxDistance,
     setMaxDistance
-  ] =
-    useState(30);
+  ] = useState(30);
 
-  const [
-    identity,
-    setIdentity
-  ] =
-    useState<any>(
-      {}
-    );
+  const [identity, setIdentity] =
+    useState<any>({});
 
-  const [
-    setup,
-    setSetup
-  ] =
-    useState<any>(
-      null
-    );
+  const [setup, setSetup] =
+    useState<any>(null);
 
-  const [
-    proCity,
-    setProCity
-  ] =
+  const [proCity, setProCity] =
     useState('');
 
   const [
     proPostalCode,
     setProPostalCode
-  ] =
-    useState('');
+  ] = useState('');
 
   const [
     locationBusy,
     setLocationBusy
-  ] =
-    useState(false);
+  ] = useState(false);
 
-  const [
-    reviews,
-    setReviews
-  ] =
-    useState<any[]>(
-      []
-    );
+  const [reviews, setReviews] =
+    useState<any[]>([]);
 
-  const [
-    clientJobs,
-    setClientJobs
-  ] =
-    useState<any[]>(
-      []
-    );
+  const [clientJobs, setClientJobs] =
+    useState<any[]>([]);
 
   const [
     matchingJobs,
     setMatchingJobs
-  ] =
-    useState<any[]>(
-      []
-    );
+  ] = useState<any[]>([]);
 
   const [
     acceptedJobs,
     setAcceptedJobs
-  ] =
-    useState<any[]>(
-      []
-    );
+  ] = useState<any[]>([]);
 
   const [
     clientFilter,
     setClientFilter
-  ] =
-    useState(
-      'tutti'
-    );
+  ] = useState('tutti');
 
-  const [
-    proFilter,
-    setProFilter
-  ] =
-    useState(
-      'tutti'
-    );
+  const [proFilter, setProFilter] =
+    useState('tutti');
 
-  const [
-    cat,
-    setCat
-  ] =
+  const [cat, setCat] =
     useState('');
 
-  const [
-    urgency,
-    setUrgency
-  ] =
-    useState(
-      'SUBITO'
-    );
+  const [urgency, setUrgency] =
+    useState('SUBITO');
 
   const [
     description,
     setDescription
-  ] =
+  ] = useState('');
+
+  const [address, setAddress] =
     useState('');
 
-  const [
-    address,
-    setAddress
-  ] =
-    useState('');
-
-  const [
-    coords,
-    setCoords
-  ] =
+  const [coords, setCoords] =
     useState<{
-      latitude:
-        number;
-      longitude:
-        number;
-    } | null>(
-      null
-    );
+      latitude: number;
+      longitude: number;
+    } | null>(null);
 
-  const [
-    photoFile,
-    setPhotoFile
-  ] =
-    useState<File | null>(
-      null
-    );
+  const [photoFile, setPhotoFile] =
+    useState<File | null>(null);
 
   const [
     photoPreview,
     setPhotoPreview
-  ] =
-    useState('');
+  ] = useState('');
 
-  const [
-    jobPhotos,
-    setJobPhotos
-  ] =
+  const [jobPhotos, setJobPhotos] =
     useState<
-      Record<
-        string,
-        string | null
-      >
+      Record<string, string | null>
     >({});
 
-  const [
-    bestMatch,
-    setBestMatch
-  ] =
-    useState<any>(
-      null
-    );
+  const [bestMatch, setBestMatch] =
+    useState<any>(null);
 
-  const [
-    authOpen,
-    setAuthOpen
-  ] =
+  const [authOpen, setAuthOpen] =
     useState(false);
 
-  const [
-    authMode,
-    setAuthMode
-  ] =
-    useState(
-      'login'
-    );
+  const [authMode, setAuthMode] =
+    useState('login');
 
   const [
     signupRole,
     setSignupRole
-  ] =
-    useState(
-      'cliente'
-    );
+  ] = useState('cliente');
 
-  const [
-    authName,
-    setAuthName
-  ] =
+  const [authName, setAuthName] =
     useState('');
 
-  /*
-   * NUOVO:
-   * telefono inserito durante
-   * la registrazione cliente.
-   */
-  const [
-    authPhone,
-    setAuthPhone
-  ] =
+  const [authPhone, setAuthPhone] =
     useState('');
 
-  const [
-    email,
-    setEmail
-  ] =
+  const [email, setEmail] =
     useState('');
 
-  const [
-    password,
-    setPassword
-  ] =
+  const [password, setPassword] =
     useState('');
 
   const [
     acceptedLegal,
     setAcceptedLegal
-  ] =
-    useState(false);
+  ] = useState(false);
 
-  const [
-    chatJobId,
-    setChatJobId
-  ] =
-    useState<
-      string | null
-    >(null);
+  const [chatJobId, setChatJobId] =
+    useState<string | null>(null);
 
-  const [
-    chatTitle,
-    setChatTitle
-  ] =
+  const [chatTitle, setChatTitle] =
     useState('');
 
-  const [
-    messages,
-    setMessages
-  ] =
-    useState<any[]>(
-      []
-    );
+  const [messages, setMessages] =
+    useState<any[]>([]);
 
   const chatInputRef =
-    useRef<
-      HTMLInputElement | null
-    >(null);
+    useRef<HTMLInputElement | null>(
+      null
+    );
 
   const [
     reviewJobId,
     setReviewJobId
-  ] =
-    useState<
-      string | null
-    >(null);
+  ] = useState<string | null>(null);
 
-  const [
-    rating,
-    setRating
-  ] =
+  const [rating, setRating] =
     useState(5);
 
   const [
     reviewComment,
     setReviewComment
-  ] =
-    useState('');
+  ] = useState('');
 
-  useEffect(
-    () => {
-      supabase.auth
-        .getUser()
-        .then(
-          ({
-            data
-          }) => {
-            setUser(
-              data.user
+  useEffect(() => {
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        setUser(data.user);
+
+        if (data.user) {
+          void loadProfile(
+            data.user.id
+          );
+        }
+      });
+
+    const { data } =
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          const currentUser =
+            session?.user ?? null;
+
+          setUser(currentUser);
+
+          if (currentUser) {
+            void loadProfile(
+              currentUser.id
             );
-
-            if (
-              data.user
-            ) {
-              void loadProfile(
-                data.user.id
-              );
-            }
+          } else {
+            resetState();
           }
-        );
+        }
+      );
 
-      const {
-        data
-      } =
-        supabase.auth
-          .onAuthStateChange(
-            (
-              _event,
-              session
-            ) => {
-              const currentUser =
-                session?.user ??
-                null;
+    return () =>
+      data.subscription.unsubscribe();
+  }, []);
 
-              setUser(
-                currentUser
-              );
+  useEffect(() => {
+    if (!user || !role) {
+      return;
+    }
 
-              if (
-                currentUser
-              ) {
-                void loadProfile(
-                  currentUser.id
-                );
-              } else {
-                resetState();
-              }
-            }
-          );
+    const channel = supabase
+      .channel(
+        `lavorosubito-${user.id}`
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'jobs'
+        },
+        async () => {
+          if (role === 'cliente') {
+            await loadClientJobs();
+          } else {
+            await loadMatchingJobs();
+            await loadAcceptedJobs();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        async payload => {
+          const row: any =
+            payload.new;
 
-      return () =>
-        data.subscription
-          .unsubscribe();
-    },
-    []
-  );
-
-  useEffect(
-    () => {
-      if (
-        !user ||
-        !role
-      ) {
-        return;
-      }
-
-      const channel =
-        supabase
-          .channel(
-            `lavorosubito-${user.id}`
-          )
-          .on(
-            'postgres_changes',
-            {
-              event:
-                '*',
-              schema:
-                'public',
-              table:
-                'jobs'
-            },
-            async () => {
-              if (
-                role ===
-                'cliente'
-              ) {
-                await loadClientJobs();
-              } else {
-                await loadMatchingJobs();
-                await loadAcceptedJobs();
-              }
-            }
-          )
-          .on(
-            'postgres_changes',
-            {
-              event:
-                'INSERT',
-              schema:
-                'public',
-              table:
-                'messages'
-            },
-            async payload => {
-              const row:
-                any =
-                  payload.new;
-
-              if (
-                chatJobId &&
-                row?.job_id ===
-                  chatJobId
-              ) {
-                await loadChat(
-                  chatJobId
-                );
-              }
-            }
-          )
-          .subscribe(
-            status => {
-              setLive(
-                status ===
-                  'SUBSCRIBED'
-              );
-            }
-          );
-
-      return () => {
+          if (
+            chatJobId &&
+            row?.job_id === chatJobId
+          ) {
+            await loadChat(
+              chatJobId
+            );
+          }
+        }
+      )
+      .subscribe(status => {
         setLive(
-          false
+          status === 'SUBSCRIBED'
         );
+      });
 
-        void supabase
-          .removeChannel(
-            channel
-          );
-      };
-    },
-    [
-      user?.id,
-      role,
-      chatJobId
-    ]
-  );
+    return () => {
+      setLive(false);
+
+      void supabase.removeChannel(
+        channel
+      );
+    };
+  }, [user?.id, role, chatJobId]);
 
   function resetState() {
     setRole('');
     setFullName('');
     setClientPhone('');
     setMessage('');
-
-    setClientJobs(
-      []
-    );
-
-    setMatchingJobs(
-      []
-    );
-
-    setAcceptedJobs(
-      []
-    );
-
-    setContactDetails(
-      {}
-    );
-
-    setSelectedProCats(
-      []
-    );
-
-    setAvailability(
-      'offline'
-    );
-
-    setIdentity(
-      {}
-    );
-
-    setSetup(
-      null
-    );
-
+    setClientJobs([]);
+    setMatchingJobs([]);
+    setAcceptedJobs([]);
+    setContactDetails({});
+    setSelectedProCats([]);
+    setAvailability('offline');
+    setIdentity({});
+    setSetup(null);
     setProCity('');
     setProPostalCode('');
-
-    setLocationBusy(
-      false
-    );
-
-    setReviews(
-      []
-    );
-
-    setBestMatch(
-      null
-    );
-
-    setAcceptedLegal(
-      false
-    );
-
-    setAuthPhone(
-      ''
-    );
-
-    setChatJobId(
-      null
-    );
-
-    setMessages(
-      []
-    );
+    setLocationBusy(false);
+    setReviews([]);
+    setBestMatch(null);
+    setAcceptedLegal(false);
+    setAuthPhone('');
+    setChatJobId(null);
+    setMessages([]);
   }
 
   async function loadProfile(
@@ -792,57 +536,36 @@ export default function Home() {
   ) {
     const profile =
       await supabase
-        .from(
-          'profiles'
-        )
+        .from('profiles')
         .select(
           'role,full_name,phone'
         )
-        .eq(
-          'id',
-          id
-        )
+        .eq('id', id)
         .maybeSingle();
 
     const detected =
-      profile.data
-        ?.role ===
+      profile.data?.role ===
       'professionista'
         ? 'professionista'
         : 'cliente';
 
-    setRole(
-      detected
-    );
+    setRole(detected);
 
     setFullName(
-      profile.data
-        ?.full_name ??
-        ''
+      profile.data?.full_name ?? ''
     );
 
-    if (
-      detected ===
-      'cliente'
-    ) {
+    if (detected === 'cliente') {
       setClientPhone(
-        profile.data
-          ?.phone ??
-          ''
+        profile.data?.phone ?? ''
       );
     }
 
     const catResponse =
       await supabase
-        .from(
-          'categories'
-        )
-        .select(
-          'id,name,slug'
-        )
-        .order(
-          'name'
-        );
+        .from('categories')
+        .select('id,name,slug')
+        .order('name');
 
     setCategories(
       Array.isArray(
@@ -852,20 +575,15 @@ export default function Home() {
         : []
     );
 
-    if (
-      detected ===
-      'cliente'
-    ) {
+    if (detected === 'cliente') {
       await loadClientJobs();
     } else {
-      await Promise.all(
-        [
-          loadProfessional(),
-          loadMatchingJobs(),
-          loadAcceptedJobs(),
-          loadReviews()
-        ]
-      );
+      await Promise.all([
+        loadProfessional(),
+        loadMatchingJobs(),
+        loadAcceptedJobs(),
+        loadReviews()
+      ]);
     }
   }
 
@@ -875,8 +593,7 @@ export default function Home() {
     }
 
     const phone =
-      clientPhone
-        .trim();
+      clientPhone.trim();
 
     if (!phone) {
       setMessage(
@@ -889,14 +606,11 @@ export default function Home() {
     setBusy(true);
     setMessage('');
 
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_profile_phone',
         {
-          p_phone:
-            phone
+          p_phone: phone
         }
       );
 
@@ -918,15 +632,11 @@ export default function Home() {
   async function loadJobContact(
     jobId: string
   ) {
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'job_contact_details',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
@@ -935,9 +645,7 @@ export default function Home() {
     }
 
     const contact =
-      Array.isArray(
-        data
-      )
+      Array.isArray(data)
         ? data[0]
         : data;
 
@@ -948,7 +656,6 @@ export default function Home() {
     setContactDetails(
       current => ({
         ...current,
-
         [jobId]:
           contact as ContactDetails
       })
@@ -969,14 +676,9 @@ export default function Home() {
             'completata'
       );
 
-    for (
-      const job
-      of allowed
-    ) {
+    for (const job of allowed) {
       await loadJobContact(
-        String(
-          job.id
-        )
+        String(job.id)
       );
     }
   }
@@ -985,92 +687,64 @@ export default function Home() {
     jobId,
     viewer
   }: {
-    jobId:
-      string;
+    jobId: string;
     viewer:
       | 'cliente'
       | 'professionista';
   }) {
     const contact =
-      contactDetails[
-        jobId
-      ];
+      contactDetails[jobId];
 
     if (!contact) {
       return null;
     }
 
     const name =
-      viewer ===
-      'cliente'
-        ? contact
-            .professional_name
-        : contact
-            .client_name;
+      viewer === 'cliente'
+        ? contact.professional_name
+        : contact.client_name;
 
     const phone =
-      viewer ===
-      'cliente'
-        ? contact
-            .professional_phone
-        : contact
-            .client_phone;
+      viewer === 'cliente'
+        ? contact.professional_phone
+        : contact.client_phone;
 
     if (!phone) {
       return (
         <div className="notice">
-          📞{' '}
-          {name ||
-            'Contatto'}{' '}
-          non ha ancora
-          inserito un numero
+          📞 {name || 'Contatto'} non
+          ha ancora inserito un numero
           di telefono.
         </div>
       );
     }
 
-    const wa =
-      whatsappNumber(
-        String(
-          phone
-        )
-      );
+    const wa = whatsappNumber(
+      String(phone)
+    );
 
     return (
       <div
         className="card"
-        style={{
-          marginTop:
-            12
-        }}
+        style={{ marginTop: 12 }}
       >
         <span className="tag">
           Contatto diretto
         </span>
 
-        <h3>
-          {name ||
-            'Contatto'}
-        </h3>
+        <h3>{name || 'Contatto'}</h3>
 
         <p>
-          📱{' '}
-          <b>
-            {phone}
-          </b>
+          📱 <b>{phone}</b>
         </p>
 
         <p
           className="muted"
-          style={{
-            fontSize:
-              12
-          }}
+          style={{ fontSize: 12 }}
         >
-          Il numero è
-          disponibile solo
-          dopo l’accettazione
-          del lavoro.
+          Il numero è disponibile solo
+          dopo l’accettazione del
+          lavoro.
         </p>
 
         <div className="actions">
@@ -1078,10 +752,8 @@ export default function Home() {
             className="full"
             href={`tel:${phone}`}
             style={{
-              textDecoration:
-                'none',
-              textAlign:
-                'center'
+              textDecoration: 'none',
+              textAlign: 'center'
             }}
           >
             📞 Chiama
@@ -1096,8 +768,7 @@ export default function Home() {
               style={{
                 textDecoration:
                   'none',
-                textAlign:
-                  'center'
+                textAlign: 'center'
               }}
             >
               🟢 WhatsApp
@@ -1114,48 +785,34 @@ export default function Home() {
       catRes,
       setupRes,
       availRes
-    ] =
-      await Promise.all(
-        [
-          supabase.rpc(
-            'my_professional_identity'
-          ),
-
-          supabase.rpc(
-            'my_professional_categories'
-          ),
-
-          supabase.rpc(
-            'my_professional_setup_status'
-          ),
-
-          supabase.rpc(
-            'my_professional_availability'
-          )
-        ]
-      );
+    ] = await Promise.all([
+      supabase.rpc(
+        'my_professional_identity'
+      ),
+      supabase.rpc(
+        'my_professional_categories'
+      ),
+      supabase.rpc(
+        'my_professional_setup_status'
+      ),
+      supabase.rpc(
+        'my_professional_availability'
+      )
+    ]);
 
     if (
-      Array.isArray(
-        idRes.data
-      ) &&
+      Array.isArray(idRes.data) &&
       idRes.data[0]
     ) {
-      setIdentity(
-        idRes.data[0]
-      );
+      setIdentity(idRes.data[0]);
     }
 
     if (
-      Array.isArray(
-        catRes.data
-      )
+      Array.isArray(catRes.data)
     ) {
       setSelectedProCats(
         catRes.data.map(
-          (
-            row: any
-          ) =>
+          (row: any) =>
             row.category_id
         )
       );
@@ -1173,8 +830,7 @@ export default function Home() {
     }
 
     if (
-      typeof
-        availRes.data ===
+      typeof availRes.data ===
       'string'
     ) {
       setAvailability(
@@ -1182,35 +838,24 @@ export default function Home() {
       );
     }
 
-    const {
-      data:
-        authData
-    } =
-      await supabase.auth
-        .getUser();
+    const { data: authData } =
+      await supabase.auth.getUser();
 
-    if (
-      authData.user
-    ) {
+    if (authData.user) {
       const pro =
         await supabase
-          .from(
-            'professionals'
-          )
+          .from('professionals')
           .select(
             'max_distance_km'
           )
           .eq(
             'id',
-            authData
-              .user
-              .id
+            authData.user.id
           )
           .maybeSingle();
 
       if (
-        pro.data
-          ?.max_distance_km !=
+        pro.data?.max_distance_km !=
         null
       ) {
         setMaxDistance(
@@ -1224,10 +869,7 @@ export default function Home() {
   }
 
   async function loadClientJobs() {
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'my_client_jobs'
       );
@@ -1241,22 +883,15 @@ export default function Home() {
     }
 
     const rows =
-      Array.isArray(
-        data
-      )
+      Array.isArray(data)
         ? data
         : [];
 
-    setClientJobs(
-      rows
-    );
+    setClientJobs(rows);
 
     void loadPhotos(
       rows.map(
-        (
-          row: any
-        ) =>
-          row.id
+        (row: any) => row.id
       )
     );
 
@@ -1266,77 +901,51 @@ export default function Home() {
   }
 
   async function loadMatchingJobs() {
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'my_matching_jobs'
       );
 
     if (error) {
-      setMatchingJobs(
-        []
-      );
-
+      setMatchingJobs([]);
       return;
     }
 
     const rows =
-      Array.isArray(
-        data
-      )
+      Array.isArray(data)
         ? data
         : [];
 
-    setMatchingJobs(
-      rows
-    );
+    setMatchingJobs(rows);
 
     void loadPhotos(
       rows.map(
-        (
-          row: any
-        ) =>
-          row.id
+        (row: any) => row.id
       )
     );
   }
 
   async function loadAcceptedJobs() {
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'my_accepted_jobs'
       );
 
     if (error) {
-      setAcceptedJobs(
-        []
-      );
-
+      setAcceptedJobs([]);
       return;
     }
 
     const rows =
-      Array.isArray(
-        data
-      )
+      Array.isArray(data)
         ? data
         : [];
 
-    setAcceptedJobs(
-      rows
-    );
+    setAcceptedJobs(rows);
 
     void loadPhotos(
       rows.map(
-        (
-          row: any
-        ) =>
-          row.id
+        (row: any) => row.id
       )
     );
 
@@ -1346,17 +955,13 @@ export default function Home() {
   }
 
   async function loadReviews() {
-    const {
-      data
-    } =
+    const { data } =
       await supabase.rpc(
         'my_professional_reviews'
       );
 
     setReviews(
-      Array.isArray(
-        data
-      )
+      Array.isArray(data)
         ? data
         : []
     );
@@ -1364,55 +969,31 @@ export default function Home() {
 
   async function getPosition() {
     return new Promise<{
-      latitude:
-        number;
-      longitude:
-        number;
-    } | null>(
-      resolve => {
-        if (
-          !navigator
-            .geolocation
-        ) {
-          resolve(
-            null
-          );
-
-          return;
-        }
-
-        navigator
-          .geolocation
-          .getCurrentPosition(
-            p =>
-              resolve({
-                latitude:
-                  p.coords
-                    .latitude,
-
-                longitude:
-                  p.coords
-                    .longitude
-              }),
-
-            () =>
-              resolve(
-                null
-              ),
-
-            {
-              enableHighAccuracy:
-                true,
-
-              timeout:
-                12000,
-
-              maximumAge:
-                60000
-            }
-          );
+      latitude: number;
+      longitude: number;
+    } | null>(resolve => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
       }
-    );
+
+      navigator.geolocation
+        .getCurrentPosition(
+          p =>
+            resolve({
+              latitude:
+                p.coords.latitude,
+              longitude:
+                p.coords.longitude
+            }),
+          () => resolve(null),
+          {
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 60000
+          }
+        );
+    });
   }
 
   function choosePhoto(
@@ -1420,85 +1001,59 @@ export default function Home() {
       ChangeEvent<HTMLInputElement>
   ) {
     const file =
-      event.target
-        .files?.[0];
+      event.target.files?.[0];
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     if (
-      !file.type
-        .startsWith(
-          'image/'
-        )
+      !file.type.startsWith(
+        'image/'
+      )
     ) {
       setMessage(
         'Seleziona un’immagine.'
       );
-
       return;
     }
 
     if (
       file.size >
-      10 *
-        1024 *
-        1024
+      10 * 1024 * 1024
     ) {
       setMessage(
         'La foto supera 10 MB.'
       );
-
       return;
     }
 
-    if (
-      photoPreview
-    ) {
-      URL
-        .revokeObjectURL(
-          photoPreview
-        );
+    if (photoPreview) {
+      URL.revokeObjectURL(
+        photoPreview
+      );
     }
 
-    setPhotoFile(
-      file
-    );
+    setPhotoFile(file);
 
     setPhotoPreview(
-      URL.createObjectURL(
-        file
-      )
+      URL.createObjectURL(file)
     );
   }
 
   function clearPhoto() {
-    if (
-      photoPreview
-    ) {
-      URL
-        .revokeObjectURL(
-          photoPreview
-        );
+    if (photoPreview) {
+      URL.revokeObjectURL(
+        photoPreview
+      );
     }
 
-    setPhotoFile(
-      null
-    );
-
-    setPhotoPreview(
-      ''
-    );
+    setPhotoFile(null);
+    setPhotoPreview('');
   }
 
   async function uploadPhoto(
     jobId: string
   ) {
-    if (
-      !photoFile ||
-      !user
-    ) {
+    if (!photoFile || !user) {
       return;
     }
 
@@ -1506,8 +1061,7 @@ export default function Home() {
       (
         photoFile.name
           .split('.')
-          .pop() ||
-        'jpg'
+          .pop() || 'jpg'
       )
         .replace(
           /[^a-zA-Z0-9]/g,
@@ -1521,30 +1075,22 @@ export default function Home() {
         .slice(2)}.${ext}`;
 
     const upload =
-      await supabase
-        .storage
-        .from(
-          'job-photos'
-        )
+      await supabase.storage
+        .from('job-photos')
         .upload(
           path,
           photoFile,
           {
             contentType:
               photoFile.type,
-
-            upsert:
-              false
+            upsert: false
           }
         );
 
-    if (
-      upload.error
-    ) {
+    if (upload.error) {
       setMessage(
         `Richiesta creata, foto non caricata: ${upload.error.message}`
       );
-
       return;
     }
 
@@ -1552,27 +1098,18 @@ export default function Home() {
       await supabase.rpc(
         'set_my_job_photo',
         {
-          p_job_id:
-            jobId,
-
-          p_photo_url:
-            path
+          p_job_id: jobId,
+          p_photo_url: path
         }
       );
 
     if (
       save.error ||
-      save.data ===
-        false
+      save.data === false
     ) {
-      await supabase
-        .storage
-        .from(
-          'job-photos'
-        )
-        .remove(
-          [path]
-        );
+      await supabase.storage
+        .from('job-photos')
+        .remove([path]);
 
       setMessage(
         `Richiesta creata, foto non collegata: ${save.error?.message ?? 'errore'}`
@@ -1585,8 +1122,7 @@ export default function Home() {
   ) {
     if (
       Object.prototype
-        .hasOwnProperty
-        .call(
+        .hasOwnProperty.call(
           jobPhotos,
           jobId
         )
@@ -1594,210 +1130,130 @@ export default function Home() {
       return;
     }
 
-    const {
-      data
-    } =
+    const { data } =
       await supabase.rpc(
         'get_job_photo_url',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
     if (!data) {
-      setJobPhotos(
-        current => ({
-          ...current,
-
-          [jobId]:
-            null
-        })
-      );
-
+      setJobPhotos(current => ({
+        ...current,
+        [jobId]: null
+      }));
       return;
     }
 
     const download =
-      await supabase
-        .storage
-        .from(
-          'job-photos'
-        )
-        .download(
-          String(
-            data
-          )
-        );
+      await supabase.storage
+        .from('job-photos')
+        .download(String(data));
 
     if (
       download.error ||
       !download.data
     ) {
-      setJobPhotos(
-        current => ({
-          ...current,
-
-          [jobId]:
-            null
-        })
-      );
-
+      setJobPhotos(current => ({
+        ...current,
+        [jobId]: null
+      }));
       return;
     }
 
-    setJobPhotos(
-      current => ({
-        ...current,
-
-        [jobId]:
-          URL
-            .createObjectURL(
-              download.data
-            )
-      })
-    );
+    setJobPhotos(current => ({
+      ...current,
+      [jobId]:
+        URL.createObjectURL(
+          download.data
+        )
+    }));
   }
 
   async function loadPhotos(
     ids: string[]
   ) {
-    for (
-      const id
-      of ids
-    ) {
-      await loadPhoto(
-        id
-      );
+    for (const id of ids) {
+      await loadPhoto(id);
     }
   }
 
   async function submitJob() {
     if (
       !cat ||
-      !description
-        .trim() ||
-      !address
-        .trim()
+      !description.trim() ||
+      !address.trim()
     ) {
       setMessage(
         'Completa categoria, descrizione e indirizzo.'
       );
-
       return;
     }
 
     if (!user) {
-      setSignupRole(
-        'cliente'
-      );
-
-      setAuthMode(
-        'signup'
-      );
-
-      setAcceptedLegal(
-        false
-      );
-
-      setAuthPhone(
-        ''
-      );
-
-      setAuthOpen(
-        true
-      );
-
+      setSignupRole('cliente');
+      setAuthMode('signup');
+      setAcceptedLegal(false);
+      setAuthPhone('');
+      setAuthOpen(true);
       return;
     }
 
     setBusy(true);
     setMessage('');
-    setBestMatch(
-      null
-    );
+    setBestMatch(null);
 
-    let position =
-      coords;
+    let position = coords;
 
     if (!position) {
       position =
         await getPosition();
 
       if (position) {
-        setCoords(
-          position
-        );
+        setCoords(position);
       }
     }
 
     const category =
       await supabase
-        .from(
-          'categories'
-        )
-        .select(
-          'id'
-        )
+        .from('categories')
+        .select('id')
         .eq(
           'slug',
-          slugify(
-            cat
-          )
+          slugify(cat)
         )
         .maybeSingle();
 
-    if (
-      !category.data
-    ) {
+    if (!category.data) {
       setBusy(false);
-
       setMessage(
         'Categoria non trovata.'
       );
-
       return;
     }
 
     const insert =
       await supabase
-        .from(
-          'jobs'
-        )
+        .from('jobs')
         .insert({
-          client_id:
-            user.id,
-
+          client_id: user.id,
           category_id:
-            category
-              .data
-              .id,
-
+            category.data.id,
           urgency:
-            urgency
-              .toLowerCase(),
-
+            urgency.toLowerCase(),
           description:
-            description
-              .trim(),
-
+            description.trim(),
           address:
-            address
-              .trim(),
-
+            address.trim(),
           latitude:
-            position
-              ?.latitude ??
+            position?.latitude ??
             null,
-
           longitude:
-            position
-              ?.longitude ??
+            position?.longitude ??
             null
         })
-        .select(
-          'id'
-        )
+        .select('id')
         .single();
 
     if (
@@ -1809,30 +1265,17 @@ export default function Home() {
       setMessage(
         `Errore: ${insert.error?.message ?? 'creazione richiesta'}`
       );
-
       return;
     }
 
     const jobId =
-      String(
-        insert
-          .data
-          .id
-      );
+      String(insert.data.id);
 
-    /*
-     * Google Ads:
-     * registra una conversione solo dopo che
-     * la richiesta è stata creata correttamente.
-     */
     reportGoogleAdsLeadConversion();
 
-    await uploadPhoto(
-      jobId
-    );
+    await uploadPhoto(jobId);
 
     clearPhoto();
-
     setDescription('');
     setAddress('');
 
@@ -1842,8 +1285,7 @@ export default function Home() {
       await supabase.rpc(
         'find_verified_professionals_for_job',
         {
-          p_job_id:
-            jobId
+          p_job_id: jobId
         }
       );
 
@@ -1851,82 +1293,58 @@ export default function Home() {
       Array.isArray(
         matching.data
       ) &&
-      matching.data
-        .length
-        ? matching
-            .data[0]
+      matching.data.length
+        ? matching.data[0]
         : null;
 
-    setBestMatch(
-      first
-    );
+    setBestMatch(first);
 
     try {
       const {
-        data:
-          sessionData
+        data: sessionData
       } =
         await supabase.auth
           .getSession();
 
       const accessToken =
-        sessionData
-          .session
+        sessionData.session
           ?.access_token;
 
-      if (
-        accessToken
-      ) {
-        await Promise
-          .allSettled([
-            fetch(
-              '/api/email/new-job',
-              {
-                method:
-                  'POST',
-
-                headers:
-                  {
-                    'Content-Type':
-                      'application/json',
-
-                    Authorization:
-                      `Bearer ${accessToken}`
-                  },
-
-                body:
-                  JSON.stringify(
-                    {
-                      jobId
-                    }
-                  )
-              }
-            ),
-
-            fetch(
-              '/api/push/send',
-              {
-                method:
-                  'POST',
-
-                headers:
-                  {
-                    'Content-Type':
-                      'application/json',
-
-                    Authorization:
-                      `Bearer ${accessToken}`
-                  },
-
-                body:
-                  JSON.stringify(
-                    {
-                      jobId
-                    }
-                  )
-              }
-            )
-          ]);
+      if (accessToken) {
+        await Promise.allSettled([
+          fetch(
+            '/api/email/new-job',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json',
+                Authorization:
+                  `Bearer ${accessToken}`
+              },
+              body:
+                JSON.stringify({
+                  jobId
+                })
+            }
+          ),
+          fetch(
+            '/api/push/send',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':
+                  'application/json',
+                Authorization:
+                  `Bearer ${accessToken}`
+              },
+              body:
+                JSON.stringify({
+                  jobId
+                })
+            }
+          )
+        ]);
       }
     } catch {
       // notifiche non bloccanti
@@ -1952,15 +1370,11 @@ export default function Home() {
       return;
     }
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'cancel_my_job',
         {
-          p_job_id:
-            id
+          p_job_id: id
         }
       );
 
@@ -1980,15 +1394,11 @@ export default function Home() {
   ) {
     setBusy(true);
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'accept_verified_job',
         {
-          p_job_id:
-            id
+          p_job_id: id
         }
       );
 
@@ -2000,20 +1410,13 @@ export default function Home() {
           : 'Lavoro già accettato.'
     );
 
-    await Promise.all(
-      [
-        loadMatchingJobs(),
-        loadAcceptedJobs()
-      ]
-    );
+    await Promise.all([
+      loadMatchingJobs(),
+      loadAcceptedJobs()
+    ]);
 
-    if (
-      data &&
-      !error
-    ) {
-      await loadJobContact(
-        id
-      );
+    if (data && !error) {
+      await loadJobContact(id);
     }
 
     setBusy(false);
@@ -2030,15 +1433,11 @@ export default function Home() {
       return;
     }
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'complete_job',
         {
-          p_job_id:
-            id
+          p_job_id: id
         }
       );
 
@@ -2050,10 +1449,7 @@ export default function Home() {
           : 'Operazione non riuscita.'
     );
 
-    if (
-      role ===
-      'cliente'
-    ) {
+    if (role === 'cliente') {
       await loadClientJobs();
     } else {
       await loadAcceptedJobs();
@@ -2064,22 +1460,14 @@ export default function Home() {
     id: string,
     title: string
   ) {
-    setChatJobId(
-      id
-    );
+    setChatJobId(id);
+    setChatTitle(title);
 
-    setChatTitle(
-      title
-    );
-
-    await loadChat(
-      id
-    );
+    await loadChat(id);
 
     setTimeout(
       () =>
-        chatInputRef
-          .current
+        chatInputRef.current
           ?.focus(),
       100
     );
@@ -2088,24 +1476,14 @@ export default function Home() {
   async function loadChat(
     id: string
   ) {
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase
-        .from(
-          'messages'
-        )
+        .from('messages')
         .select(
           'id,job_id,sender_id,message,created_at'
         )
-        .eq(
-          'job_id',
-          id
-        )
-        .order(
-          'created_at'
-        );
+        .eq('job_id', id)
+        .order('created_at');
 
     if (error) {
       setMessage(
@@ -2113,9 +1491,7 @@ export default function Home() {
       );
     } else {
       setMessages(
-        Array.isArray(
-          data
-        )
+        Array.isArray(data)
           ? data
           : []
       );
@@ -2123,108 +1499,64 @@ export default function Home() {
   }
 
   async function sendMessage(
-    event:
-      FormEvent
+    event: FormEvent
   ) {
-    event
-      .preventDefault();
+    event.preventDefault();
 
-    if (
-      !user ||
-      !chatJobId
-    ) {
+    if (!user || !chatJobId) {
       return;
     }
 
     const text =
-      chatInputRef
-        .current
-        ?.value
-        .trim() ??
-      '';
+      chatInputRef.current
+        ?.value.trim() ?? '';
 
-    if (!text) {
-      return;
-    }
+    if (!text) return;
 
-    const {
-      error
-    } =
+    const { error } =
       await supabase
-        .from(
-          'messages'
-        )
+        .from('messages')
         .insert({
-          job_id:
-            chatJobId,
-
-          sender_id:
-            user.id,
-
-          message:
-            text
+          job_id: chatJobId,
+          sender_id: user.id,
+          message: text
         });
 
     if (error) {
-      setMessage(
-        error.message
-      );
-
+      setMessage(error.message);
       return;
     }
 
-    if (
-      chatInputRef
-        .current
-    ) {
-      chatInputRef
-        .current
-        .value =
+    if (chatInputRef.current) {
+      chatInputRef.current.value =
         '';
     }
 
-    await loadChat(
-      chatJobId
-    );
+    await loadChat(chatJobId);
 
     setTimeout(
       () =>
-        chatInputRef
-          .current
+        chatInputRef.current
           ?.focus(),
       50
     );
   }
 
   async function submitReview(
-    event:
-      FormEvent
+    event: FormEvent
   ) {
-    event
-      .preventDefault();
+    event.preventDefault();
 
-    if (
-      !reviewJobId
-    ) {
-      return;
-    }
+    if (!reviewJobId) return;
 
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'create_review',
         {
-          p_job_id:
-            reviewJobId,
-
-          p_rating:
-            rating,
-
+          p_job_id: reviewJobId,
+          p_rating: rating,
           p_comment:
-            reviewComment
-              .trim() ||
+            reviewComment.trim() ||
             null
         }
       );
@@ -2237,112 +1569,70 @@ export default function Home() {
           : 'Recensione non inviata.'
     );
 
-    setReviewJobId(
-      null
-    );
-
-    setReviewComment(
-      ''
-    );
+    setReviewJobId(null);
+    setReviewComment('');
 
     await loadClientJobs();
   }
 
   async function authSubmit(
-    event:
-      FormEvent
+    event: FormEvent
   ) {
-    event
-      .preventDefault();
+    event.preventDefault();
 
-    /*
-     * Telefono obbligatorio
-     * solo per il cliente.
-     */
     if (
-      authMode ===
-        'signup' &&
-      signupRole ===
-        'cliente' &&
+      authMode === 'signup' &&
+      signupRole === 'cliente' &&
       !authPhone.trim()
     ) {
       setMessage(
         'Inserisci il tuo numero di telefono.'
       );
-
       return;
     }
 
     if (
-      authMode ===
-        'signup' &&
+      authMode === 'signup' &&
       !acceptedLegal
     ) {
       setMessage(
         'Per registrarti devi accettare la Privacy Policy e i Termini e condizioni.'
       );
-
       return;
     }
 
     setBusy(true);
     setMessage('');
 
-    if (
-      authMode ===
-      'signup'
-    ) {
-      const {
-        error
-      } =
-        await supabase.auth
-          .signUp({
-            email:
-              email
-                .trim(),
-
-            password,
-
-            options: {
-              data: {
-                full_name:
-                  authName
-                    .trim(),
-
-                role:
-                  signupRole,
-
-                /*
-                 * Il trigger handle_new_user
-                 * legge questo metadata
-                 * e lo salva in profiles.phone.
-                 */
-                phone:
-                  signupRole ===
-                    'cliente'
-                    ? authPhone
-                        .trim()
-                    : null,
-
-                legal_accepted:
-                  true,
-
-                privacy_version:
-                  PRIVACY_VERSION,
-
-                terms_version:
-                  TERMS_VERSION
-              }
+    if (authMode === 'signup') {
+      const { error } =
+        await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              full_name:
+                authName.trim(),
+              role: signupRole,
+              phone:
+                signupRole ===
+                'cliente'
+                  ? authPhone.trim()
+                  : null,
+              legal_accepted: true,
+              privacy_version:
+                PRIVACY_VERSION,
+              terms_version:
+                TERMS_VERSION
             }
-          });
+          }
+        });
 
       if (error) {
         setMessage(
           `Errore registrazione: ${error.message}`
         );
-
         setBusy(false);
-
         return;
       }
 
@@ -2350,47 +1640,25 @@ export default function Home() {
         '✅ Registrazione completata. Controlla la tua email.'
       );
 
-      setAcceptedLegal(
-        false
-      );
-
-      setAuthPhone(
-        ''
-      );
-
-      setAuthMode(
-        'login'
-      );
+      setAcceptedLegal(false);
+      setAuthPhone('');
+      setAuthMode('login');
     } else {
-      const {
-        data,
-        error
-      } =
+      const { data, error } =
         await supabase.auth
           .signInWithPassword({
-            email:
-              email
-                .trim(),
-
+            email: email.trim(),
             password
           });
 
       if (error) {
-        setMessage(
-          error.message
-        );
+        setMessage(error.message);
       } else {
-        setAuthOpen(
-          false
-        );
+        setAuthOpen(false);
 
-        if (
-          data.user
-        ) {
+        if (data.user) {
           await loadProfile(
-            data
-              .user
-              .id
+            data.user.id
           );
         }
       }
@@ -2403,13 +1671,10 @@ export default function Home() {
     const cleanEmail =
       email.trim();
 
-    if (
-      !cleanEmail
-    ) {
+    if (!cleanEmail) {
       setMessage(
         'Inserisci prima la tua email.'
       );
-
       return;
     }
 
@@ -2419,15 +1684,11 @@ export default function Home() {
     const redirectTo =
       `${window.location.origin}/reset-password`;
 
-    const {
-      error
-    } =
+    const { error } =
       await supabase.auth
         .resetPasswordForEmail(
           cleanEmail,
-          {
-            redirectTo
-          }
+          { redirectTo }
         );
 
     setBusy(false);
@@ -2439,24 +1700,15 @@ export default function Home() {
     );
   }
 
-  /*
-   * CANCELLAZIONE ACCOUNT
-   */
   async function deleteMyAccount() {
-    if (!user) {
-      return;
-    }
+    if (!user) return;
 
     const firstConfirm =
       window.confirm(
         'Vuoi davvero eliminare il tuo account?\n\nQuesta operazione è definitiva e non può essere annullata.'
       );
 
-    if (
-      !firstConfirm
-    ) {
-      return;
-    }
+    if (!firstConfirm) return;
 
     const secondConfirm =
       window.prompt(
@@ -2464,13 +1716,11 @@ export default function Home() {
       );
 
     if (
-      secondConfirm !==
-      'ELIMINA'
+      secondConfirm !== 'ELIMINA'
     ) {
       setMessage(
         'Eliminazione account annullata.'
       );
-
       return;
     }
 
@@ -2479,17 +1729,14 @@ export default function Home() {
 
     try {
       const {
-        data:
-          sessionData,
-        error:
-          sessionError
+        data: sessionData,
+        error: sessionError
       } =
         await supabase.auth
           .getSession();
 
       const accessToken =
-        sessionData
-          .session
+        sessionData.session
           ?.access_token;
 
       if (
@@ -2499,9 +1746,7 @@ export default function Home() {
         setMessage(
           'Sessione non valida. Accedi nuovamente.'
         );
-
         setBusy(false);
-
         return;
       }
 
@@ -2509,13 +1754,10 @@ export default function Home() {
         await fetch(
           '/api/account/delete',
           {
-            method:
-              'POST',
-
+            method: 'POST',
             headers: {
               'Content-Type':
                 'application/json',
-
               Authorization:
                 `Bearer ${accessToken}`
             }
@@ -2529,86 +1771,59 @@ export default function Home() {
 
       try {
         result =
-          await response
-            .json();
+          await response.json();
       } catch {
         result = {};
       }
 
       if (
         !response.ok ||
-        result.ok !==
-          true
+        result.ok !== true
       ) {
         setMessage(
           result.error ||
             'Errore durante l’eliminazione dell’account.'
         );
-
         setBusy(false);
-
         return;
       }
 
-      await supabase.auth
-        .signOut();
+      await supabase.auth.signOut();
 
       resetState();
+      setUser(null);
 
-      setUser(
-        null
-      );
-
-      window.location
-        .href =
-        '/';
+      window.location.href = '/';
     } catch {
       setMessage(
         'Errore durante l’eliminazione dell’account.'
       );
-
       setBusy(false);
     }
   }
 
   async function logout() {
-    await supabase.auth
-      .signOut();
-
+    await supabase.auth.signOut();
     resetState();
   }
 
   async function saveIdentity() {
-    const {
-      data,
-      error
-    } =
+    const { data, error } =
       await supabase.rpc(
         'update_my_professional_identity',
         {
           p_business_name:
-            identity
-              .business_name
-              ?.trim() ||
-            '',
-
+            identity.business_name
+              ?.trim() || '',
           p_phone:
-            identity
-              .phone
-              ?.trim() ||
-            '',
-
+            identity.phone
+              ?.trim() || '',
           p_vat_number:
-            identity
-              .vat_number
-              ?.trim() ||
-            '',
-
+            identity.vat_number
+              ?.trim() || '',
           p_tax_code:
-            identity
-              .tax_code
-              ?.trim() ||
-            ''
+            identity.tax_code
+              ?.trim() || ''
         }
       );
 
@@ -2625,19 +1840,15 @@ export default function Home() {
 
   async function saveCategories() {
     if (
-      !selectedProCats
-        .length
+      !selectedProCats.length
     ) {
       setMessage(
         'Seleziona almeno una categoria.'
       );
-
       return;
     }
 
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_categories',
         {
@@ -2657,38 +1868,25 @@ export default function Home() {
   }
 
   async function saveProfessionalCoordinates(
-    latitude:
-      number,
-    longitude:
-      number,
-    successMessage:
-      string
+    latitude: number,
+    longitude: number,
+    successMessage: string
   ) {
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_professional_location',
         {
-          p_latitude:
-            latitude,
-
-          p_longitude:
-            longitude
+          p_latitude: latitude,
+          p_longitude: longitude
         }
       );
 
     if (error) {
-      setMessage(
-        error.message
-      );
-
+      setMessage(error.message);
       return false;
     }
 
-    setMessage(
-      successMessage
-    );
+    setMessage(successMessage);
 
     await loadProfessional();
     await loadMatchingJobs();
@@ -2697,10 +1895,7 @@ export default function Home() {
   }
 
   async function setProLocation() {
-    setLocationBusy(
-      true
-    );
-
+    setLocationBusy(true);
     setMessage('');
 
     const p =
@@ -2710,11 +1905,7 @@ export default function Home() {
       setMessage(
         'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
       );
-
-      setLocationBusy(
-        false
-      );
-
+      setLocationBusy(false);
       return;
     }
 
@@ -2724,9 +1915,7 @@ export default function Home() {
       '✅ Posizione GPS aggiornata.'
     );
 
-    setLocationBusy(
-      false
-    );
+    setLocationBusy(false);
   }
 
   async function setProLocationManual() {
@@ -2734,24 +1923,16 @@ export default function Home() {
       proCity.trim();
 
     const postalCode =
-      proPostalCode
-        .trim();
+      proPostalCode.trim();
 
-    if (
-      !city &&
-      !postalCode
-    ) {
+    if (!city && !postalCode) {
       setMessage(
         'Inserisci la città o il CAP della tua zona operativa.'
       );
-
       return;
     }
 
-    setLocationBusy(
-      true
-    );
-
+    setLocationBusy(true);
     setMessage('');
 
     try {
@@ -2759,15 +1940,10 @@ export default function Home() {
         new URLSearchParams();
 
       if (city) {
-        params.set(
-          'city',
-          city
-        );
+        params.set('city', city);
       }
 
-      if (
-        postalCode
-      ) {
+      if (postalCode) {
         params.set(
           'postalCode',
           postalCode
@@ -2780,70 +1956,43 @@ export default function Home() {
         );
 
       const result =
-        await response
-          .json();
+        await response.json();
 
-      if (
-        !response.ok
-      ) {
+      if (!response.ok) {
         setMessage(
           result.error ||
             'Località non trovata.'
         );
-
-        setLocationBusy(
-          false
-        );
-
+        setLocationBusy(false);
         return;
       }
 
       const latitude =
-        Number(
-          result
-            .latitude
-        );
+        Number(result.latitude);
 
       const longitude =
-        Number(
-          result
-            .longitude
-        );
+        Number(result.longitude);
 
       if (
-        !Number
-          .isFinite(
-            latitude
-          ) ||
-        !Number
-          .isFinite(
-            longitude
-          )
+        !Number.isFinite(
+          latitude
+        ) ||
+        !Number.isFinite(
+          longitude
+        )
       ) {
         setMessage(
           'Coordinate della località non valide.'
         );
-
-        setLocationBusy(
-          false
-        );
-
+        setLocationBusy(false);
         return;
       }
 
       const label =
-        result
-          .displayName ||
-        [
-          postalCode,
-          city
-        ]
-          .filter(
-            Boolean
-          )
-          .join(
-            ' '
-          );
+        result.displayName ||
+        [postalCode, city]
+          .filter(Boolean)
+          .join(' ');
 
       await saveProfessionalCoordinates(
         latitude,
@@ -2856,37 +2005,26 @@ export default function Home() {
       );
     }
 
-    setLocationBusy(
-      false
-    );
+    setLocationBusy(false);
   }
 
   async function setRadius(
-    value:
-      number
+    value: number
   ) {
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_max_distance',
         {
-          p_max_distance:
-            value
+          p_max_distance: value
         }
       );
 
     if (error) {
-      setMessage(
-        error.message
-      );
-
+      setMessage(error.message);
       return;
     }
 
-    setMaxDistance(
-      value
-    );
+    setMaxDistance(value);
 
     setMessage(
       `✅ Raggio impostato a ${value} km.`
@@ -2896,31 +2034,22 @@ export default function Home() {
   }
 
   async function setAvail(
-    value:
-      string
+    value: string
   ) {
-    const {
-      error
-    } =
+    const { error } =
       await supabase.rpc(
         'update_my_availability',
         {
-          p_status:
-            value
+          p_status: value
         }
       );
 
     if (error) {
-      setMessage(
-        error.message
-      );
-
+      setMessage(error.message);
       return;
     }
 
-    setAvailability(
-      value
-    );
+    setAvailability(value);
 
     setMessage(
       `✅ ${availabilityLabel(value)}`
@@ -2930,90 +2059,64 @@ export default function Home() {
   }
 
   const filteredClient =
-    useMemo(
-      () => {
-        if (
-          clientFilter ===
-          'tutti'
-        ) {
-          return clientJobs;
-        }
+    useMemo(() => {
+      if (
+        clientFilter === 'tutti'
+      ) {
+        return clientJobs;
+      }
 
-        return clientJobs
-          .filter(
-            job =>
-              job.status ===
-              clientFilter
-          );
-      },
-      [
-        clientJobs,
-        clientFilter
-      ]
-    );
+      return clientJobs.filter(
+        job =>
+          job.status ===
+          clientFilter
+      );
+    }, [
+      clientJobs,
+      clientFilter
+    ]);
 
   const visibleMatching =
-    proFilter ===
-      'tutti' ||
-    proFilter ===
-      'aperta'
+    proFilter === 'tutti' ||
+    proFilter === 'aperta'
       ? matchingJobs
       : [];
 
   const visibleAccepted =
-    proFilter ===
-    'tutti'
+    proFilter === 'tutti'
       ? acceptedJobs
-      : acceptedJobs
-          .filter(
-            job =>
-              job.status ===
-              proFilter
-          );
+      : acceptedJobs.filter(
+          job =>
+            job.status ===
+            proFilter
+        );
 
   const verified =
-    identity
-      .verified ===
-      true &&
-    identity
-      .verification_status ===
+    identity.verified === true &&
+    identity.verification_status ===
       'verificato';
 
   const setupPercentage =
     setup
       ? [
-          setup
-            .has_categories,
-          setup
-            .has_location,
-          setup
-            .has_radius,
-          setup
-            .has_availability
-        ]
-          .filter(
-            Boolean
-          )
-          .length *
+          setup.has_categories,
+          setup.has_location,
+          setup.has_radius,
+          setup.has_availability
+        ].filter(Boolean).length *
         25
       : 0;
 
   const averageRating =
     reviews.length
       ? reviews.reduce(
-          (
-            sum,
-            review
-          ) =>
+          (sum, review) =>
             sum +
             Number(
-              review
-                .rating ||
-                0
+              review.rating || 0
             ),
           0
-        ) /
-        reviews.length
+        ) / reviews.length
       : 0;
 
   function Photo({
@@ -3022,25 +2125,19 @@ export default function Home() {
     id: string;
   }) {
     const src =
-      jobPhotos[
-        id
-      ];
+      jobPhotos[id];
 
-    return src
-      ? (
-        <img
-          className="photo"
-          src={src}
-          alt="Foto del problema"
-        />
-      )
-      : null;
+    return src ? (
+      <img
+        className="photo"
+        src={src}
+        alt="Foto del problema"
+      />
+    ) : null;
   }
 
   function ChatModal() {
-    if (
-      !chatJobId
-    ) {
+    if (!chatJobId) {
       return null;
     }
 
@@ -3051,9 +2148,7 @@ export default function Home() {
             type="button"
             className="x"
             onClick={() =>
-              setChatJobId(
-                null
-              )
+              setChatJobId(null)
             }
           >
             ×
@@ -3063,54 +2158,38 @@ export default function Home() {
             Chat intervento
           </span>
 
-          <h2>
-            {chatTitle}
-          </h2>
+          <h2>{chatTitle}</h2>
 
           <div className="chat-list">
-            {messages.map(
-              item => (
-                <div
-                  key={
-                    item.id
-                  }
-                  className={
-                    `bubble ${
-                      item.sender_id ===
-                      user?.id
-                        ? 'mine'
-                        : 'theirs'
-                    }`
-                  }
-                >
-                  <b>
-                    {
-                      item.sender_id ===
-                      user?.id
-                        ? 'Tu'
-                        : 'Interlocutore'
-                    }
-                  </b>
+            {messages.map(item => (
+              <div
+                key={item.id}
+                className={`bubble ${
+                  item.sender_id ===
+                  user?.id
+                    ? 'mine'
+                    : 'theirs'
+                }`}
+              >
+                <b>
+                  {item.sender_id ===
+                  user?.id
+                    ? 'Tu'
+                    : 'Interlocutore'}
+                </b>
 
-                  <div>
-                    {
-                      item.message
-                    }
-                  </div>
+                <div>
+                  {item.message}
                 </div>
-              )
-            )}
+              </div>
+            ))}
           </div>
 
           <form
-            onSubmit={
-              sendMessage
-            }
+            onSubmit={sendMessage}
           >
             <input
-              ref={
-                chatInputRef
-              }
+              ref={chatInputRef}
               autoComplete="off"
               placeholder="Scrivi un messaggio..."
             />
@@ -3118,8 +2197,7 @@ export default function Home() {
             <button
               className="full"
               style={{
-                marginTop:
-                  10
+                marginTop: 10
               }}
             >
               Invia
@@ -3130,34 +2208,22 @@ export default function Home() {
     );
   }
 
-  /*
-   * AREA PROFESSIONISTA
-   */
   if (
     user &&
-    role ===
-      'professionista'
+    role === 'professionista'
   ) {
     return (
       <main>
         <header>
           <div className="logo">
-            <b>
-              L
-            </b>
-
+            <b>L</b>
             Lavoro
-
-            <span>
-              Subito
-            </span>
+            <span>Subito</span>
           </div>
 
           <button
             className="outline"
-            onClick={
-              logout
-            }
+            onClick={logout}
           >
             Esci
           </button>
@@ -3171,10 +2237,8 @@ export default function Home() {
 
             <h2>
               Ciao{' '}
-              {
-                fullName ||
-                'Professionista'
-              }
+              {fullName ||
+                'Professionista'}
             </h2>
 
             <div
@@ -3184,11 +2248,9 @@ export default function Home() {
                   : 'notice'
               }
             >
-              {
-                live
-                  ? '🟢 Aggiornamento LIVE attivo'
-                  : '🟡 Connessione LIVE...'
-              }
+              {live
+                ? '🟢 Aggiornamento LIVE attivo'
+                : '🟡 Connessione LIVE...'}
             </div>
 
             {message && (
@@ -3202,11 +2264,8 @@ export default function Home() {
                 <span className="muted">
                   Profilo
                 </span>
-
                 <strong>
-                  {
-                    setupPercentage
-                  }%
+                  {setupPercentage}%
                 </strong>
               </div>
 
@@ -3214,13 +2273,10 @@ export default function Home() {
                 <span className="muted">
                   Stato
                 </span>
-
                 <strong>
-                  {
-                    verified
-                      ? '✅'
-                      : '🟡'
-                  }
+                  {verified
+                    ? '✅'
+                    : '🟡'}
                 </strong>
               </div>
 
@@ -3228,12 +2284,8 @@ export default function Home() {
                 <span className="muted">
                   Nuovi
                 </span>
-
                 <strong>
-                  {
-                    matchingJobs
-                      .length
-                  }
+                  {matchingJobs.length}
                 </strong>
               </div>
 
@@ -3241,41 +2293,31 @@ export default function Home() {
                 <span className="muted">
                   Recensioni
                 </span>
-
                 <strong>
-                  {
-                    reviews.length
-                      ? averageRating
-                          .toFixed(
-                            1
-                          )
-                      : '—'
-                  }
+                  {reviews.length
+                    ? averageRating.toFixed(
+                        1
+                      )
+                    : '—'}
                 </strong>
               </div>
             </div>
 
             <div
               className="card"
-              style={{
-                marginTop:
-                  16
-              }}
+              style={{ marginTop: 16 }}
             >
               <span className="tag">
                 Dati e verifica
               </span>
 
               <h3>
-                {
-                  verified
-                    ? '✅ Professionista verificato'
-                    : identity
-                        .verification_status ===
+                {verified
+                  ? '✅ Professionista verificato'
+                  : identity.verification_status ===
                       'rifiutato'
-                      ? '❌ Verifica rifiutata'
-                      : '🟡 In attesa di verifica'
-                }
+                    ? '❌ Verifica rifiutata'
+                    : '🟡 In attesa di verifica'}
               </h3>
 
               <label>
@@ -3284,25 +2326,17 @@ export default function Home() {
 
               <input
                 value={
-                  identity
-                    .business_name ??
+                  identity.business_name ??
                   ''
                 }
-                onChange={
-                  e =>
-                    setIdentity(
-                      (
-                        current:
-                          any
-                      ) => ({
-                        ...current,
-
-                        business_name:
-                          e
-                            .target
-                            .value
-                      })
-                    )
+                onChange={e =>
+                  setIdentity(
+                    (current: any) => ({
+                      ...current,
+                      business_name:
+                        e.target.value
+                    })
+                  )
                 }
               />
 
@@ -3314,25 +2348,16 @@ export default function Home() {
                 type="tel"
                 inputMode="tel"
                 value={
-                  identity
-                    .phone ??
-                  ''
+                  identity.phone ?? ''
                 }
-                onChange={
-                  e =>
-                    setIdentity(
-                      (
-                        current:
-                          any
-                      ) => ({
-                        ...current,
-
-                        phone:
-                          e
-                            .target
-                            .value
-                      })
-                    )
+                onChange={e =>
+                  setIdentity(
+                    (current: any) => ({
+                      ...current,
+                      phone:
+                        e.target.value
+                    })
+                  )
                 }
                 placeholder="+39 333 1234567"
               />
@@ -3343,25 +2368,17 @@ export default function Home() {
 
               <input
                 value={
-                  identity
-                    .vat_number ??
+                  identity.vat_number ??
                   ''
                 }
-                onChange={
-                  e =>
-                    setIdentity(
-                      (
-                        current:
-                          any
-                      ) => ({
-                        ...current,
-
-                        vat_number:
-                          e
-                            .target
-                            .value
-                      })
-                    )
+                onChange={e =>
+                  setIdentity(
+                    (current: any) => ({
+                      ...current,
+                      vat_number:
+                        e.target.value
+                    })
+                  )
                 }
               />
 
@@ -3371,34 +2388,24 @@ export default function Home() {
 
               <input
                 value={
-                  identity
-                    .tax_code ??
+                  identity.tax_code ??
                   ''
                 }
-                onChange={
-                  e =>
-                    setIdentity(
-                      (
-                        current:
-                          any
-                      ) => ({
-                        ...current,
-
-                        tax_code:
-                          e
-                            .target
-                            .value
-                      })
-                    )
+                onChange={e =>
+                  setIdentity(
+                    (current: any) => ({
+                      ...current,
+                      tax_code:
+                        e.target.value
+                    })
+                  )
                 }
               />
 
               <div className="actions">
                 <button
                   className="full"
-                  onClick={
-                    saveIdentity
-                  }
+                  onClick={saveIdentity}
                 >
                   Salva dati
                 </button>
@@ -3407,21 +2414,16 @@ export default function Home() {
 
             <div
               className="card"
-              style={{
-                marginTop:
-                  16
-              }}
+              style={{ marginTop: 16 }}
             >
               <span className="tag">
                 Disponibilità
               </span>
 
               <h3>
-                {
-                  availabilityLabel(
-                    availability
-                  )
-                }
+                {availabilityLabel(
+                  availability
+                )}
               </h3>
 
               <div className="actions">
@@ -3430,41 +2432,30 @@ export default function Home() {
                   '1-2h',
                   'oggi',
                   'offline'
-                ].map(
-                  value => (
-                    <button
-                      key={
-                        value
-                      }
-                      className={
-                        availability ===
-                        value
-                          ? 'full'
-                          : 'outline'
-                      }
-                      onClick={() =>
-                        setAvail(
-                          value
-                        )
-                      }
-                    >
-                      {
-                        availabilityLabel(
-                          value
-                        )
-                      }
-                    </button>
-                  )
-                )}
+                ].map(value => (
+                  <button
+                    key={value}
+                    className={
+                      availability ===
+                      value
+                        ? 'full'
+                        : 'outline'
+                    }
+                    onClick={() =>
+                      setAvail(value)
+                    }
+                  >
+                    {availabilityLabel(
+                      value
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
 
             <div
               className="card"
-              style={{
-                marginTop:
-                  16
-              }}
+              style={{ marginTop: 16 }}
             >
               <span className="tag">
                 Categorie
@@ -3472,38 +2463,30 @@ export default function Home() {
 
               <div
                 className="grid"
-                style={{
-                  marginTop:
-                    12
-                }}
+                style={{ marginTop: 12 }}
               >
                 {categories.map(
                   category => (
                     <button
-                      key={
-                        category.id
-                      }
+                      key={category.id}
                       className={
-                        selectedProCats
-                          .includes(
-                            category.id
-                          )
+                        selectedProCats.includes(
+                          category.id
+                        )
                           ? 'cat selected'
                           : 'cat'
                       }
                       onClick={() =>
                         setSelectedProCats(
                           current =>
-                            current
-                              .includes(
-                                category.id
-                              )
-                              ? current
-                                  .filter(
-                                    id =>
-                                      id !==
-                                      category.id
-                                  )
+                            current.includes(
+                              category.id
+                            )
+                              ? current.filter(
+                                  id =>
+                                    id !==
+                                    category.id
+                                )
                               : [
                                   ...current,
                                   category.id
@@ -3511,18 +2494,12 @@ export default function Home() {
                         )
                       }
                     >
-                      {
-                        selectedProCats
-                          .includes(
-                            category.id
-                          )
-                          ? '✓ '
-                          : ''
-                      }
-
-                      {
-                        category.name
-                      }
+                      {selectedProCats.includes(
+                        category.id
+                      )
+                        ? '✓ '
+                        : ''}
+                      {category.name}
                     </button>
                   )
                 )}
@@ -3542,79 +2519,53 @@ export default function Home() {
 
             <div
               className="card"
-              style={{
-                marginTop:
-                  16
-              }}
+              style={{ marginTop: 16 }}
             >
               <span className="tag">
                 Posizione e raggio
               </span>
 
-              <h3>
-                Zona operativa
-              </h3>
+              <h3>Zona operativa</h3>
 
               <p className="muted">
-                Puoi usare la posizione GPS oppure indicare manualmente città e CAP.
+                Puoi usare la posizione GPS
+                oppure indicare manualmente
+                città e CAP.
               </p>
 
               <button
                 className="full"
-                disabled={
-                  locationBusy
-                }
-                onClick={
-                  setProLocation
-                }
+                disabled={locationBusy}
+                onClick={setProLocation}
               >
-                {
-                  locationBusy
-                    ? 'Localizzazione...'
-                    : '📍 Usa la mia posizione GPS'
-                }
+                {locationBusy
+                  ? 'Localizzazione...'
+                  : '📍 Usa la mia posizione GPS'}
               </button>
 
               <div
-                style={{
-                  marginTop:
-                    20
-                }}
+                style={{ marginTop: 20 }}
               >
-                <label>
-                  Città
-                </label>
+                <label>Città</label>
 
                 <input
-                  value={
-                    proCity
-                  }
-                  onChange={
-                    e =>
-                      setProCity(
-                        e
-                          .target
-                          .value
-                      )
+                  value={proCity}
+                  onChange={e =>
+                    setProCity(
+                      e.target.value
+                    )
                   }
                   placeholder="Es. Bologna"
                 />
 
-                <label>
-                  CAP
-                </label>
+                <label>CAP</label>
 
                 <input
-                  value={
-                    proPostalCode
-                  }
-                  onChange={
-                    e =>
-                      setProPostalCode(
-                        e
-                          .target
-                          .value
-                      )
+                  value={proPostalCode}
+                  onChange={e =>
+                    setProPostalCode(
+                      e.target.value
+                    )
                   }
                   inputMode="numeric"
                   placeholder="Es. 40121"
@@ -3622,14 +2573,10 @@ export default function Home() {
 
                 <button
                   className="outline"
-                  disabled={
-                    locationBusy
-                  }
+                  disabled={locationBusy}
                   style={{
-                    marginTop:
-                      12,
-                    width:
-                      '100%'
+                    marginTop: 12,
+                    width: '100%'
                   }}
                   onClick={
                     setProLocationManual
@@ -3641,10 +2588,8 @@ export default function Home() {
 
               <hr
                 style={{
-                  margin:
-                    '24px 0',
-                  border:
-                    0,
+                  margin: '24px 0',
+                  border: 0,
                   borderTop:
                     '1px solid #e5e5e5'
                 }}
@@ -3652,47 +2597,29 @@ export default function Home() {
 
               <h3>
                 Raggio massimo:{' '}
-                {
-                  maxDistance
-                }{' '}
-                km
+                {maxDistance} km
               </h3>
 
               <div className="actions">
-                {DISTANCES.map(
-                  value => (
-                    <button
-                      key={
-                        value
-                      }
-                      className={
-                        maxDistance ===
-                        value
-                          ? 'full'
-                          : 'outline'
-                      }
-                      onClick={() =>
-                        setRadius(
-                          value
-                        )
-                      }
-                    >
-                      {
-                        value
-                      }{' '}
-                      km
-                    </button>
-                  )
-                )}
+                {DISTANCES.map(value => (
+                  <button
+                    key={value}
+                    className={
+                      maxDistance === value
+                        ? 'full'
+                        : 'outline'
+                    }
+                    onClick={() =>
+                      setRadius(value)
+                    }
+                  >
+                    {value} km
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop:
-                  30
-              }}
-            >
+            <div style={{ marginTop: 30 }}>
               <span className="tag">
                 Lavori
               </span>
@@ -3703,7 +2630,9 @@ export default function Home() {
 
               {!verified && (
                 <div className="notice">
-                  🔒 Il matching è visibile solo dopo la verifica amministratore.
+                  🔒 Il matching è visibile
+                  solo dopo la verifica
+                  amministratore.
                 </div>
               )}
 
@@ -3713,237 +2642,176 @@ export default function Home() {
                   'aperta',
                   'accettata',
                   'completata'
-                ].map(
-                  filter => (
-                    <button
-                      key={
-                        filter
-                      }
-                      className={
-                        proFilter ===
-                        filter
-                          ? 'selected'
-                          : ''
-                      }
-                      onClick={() =>
-                        setProFilter(
-                          filter
-                        )
-                      }
-                    >
-                      {
-                        filter ===
-                        'tutti'
-                          ? 'Tutti'
-                          : filter ===
-                              'aperta'
-                            ? 'Da accettare'
-                            : filter ===
-                                'accettata'
-                              ? 'Accettati'
-                              : 'Completati'
-                      }
-                    </button>
-                  )
-                )}
+                ].map(filter => (
+                  <button
+                    key={filter}
+                    className={
+                      proFilter === filter
+                        ? 'selected'
+                        : ''
+                    }
+                    onClick={() =>
+                      setProFilter(filter)
+                    }
+                  >
+                    {filter === 'tutti'
+                      ? 'Tutti'
+                      : filter === 'aperta'
+                        ? 'Da accettare'
+                        : filter ===
+                            'accettata'
+                          ? 'Accettati'
+                          : 'Completati'}
+                  </button>
+                ))}
               </div>
 
               {verified &&
-                visibleMatching
-                  .map(
-                    job => (
-                      <article
-                        className="card job"
-                        key={
-                          `m-${job.id}`
-                        }
-                      >
-                        <div className="job-top">
-                          <div>
-                            <span className="status">
-                              🔴 DA ACCETTARE
-                            </span>
+                visibleMatching.map(
+                  job => (
+                    <article
+                      className="card job"
+                      key={`m-${job.id}`}
+                    >
+                      <div className="job-top">
+                        <div>
+                          <span className="status">
+                            🔴 DA ACCETTARE
+                          </span>
 
-                            <h3>
-                              {
-                                job.category_name ||
-                                'Intervento'
-                              }
-                            </h3>
-                          </div>
-
-                          <b>
-                            {
-                              job.urgency
-                                ?.toUpperCase()
-                            }
-                          </b>
+                          <h3>
+                            {job.category_name ||
+                              'Intervento'}
+                          </h3>
                         </div>
 
+                        <b>
+                          {job.urgency?.toUpperCase()}
+                        </b>
+                      </div>
+
+                      <p>
+                        {job.description}
+                      </p>
+
+                      <Photo id={job.id} />
+
+                      <p className="muted">
+                        🔒 Indirizzo e telefono
+                        disponibili dopo
+                        l’accettazione
+                      </p>
+
+                      {job.distance_km !=
+                        null && (
                         <p>
-                          {
-                            job.description
-                          }
+                          📍{' '}
+                          {Number(
+                            job.distance_km
+                          ).toFixed(1)}{' '}
+                          km · ⏱{' '}
+                          {etaLabel(
+                            job.eta_minutes
+                          )}
                         </p>
+                      )}
 
-                        <Photo
-                          id={
-                            job.id
-                          }
-                        />
-
-                        <p className="muted">
-                          🔒 Indirizzo e telefono disponibili dopo l’accettazione
-                        </p>
-
-                        {
-                          job.distance_km !=
-                            null && (
-                            <p>
-                              📍{' '}
-                              {
-                                Number(
-                                  job.distance_km
-                                ).toFixed(
-                                  1
-                                )
-                              }{' '}
-                              km · ⏱{' '}
-                              {
-                                etaLabel(
-                                  job.eta_minutes
-                                )
-                              }
-                            </p>
-                          )
+                      <button
+                        className="full"
+                        disabled={
+                          busy ||
+                          availability ===
+                            'offline'
                         }
+                        onClick={() =>
+                          acceptJob(job.id)
+                        }
+                      >
+                        {availability ===
+                        'offline'
+                          ? 'Sei offline'
+                          : 'Accetta lavoro →'}
+                      </button>
+                    </article>
+                  )
+                )}
 
+              {verified &&
+                visibleAccepted.map(
+                  job => (
+                    <article
+                      className="card job"
+                      key={`a-${job.id}`}
+                    >
+                      <span className="status">
+                        {statusLabel(
+                          job.status
+                        )}
+                      </span>
+
+                      <h3>
+                        {job.category_name ||
+                          'Intervento'}
+                      </h3>
+
+                      <p>
+                        {job.description}
+                      </p>
+
+                      <Photo id={job.id} />
+
+                      {job.address && (
+                        <div className="success">
+                          📍{' '}
+                          <b>
+                            Indirizzo intervento
+                          </b>
+                          <br />
+                          {job.address}
+                        </div>
+                      )}
+
+                      <ContactButtons
+                        jobId={String(
+                          job.id
+                        )}
+                        viewer="professionista"
+                      />
+
+                      <div className="actions">
                         <button
                           className="full"
-                          disabled={
-                            busy ||
-                            availability ===
-                              'offline'
-                          }
                           onClick={() =>
-                            acceptJob(
-                              job.id
+                            openChat(
+                              job.id,
+                              job.category_name ||
+                                'Intervento'
                             )
                           }
                         >
-                          {
-                            availability ===
-                            'offline'
-                              ? 'Sei offline'
-                              : 'Accetta lavoro →'
-                          }
+                          💬 Chat
                         </button>
-                      </article>
-                    )
-                  )}
 
-              {verified &&
-                visibleAccepted
-                  .map(
-                    job => (
-                      <article
-                        className="card job"
-                        key={
-                          `a-${job.id}`
-                        }
-                      >
-                        <span className="status">
-                          {
-                            statusLabel(
-                              job.status
-                            )
-                          }
-                        </span>
-
-                        <h3>
-                          {
-                            job.category_name ||
-                            'Intervento'
-                          }
-                        </h3>
-
-                        <p>
-                          {
-                            job.description
-                          }
-                        </p>
-
-                        <Photo
-                          id={
-                            job.id
-                          }
-                        />
-
-                        {job.address && (
-                          <div className="success">
-                            📍{' '}
-                            <b>
-                              Indirizzo intervento
-                            </b>
-
-                            <br />
-
-                            {
-                              job.address
-                            }
-                          </div>
-                        )}
-
-                        <ContactButtons
-                          jobId={
-                            String(
-                              job.id
-                            )
-                          }
-                          viewer="professionista"
-                        />
-
-                        <div className="actions">
+                        {job.status !==
+                          'completata' && (
                           <button
-                            className="full"
+                            className="outline"
                             onClick={() =>
-                              openChat(
-                                job.id,
-                                job.category_name ||
-                                  'Intervento'
+                              completeJob(
+                                job.id
                               )
                             }
                           >
-                            💬 Chat
+                            ✓ Completa
                           </button>
-
-                          {
-                            job.status !==
-                              'completata' && (
-                              <button
-                                className="outline"
-                                onClick={() =>
-                                  completeJob(
-                                    job.id
-                                  )
-                                }
-                              >
-                                ✓ Completa
-                              </button>
-                            )
-                          }
-                        </div>
-                      </article>
-                    )
-                  )}
+                        )}
+                      </div>
+                    </article>
+                  )
+                )}
             </div>
 
-            <div
-              style={{
-                marginTop:
-                  30
-              }}
-            >
+            <div style={{ marginTop: 30 }}>
               <span className="tag">
                 Recensioni
               </span>
@@ -3952,59 +2820,45 @@ export default function Home() {
                 Le mie recensioni
               </h2>
 
-              {
-                reviews.length ===
-                0
-                  ? (
-                    <div className="card">
-                      <p className="muted">
-                        Non hai ancora recensioni.
-                      </p>
-                    </div>
-                  )
-                  : reviews.map(
-                      review => (
-                        <div
-                          className="card"
-                          key={
-                            review.review_id
-                          }
-                        >
-                          <b>
-                            {
-                              review.client_name ||
-                              'Cliente'
-                            }
-                          </b>
+              {reviews.length === 0 ? (
+                <div className="card">
+                  <p className="muted">
+                    Non hai ancora recensioni.
+                  </p>
+                </div>
+              ) : (
+                reviews.map(review => (
+                  <div
+                    className="card"
+                    key={review.review_id}
+                  >
+                    <b>
+                      {review.client_name ||
+                        'Cliente'}
+                    </b>
 
-                          <p>
-                            {
-                              '⭐'.repeat(
-                                Number(
-                                  review.rating ||
-                                  0
-                                )
-                              )
-                            }
-                          </p>
+                    <p>
+                      {'⭐'.repeat(
+                        Number(
+                          review.rating ||
+                            0
+                        )
+                      )}
+                    </p>
 
-                          <p className="muted">
-                            {
-                              review.comment ||
-                              'Nessun commento.'
-                            }
-                          </p>
-                        </div>
-                      )
-                    )
-              }
+                    <p className="muted">
+                      {review.comment ||
+                        'Nessun commento.'}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
 
             <div
               className="card"
               style={{
-                marginTop:
-                  32,
+                marginTop: 32,
                 border:
                   '1px solid #d92d20'
               }}
@@ -4012,8 +2866,7 @@ export default function Home() {
               <span
                 className="tag"
                 style={{
-                  color:
-                    '#b42318'
+                  color: '#b42318'
                 }}
               >
                 Zona pericolosa
@@ -4021,36 +2874,29 @@ export default function Home() {
 
               <h3
                 style={{
-                  color:
-                    '#b42318'
+                  color: '#b42318'
                 }}
               >
                 Elimina il mio account
               </h3>
 
               <p className="muted">
-                La cancellazione è definitiva. Il tuo account professionista e i dati collegati verranno eliminati.
+                La cancellazione è definitiva.
+                Il tuo account professionista
+                e i dati collegati verranno
+                eliminati.
               </p>
 
               <button
                 type="button"
                 className="danger"
-                disabled={
-                  busy
-                }
-                style={{
-                  width:
-                    '100%'
-                }}
-                onClick={
-                  deleteMyAccount
-                }
+                disabled={busy}
+                style={{ width: '100%' }}
+                onClick={deleteMyAccount}
               >
-                {
-                  busy
-                    ? 'Attendi...'
-                    : '🗑 Elimina definitivamente il mio account'
-                }
+                {busy
+                  ? 'Attendi...'
+                  : '🗑 Elimina definitivamente il mio account'}
               </button>
             </div>
           </section>
@@ -4062,61 +2908,35 @@ export default function Home() {
     );
   }
 
-  /*
-   * AREA CLIENTE
-   */
   return (
     <main>
       <header>
         <div className="logo">
-          <b>
-            L
-          </b>
-
+          <b>L</b>
           Lavoro
-
-          <span>
-            Subito
-          </span>
+          <span>Subito</span>
         </div>
 
-        {
-          user
-            ? (
-              <button
-                className="outline"
-                onClick={
-                  logout
-                }
-              >
-                Esci
-              </button>
-            )
-            : (
-              <button
-                className="outline"
-                onClick={() => {
-                  setAuthMode(
-                    'login'
-                  );
-
-                  setAcceptedLegal(
-                    false
-                  );
-
-                  setAuthPhone(
-                    ''
-                  );
-
-                  setAuthOpen(
-                    true
-                  );
-                }}
-              >
-                Accedi / Registrati
-              </button>
-            )
-        }
+        {user ? (
+          <button
+            className="outline"
+            onClick={logout}
+          >
+            Esci
+          </button>
+        ) : (
+          <button
+            className="outline"
+            onClick={() => {
+              setAuthMode('login');
+              setAcceptedLegal(false);
+              setAuthPhone('');
+              setAuthOpen(true);
+            }}
+          >
+            Accedi / Registrati
+          </button>
+        )}
       </header>
 
       <div className="container">
@@ -4129,14 +2949,15 @@ export default function Home() {
             <h1>
               Un problema?
               <br />
-
               <span>
                 Risolviamolo subito.
               </span>
             </h1>
 
             <p>
-              Trova un professionista verificato, disponibile e vicino a te.
+              Trova un professionista
+              verificato, disponibile e
+              vicino a te.
             </p>
           </div>
 
@@ -4151,37 +2972,22 @@ export default function Home() {
 
             <div className="grid">
               {CATEGORIES.map(
-                (
-                  [
-                    name,
-                    icon
-                  ]
-                ) => (
+                ([name, icon]) => (
                   <button
-                    key={
-                      name
-                    }
+                    key={name}
                     className={
-                      cat ===
-                      name
+                      cat === name
                         ? 'cat selected'
                         : 'cat'
                     }
                     onClick={() =>
-                      setCat(
-                        name
-                      )
+                      setCat(name)
                     }
                   >
                     <strong>
-                      {
-                        icon
-                      }
+                      {icon}
                     </strong>
-
-                    {
-                      name
-                    }
+                    {name}
                   </button>
                 )
               )}
@@ -4192,30 +2998,21 @@ export default function Home() {
                 'SUBITO',
                 'OGGI',
                 '48H'
-              ].map(
-                value => (
-                  <button
-                    key={
-                      value
-                    }
-                    className={
-                      urgency ===
-                      value
-                        ? 'selected'
-                        : ''
-                    }
-                    onClick={() =>
-                      setUrgency(
-                        value
-                      )
-                    }
-                  >
-                    {
-                      value
-                    }
-                  </button>
-                )
-              )}
+              ].map(value => (
+                <button
+                  key={value}
+                  className={
+                    urgency === value
+                      ? 'selected'
+                      : ''
+                  }
+                  onClick={() =>
+                    setUrgency(value)
+                  }
+                >
+                  {value}
+                </button>
+              ))}
             </div>
 
             <label>
@@ -4223,19 +3020,12 @@ export default function Home() {
             </label>
 
             <textarea
-              rows={
-                4
-              }
-              value={
-                description
-              }
-              onChange={
-                e =>
-                  setDescription(
-                    e
-                      .target
-                      .value
-                  )
+              rows={4}
+              value={description}
+              onChange={e =>
+                setDescription(
+                  e.target.value
+                )
               }
               placeholder="Es. Perdita d’acqua sotto il lavandino..."
             />
@@ -4247,9 +3037,7 @@ export default function Home() {
             <input
               type="file"
               accept="image/*"
-              onChange={
-                choosePhoto
-              }
+              onChange={choosePhoto}
             />
 
             <div className="small muted">
@@ -4260,17 +3048,13 @@ export default function Home() {
               <>
                 <img
                   className="photo"
-                  src={
-                    photoPreview
-                  }
+                  src={photoPreview}
                   alt="Anteprima"
                 />
 
                 <button
                   className="danger"
-                  onClick={
-                    clearPhoto
-                  }
+                  onClick={clearPhoto}
                 >
                   Rimuovi foto
                 </button>
@@ -4282,16 +3066,11 @@ export default function Home() {
             </label>
 
             <input
-              value={
-                address
-              }
-              onChange={
-                e =>
-                  setAddress(
-                    e
-                      .target
-                      .value
-                  )
+              value={address}
+              onChange={e =>
+                setAddress(
+                  e.target.value
+                )
               }
               placeholder="Es. Via Roma 15, Bologna"
             />
@@ -4299,52 +3078,38 @@ export default function Home() {
             <div className="actions">
               <button
                 className="outline"
-                onClick={
-                  async () => {
-                    const p =
-                      await getPosition();
+                onClick={async () => {
+                  const p =
+                    await getPosition();
 
-                    setCoords(
-                      p
-                    );
+                  setCoords(p);
 
-                    setMessage(
-                      p
-                        ? '📍 Posizione GPS rilevata.'
-                        : 'Posizione non disponibile.'
-                    );
-                  }
-                }
+                  setMessage(
+                    p
+                      ? '📍 Posizione GPS rilevata.'
+                      : 'Posizione non disponibile.'
+                  );
+                }}
               >
-                {
-                  coords
-                    ? '✅ GPS rilevato'
-                    : '📍 Usa posizione GPS'
-                }
+                {coords
+                  ? '✅ GPS rilevato'
+                  : '📍 Usa posizione GPS'}
               </button>
 
               <button
                 className="full"
-                disabled={
-                  busy
-                }
-                onClick={
-                  submitJob
-                }
+                disabled={busy}
+                onClick={submitJob}
               >
-                {
-                  busy
-                    ? 'Invio...'
-                    : 'Trova chi è disponibile →'
-                }
+                {busy
+                  ? 'Invio...'
+                  : 'Trova chi è disponibile →'}
               </button>
             </div>
 
             {message && (
               <div className="success">
-                {
-                  message
-                }
+                {message}
               </div>
             )}
 
@@ -4352,8 +3117,7 @@ export default function Home() {
               <div
                 className="card"
                 style={{
-                  marginTop:
-                    16,
+                  marginTop: 16,
                   borderColor:
                     '#48b779'
                 }}
@@ -4363,72 +3127,49 @@ export default function Home() {
                 </span>
 
                 <h3>
-                  {
-                    bestMatch
-                      .professional_name
-                  }
+                  {bestMatch.professional_name}
                 </h3>
 
                 <p>
-                  🎯{' '}
-                  {
-                    bestMatch
-                      .match_score
-                  }
+                  🎯 {bestMatch.match_score}
                   /100 · ⭐{' '}
-                  {
-                    Number(
-                      bestMatch
-                        .average_rating ||
+                  {Number(
+                    bestMatch.average_rating ||
                       0
-                    ).toFixed(
-                      1
-                    )
-                  }{' '}
+                  ).toFixed(1)}{' '}
                   ·{' '}
-                  {
-                    bestMatch
-                      .review_count ||
-                    0
-                  }{' '}
+                  {bestMatch.review_count ||
+                    0}{' '}
                   recensioni
                 </p>
 
                 <p>
-                  {
-                    availabilityLabel(
-                      bestMatch
-                        .availability_status
-                    )
-                  }{' '}
+                  {availabilityLabel(
+                    bestMatch.availability_status
+                  )}{' '}
                   · 📍{' '}
-                  {
-                    bestMatch
-                      .distance_km !=
-                    null
-                      ? Number(
-                          bestMatch
-                            .distance_km
-                        ).toFixed(
-                          1
-                        )
-                      : '—'
-                  }{' '}
+                  {bestMatch.distance_km !=
+                  null
+                    ? Number(
+                        bestMatch.distance_km
+                      ).toFixed(1)
+                    : '—'}{' '}
                   km
                 </p>
 
                 <p className="muted">
-                  🔒 Il numero di telefono sarà disponibile solo dopo che il professionista avrà accettato il lavoro.
+                  🔒 Il numero di telefono sarà
+                  disponibile solo dopo che il
+                  professionista avrà accettato
+                  il lavoro.
                 </p>
               </div>
             )}
           </div>
         </section>
 
-        {
-          user &&
-          role ===
-            'cliente' && (
+        {user &&
+          role === 'cliente' && (
             <section className="section">
               <span className="tag">
                 Il mio profilo
@@ -4440,7 +3181,10 @@ export default function Home() {
 
               <div className="card">
                 <p className="muted">
-                  Il numero viene mostrato esclusivamente al professionista che ha accettato il tuo intervento.
+                  Il numero viene mostrato
+                  esclusivamente al
+                  professionista che ha
+                  accettato il tuo intervento.
                 </p>
 
                 <label>
@@ -4451,29 +3195,19 @@ export default function Home() {
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
-                  value={
-                    clientPhone
-                  }
-                  onChange={
-                    e =>
-                      setClientPhone(
-                        e
-                          .target
-                          .value
-                      )
+                  value={clientPhone}
+                  onChange={e =>
+                    setClientPhone(
+                      e.target.value
+                    )
                   }
                   placeholder="+39 333 1234567"
                 />
 
                 <button
                   className="full"
-                  style={{
-                    marginTop:
-                      12
-                  }}
-                  disabled={
-                    busy
-                  }
+                  style={{ marginTop: 12 }}
+                  disabled={busy}
                   onClick={
                     saveClientPhone
                   }
@@ -4485,8 +3219,7 @@ export default function Home() {
               <div
                 className="card"
                 style={{
-                  marginTop:
-                    16,
+                  marginTop: 16,
                   border:
                     '1px solid #d92d20'
                 }}
@@ -4494,8 +3227,7 @@ export default function Home() {
                 <span
                   className="tag"
                   style={{
-                    color:
-                      '#b42318'
+                    color: '#b42318'
                   }}
                 >
                   Zona pericolosa
@@ -4503,46 +3235,39 @@ export default function Home() {
 
                 <h3
                   style={{
-                    color:
-                      '#b42318'
+                    color: '#b42318'
                   }}
                 >
                   Elimina il mio account
                 </h3>
 
                 <p className="muted">
-                  La cancellazione è definitiva. Il tuo account e i dati collegati verranno eliminati.
+                  La cancellazione è
+                  definitiva. Il tuo account e
+                  i dati collegati verranno
+                  eliminati.
                 </p>
 
                 <button
                   type="button"
                   className="danger"
-                  disabled={
-                    busy
-                  }
-                  style={{
-                    width:
-                      '100%'
-                  }}
+                  disabled={busy}
+                  style={{ width: '100%' }}
                   onClick={
                     deleteMyAccount
                   }
                 >
-                  {
-                    busy
-                      ? 'Attendi...'
-                      : '🗑 Elimina definitivamente il mio account'
-                  }
+                  {busy
+                    ? 'Attendi...'
+                    : '🗑 Elimina definitivamente il mio account'}
                 </button>
               </div>
 
               <span
                 className="tag"
                 style={{
-                  marginTop:
-                    30,
-                  display:
-                    'inline-block'
+                  marginTop: 30,
+                  display: 'inline-block'
                 }}
               >
                 Storico cliente
@@ -4559,11 +3284,9 @@ export default function Home() {
                     : 'notice'
                 }
               >
-                {
-                  live
-                    ? '🟢 Stato LIVE'
-                    : '🟡 Connessione LIVE...'
-                }
+                {live
+                  ? '🟢 Stato LIVE'
+                  : '🟡 Connessione LIVE...'}
               </div>
 
               <div className="filter">
@@ -4573,215 +3296,160 @@ export default function Home() {
                   'accettata',
                   'completata',
                   'annullata'
-                ].map(
-                  filter => (
-                    <button
-                      key={
+                ].map(filter => (
+                  <button
+                    key={filter}
+                    className={
+                      clientFilter ===
+                      filter
+                        ? 'selected'
+                        : ''
+                    }
+                    onClick={() =>
+                      setClientFilter(
                         filter
-                      }
-                      className={
-                        clientFilter ===
-                        filter
-                          ? 'selected'
-                          : ''
-                      }
-                      onClick={() =>
-                        setClientFilter(
-                          filter
-                        )
-                      }
-                    >
-                      {
-                        filter ===
-                        'tutti'
-                          ? 'Tutti'
-                          : filter
-                      }
-                    </button>
-                  )
-                )}
+                      )
+                    }
+                  >
+                    {filter === 'tutti'
+                      ? 'Tutti'
+                      : filter}
+                  </button>
+                ))}
               </div>
 
-              {filteredClient
-                .map(
-                  job => (
-                    <article
-                      className="card job"
-                      key={
-                        job.id
-                      }
-                    >
-                      <span className="status">
-                        {
-                          statusLabel(
-                            job.status
-                          )
-                        }
-                      </span>
+              {filteredClient.map(
+                job => (
+                  <article
+                    className="card job"
+                    key={job.id}
+                  >
+                    <span className="status">
+                      {statusLabel(
+                        job.status
+                      )}
+                    </span>
 
-                      <h3>
-                        {
-                          job.category_name ||
-                          'Intervento'
-                        }
-                      </h3>
+                    <h3>
+                      {job.category_name ||
+                        'Intervento'}
+                    </h3>
 
-                      <p>
-                        {
-                          job.description
-                        }
-                      </p>
+                    <p>
+                      {job.description}
+                    </p>
 
-                      <Photo
-                        id={
+                    <Photo id={job.id} />
+
+                    {job.address && (
+                      <div className="notice">
+                        📍{' '}
+                        <b>
+                          Indirizzo intervento
+                        </b>
+                        <br />
+                        {job.address}
+                      </div>
+                    )}
+
+                    <p>
+                      <b>Urgenza:</b>{' '}
+                      {job.urgency?.toUpperCase()}
+                    </p>
+
+                    {job.professional_name && (
+                      <div className="success">
+                        ✅{' '}
+                        {job.professional_name}
+                      </div>
+                    )}
+
+                    {(job.status ===
+                      'accettata' ||
+                      job.status ===
+                        'in_corso' ||
+                      job.status ===
+                        'completata') && (
+                      <ContactButtons
+                        jobId={String(
                           job.id
-                        }
+                        )}
+                        viewer="cliente"
                       />
+                    )}
 
-                      {job.address && (
-                        <div className="notice">
-                          📍{' '}
-                          <b>
-                            Indirizzo intervento
-                          </b>
-
-                          <br />
-
-                          {
-                            job.address
+                    <div className="actions">
+                      {job.status ===
+                        'aperta' && (
+                        <button
+                          className="danger"
+                          onClick={() =>
+                            cancelJob(
+                              job.id
+                            )
                           }
-                        </div>
+                        >
+                          ❌ Annulla richiesta
+                        </button>
                       )}
 
-                      <p>
-                        <b>
-                          Urgenza:
-                        </b>{' '}
-                        {
-                          job.urgency
-                            ?.toUpperCase()
-                        }
-                      </p>
+                      {(job.status ===
+                        'accettata' ||
+                        job.status ===
+                          'in_corso' ||
+                        job.status ===
+                          'completata') && (
+                        <button
+                          className="full"
+                          onClick={() =>
+                            openChat(
+                              job.id,
+                              job.professional_name ||
+                                'Intervento'
+                            )
+                          }
+                        >
+                          💬 Chat
+                        </button>
+                      )}
 
-                      {
-                        job.professional_name && (
-                          <div className="success">
-                            ✅{' '}
-                            {
-                              job.professional_name
-                            }
-                          </div>
-                        )
-                      }
+                      {(job.status ===
+                        'accettata' ||
+                        job.status ===
+                          'in_corso') && (
+                        <button
+                          className="outline"
+                          onClick={() =>
+                            completeJob(
+                              job.id
+                            )
+                          }
+                        >
+                          ✓ Completa
+                        </button>
+                      )}
 
-                      {
-                        (
-                          job.status ===
-                            'accettata' ||
-                          job.status ===
-                            'in_corso' ||
-                          job.status ===
-                            'completata'
-                        ) && (
-                          <ContactButtons
-                            jobId={
-                              String(
+                      {job.status ===
+                        'completata' &&
+                        !job.reviewed && (
+                          <button
+                            className="outline"
+                            onClick={() => {
+                              setReviewJobId(
                                 job.id
-                              )
-                            }
-                            viewer="cliente"
-                          />
-                        )
-                      }
-
-                      <div className="actions">
-                        {
-                          job.status ===
-                            'aperta' && (
-                            <button
-                              className="danger"
-                              onClick={() =>
-                                cancelJob(
-                                  job.id
-                                )
-                              }
-                            >
-                              ❌ Annulla richiesta
-                            </button>
-                          )
-                        }
-
-                        {
-                          (
-                            job.status ===
-                              'accettata' ||
-                            job.status ===
-                              'in_corso' ||
-                            job.status ===
-                              'completata'
-                          ) && (
-                            <button
-                              className="full"
-                              onClick={() =>
-                                openChat(
-                                  job.id,
-                                  job.professional_name ||
-                                    'Intervento'
-                                )
-                              }
-                            >
-                              💬 Chat
-                            </button>
-                          )
-                        }
-
-                        {
-                          (
-                            job.status ===
-                              'accettata' ||
-                            job.status ===
-                              'in_corso'
-                          ) && (
-                            <button
-                              className="outline"
-                              onClick={() =>
-                                completeJob(
-                                  job.id
-                                )
-                              }
-                            >
-                              ✓ Completa
-                            </button>
-                          )
-                        }
-
-                        {
-                          job.status ===
-                            'completata' &&
-                          !job.reviewed && (
-                            <button
-                              className="outline"
-                              onClick={() => {
-                                setReviewJobId(
-                                  job.id
-                                );
-
-                                setRating(
-                                  5
-                                );
-                              }}
-                            >
-                              ⭐ Recensisci
-                            </button>
-                          )
-                        }
-                      </div>
-                    </article>
-                  )
-                )}
+                              );
+                              setRating(5);
+                            }}
+                          >
+                            ⭐ Recensisci
+                          </button>
+                        )}
+                    </div>
+                  </article>
+                )
+              )}
             </section>
-          )
-        }
+          )}
       </div>
 
       <LegalFooter />
@@ -4790,60 +3458,42 @@ export default function Home() {
         <div className="modal">
           <form
             className="modalBox"
-            onSubmit={
-              authSubmit
-            }
+            onSubmit={authSubmit}
           >
             <button
               type="button"
               className="x"
               onClick={() => {
-                setAuthOpen(
-                  false
-                );
-
+                setAuthOpen(false);
                 setAcceptedLegal(
                   false
                 );
-
-                setAuthPhone(
-                  ''
-                );
+                setAuthPhone('');
               }}
             >
               ×
             </button>
 
             <h2>
-              {
-                authMode ===
-                'signup'
-                  ? 'Crea account'
-                  : 'Bentornato'
-              }
+              {authMode === 'signup'
+                ? 'Crea account'
+                : 'Bentornato'}
             </h2>
 
             <div className="actions">
               <button
                 type="button"
                 className={
-                  authMode ===
-                  'login'
+                  authMode === 'login'
                     ? 'full'
                     : 'outline'
                 }
                 onClick={() => {
-                  setAuthMode(
-                    'login'
-                  );
-
+                  setAuthMode('login');
                   setAcceptedLegal(
                     false
                   );
-
-                  setAuthPhone(
-                    ''
-                  );
+                  setAuthPhone('');
                 }}
               >
                 Accedi
@@ -4852,311 +3502,225 @@ export default function Home() {
               <button
                 type="button"
                 className={
-                  authMode ===
-                  'signup'
+                  authMode === 'signup'
                     ? 'full'
                     : 'outline'
                 }
                 onClick={() => {
-                  setAuthMode(
-                    'signup'
-                  );
-
+                  setAuthMode('signup');
                   setAcceptedLegal(
                     false
                   );
-
-                  setAuthPhone(
-                    ''
-                  );
+                  setAuthPhone('');
                 }}
               >
                 Registrati
               </button>
             </div>
 
-            {
-              authMode ===
-                'signup' && (
-                <>
-                  <label>
-                    Nome e cognome
-                  </label>
+            {authMode === 'signup' && (
+              <>
+                <label>
+                  Nome e cognome
+                </label>
 
-                  <input
-                    required
-                    value={
-                      authName
-                    }
-                    onChange={
-                      e =>
-                        setAuthName(
-                          e
-                            .target
-                            .value
-                        )
-                    }
-                  />
-
-                  <label>
-                    Tipo account
-                  </label>
-
-                  <select
-                    value={
-                      signupRole
-                    }
-                    onChange={
-                      e => {
-                        setSignupRole(
-                          e
-                            .target
-                            .value
-                        );
-
-                        setAuthPhone(
-                          ''
-                        );
-                      }
-                    }
-                  >
-                    <option value="cliente">
-                      Cliente
-                    </option>
-
-                    <option value="professionista">
-                      Professionista
-                    </option>
-                  </select>
-
-                  {
-                    signupRole ===
-                      'cliente' && (
-                      <>
-                        <label>
-                          📱 Numero di telefono
-                        </label>
-
-                        <input
-                          type="tel"
-                          inputMode="tel"
-                          autoComplete="tel"
-                          required
-                          value={
-                            authPhone
-                          }
-                          onChange={
-                            e =>
-                              setAuthPhone(
-                                e
-                                  .target
-                                  .value
-                              )
-                          }
-                          placeholder="+39 333 1234567"
-                        />
-
-                        <p
-                          className="muted"
-                          style={{
-                            fontSize:
-                              12,
-                            marginTop:
-                              6
-                          }}
-                        >
-                          Il numero verrà mostrato al professionista solo dopo che avrà accettato il tuo intervento.
-                        </p>
-                      </>
+                <input
+                  required
+                  value={authName}
+                  onChange={e =>
+                    setAuthName(
+                      e.target.value
                     )
                   }
-                </>
-              )
-            }
+                />
 
-            <label>
-              Email
-            </label>
+                <label>
+                  Tipo account
+                </label>
+
+                <select
+                  value={signupRole}
+                  onChange={e => {
+                    setSignupRole(
+                      e.target.value
+                    );
+                    setAuthPhone('');
+                  }}
+                >
+                  <option value="cliente">
+                    Cliente
+                  </option>
+
+                  <option value="professionista">
+                    Professionista
+                  </option>
+                </select>
+
+                {signupRole ===
+                  'cliente' && (
+                  <>
+                    <label>
+                      📱 Numero di telefono
+                    </label>
+
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      required
+                      value={authPhone}
+                      onChange={e =>
+                        setAuthPhone(
+                          e.target.value
+                        )
+                      }
+                      placeholder="+39 333 1234567"
+                    />
+
+                    <p
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        marginTop: 6
+                      }}
+                    >
+                      Il numero verrà mostrato
+                      al professionista solo
+                      dopo che avrà accettato
+                      il tuo intervento.
+                    </p>
+                  </>
+                )}
+              </>
+            )}
+
+            <label>Email</label>
 
             <input
               type="email"
               required
-              value={
-                email
-              }
-              onChange={
-                e =>
-                  setEmail(
-                    e
-                      .target
-                      .value
-                  )
+              value={email}
+              onChange={e =>
+                setEmail(
+                  e.target.value
+                )
               }
             />
 
-            <label>
-              Password
-            </label>
+            <label>Password</label>
 
             <input
               type="password"
-              minLength={
-                6
-              }
+              minLength={6}
               required
-              value={
-                password
-              }
-              onChange={
-                e =>
-                  setPassword(
-                    e
-                      .target
-                      .value
-                  )
+              value={password}
+              onChange={e =>
+                setPassword(
+                  e.target.value
+                )
               }
             />
 
-            {
-              authMode ===
-                'login' && (
-                <button
-                  type="button"
-                  className="outline"
-                  disabled={
-                    busy
+            {authMode === 'login' && (
+              <button
+                type="button"
+                className="outline"
+                disabled={busy}
+                style={{
+                  marginTop: 12,
+                  width: '100%'
+                }}
+                onClick={
+                  forgotPassword
+                }
+              >
+                🔑 Password dimenticata?
+              </button>
+            )}
+
+            {authMode === 'signup' && (
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems:
+                    'flex-start',
+                  gap: 10,
+                  marginTop: 16,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  cursor: 'pointer'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  required
+                  checked={
+                    acceptedLegal
+                  }
+                  onChange={e =>
+                    setAcceptedLegal(
+                      e.target.checked
+                    )
                   }
                   style={{
-                    marginTop:
-                      12,
-                    width:
-                      '100%'
+                    width: 18,
+                    height: 18,
+                    minWidth: 18,
+                    padding: 0,
+                    margin:
+                      '1px 0 0'
                   }}
-                  onClick={
-                    forgotPassword
-                  }
-                >
-                  🔑 Password dimenticata?
-                </button>
-              )
-            }
+                />
 
-            {
-              authMode ===
-                'signup' && (
-                <label
-                  style={{
-                    display:
-                      'flex',
-                    alignItems:
-                      'flex-start',
-                    gap:
-                      10,
-                    marginTop:
-                      16,
-                    fontWeight:
-                      600,
-                    fontSize:
-                      13,
-                    lineHeight:
-                      1.45,
-                    cursor:
-                      'pointer'
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    required
-                    checked={
-                      acceptedLegal
+                <span>
+                  Dichiaro di aver letto e
+                  accetto i{' '}
+                  <a
+                    href="/termini"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={e =>
+                      e.stopPropagation()
                     }
-                    onChange={
-                      e =>
-                        setAcceptedLegal(
-                          e
-                            .target
-                            .checked
-                        )
+                  >
+                    Termini e condizioni
+                  </a>{' '}
+                  e dichiaro di aver letto la{' '}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={e =>
+                      e.stopPropagation()
                     }
-                    style={{
-                      width:
-                        18,
-                      height:
-                        18,
-                      minWidth:
-                        18,
-                      padding:
-                        0,
-                      margin:
-                        '1px 0 0'
-                    }}
-                  />
-
-                  <span>
-                    Dichiaro di aver letto e accetto i{' '}
-
-                    <a
-                      href="/termini"
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={
-                        e =>
-                          e.stopPropagation()
-                      }
-                    >
-                      Termini e condizioni
-                    </a>
-
-                    {' '}e dichiaro di aver letto la{' '}
-
-                    <a
-                      href="/privacy"
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={
-                        e =>
-                          e.stopPropagation()
-                      }
-                    >
-                      Privacy Policy
-                    </a>
-                    .
-                  </span>
-                </label>
-              )
-            }
+                  >
+                    Privacy Policy
+                  </a>
+                  .
+                </span>
+              </label>
+            )}
 
             <button
               className="full"
-              style={{
-                marginTop:
-                  14
-              }}
+              style={{ marginTop: 14 }}
               disabled={
                 busy ||
-                (
-                  authMode ===
-                    'signup' &&
-                  (
-                    !acceptedLegal ||
-                    (
-                      signupRole ===
-                        'cliente' &&
-                      !authPhone
-                        .trim()
-                    )
-                  )
-                )
+                (authMode ===
+                  'signup' &&
+                  (!acceptedLegal ||
+                    (signupRole ===
+                      'cliente' &&
+                      !authPhone.trim())))
               }
             >
-              {
-                busy
-                  ? 'Attendi...'
-                  : authMode ===
-                      'signup'
-                    ? 'Crea account'
-                    : 'Accedi'
-              }
+              {busy
+                ? 'Attendi...'
+                : authMode ===
+                    'signup'
+                  ? 'Crea account'
+                  : 'Accedi'}
             </button>
           </form>
         </div>
@@ -5168,17 +3732,13 @@ export default function Home() {
         <div className="modal">
           <form
             className="modalBox"
-            onSubmit={
-              submitReview
-            }
+            onSubmit={submitReview}
           >
             <button
               type="button"
               className="x"
               onClick={() =>
-                setReviewJobId(
-                  null
-                )
+                setReviewJobId(null)
               }
             >
               ×
@@ -5193,35 +3753,21 @@ export default function Home() {
             </h2>
 
             <div className="actions">
-              {[
-                1,
-                2,
-                3,
-                4,
-                5
-              ].map(
+              {[1, 2, 3, 4, 5].map(
                 stars => (
                   <button
                     type="button"
-                    key={
-                      stars
-                    }
+                    key={stars}
                     className={
-                      rating ===
-                      stars
+                      rating === stars
                         ? 'full'
                         : 'outline'
                     }
                     onClick={() =>
-                      setRating(
-                        stars
-                      )
+                      setRating(stars)
                     }
                   >
-                    {
-                      stars
-                    }{' '}
-                    ⭐
+                    {stars} ⭐
                   </button>
                 )
               )}
@@ -5232,28 +3778,18 @@ export default function Home() {
             </label>
 
             <textarea
-              rows={
-                4
-              }
-              value={
-                reviewComment
-              }
-              onChange={
-                e =>
-                  setReviewComment(
-                    e
-                      .target
-                      .value
-                  )
+              rows={4}
+              value={reviewComment}
+              onChange={e =>
+                setReviewComment(
+                  e.target.value
+                )
               }
             />
 
             <button
               className="full"
-              style={{
-                marginTop:
-                  12
-              }}
+              style={{ marginTop: 12 }}
             >
               Invia recensione
             </button>
