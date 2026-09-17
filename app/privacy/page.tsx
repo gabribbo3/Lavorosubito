@@ -36,7 +36,7 @@ export default function PrivacyPage() {
       </h1>
 
       <p>
-        Ultimo aggiornamento: 16 settembre 2026
+        Ultimo aggiornamento: 17 settembre 2026
       </p>
 
       <p>
@@ -121,10 +121,21 @@ export default function PrivacyPage() {
         </li>
 
         <li>
-          identificatori tecnici pseudonimi o anonimi
-          utilizzati per misurare l&apos;utilizzo della
-          piattaforma, come descritto nella sezione
-          dedicata alle statistiche di utilizzo.
+          preferenze espresse dall&apos;utente in relazione
+          alle tecnologie statistiche e pubblicitarie;
+        </li>
+
+        <li>
+          previo consenso alle statistiche, un identificatore
+          tecnico pseudonimo generato casualmente e
+          memorizzato localmente nel browser, utilizzato per
+          stimare le visualizzazioni e i visitatori unici;
+        </li>
+
+        <li>
+          dati tecnici eventualmente trattati attraverso
+          tecnologie pubblicitarie di Google, quando
+          l&apos;utente presta il relativo consenso.
         </li>
       </ul>
 
@@ -179,9 +190,14 @@ export default function PrivacyPage() {
         </li>
 
         <li>
-          produrre statistiche aggregate sull&apos;utilizzo
-          della piattaforma, come il numero di
-          visualizzazioni e la stima dei visitatori unici.
+          previo consenso, produrre statistiche
+          sull&apos;utilizzo della piattaforma, come il numero
+          di visualizzazioni e la stima dei visitatori unici;
+        </li>
+
+        <li>
+          previo consenso, utilizzare tecnologie
+          pubblicitarie e di misurazione di Google.
         </li>
       </ul>
 
@@ -198,7 +214,9 @@ export default function PrivacyPage() {
         </li>
 
         <li>
-          del consenso, quando richiesto;
+          del consenso, quando richiesto, in particolare per
+          le tecnologie statistiche e pubblicitarie
+          opzionali;
         </li>
 
         <li>
@@ -207,9 +225,9 @@ export default function PrivacyPage() {
 
         <li>
           del legittimo interesse del titolare alla
-          sicurezza, prevenzione degli abusi, corretto
-          funzionamento e miglioramento della piattaforma,
-          nei limiti consentiti dalla normativa applicabile.
+          sicurezza, prevenzione degli abusi e corretto
+          funzionamento della piattaforma, nei limiti
+          consentiti dalla normativa applicabile.
         </li>
       </ul>
 
@@ -288,12 +306,60 @@ export default function PrivacyPage() {
         di contenuti illeciti, offensivi o abusivi.
       </p>
 
-      <h2>10. Statistiche di utilizzo e identificatore nel browser</h2>
+      <h2>
+        10. Preferenze privacy e tecnologie opzionali
+      </h2>
 
       <p>
-        LavoroSubito utilizza un identificatore tecnico
-        generato casualmente e memorizzato localmente nel
-        browser dell&apos;utente tramite la tecnologia
+        Al primo accesso LavoroSubito presenta un pannello
+        attraverso il quale l&apos;utente può accettare,
+        rifiutare o personalizzare l&apos;utilizzo delle
+        tecnologie opzionali.
+      </p>
+
+      <p>
+        Le preferenze sono suddivise nelle seguenti
+        categorie:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Necessari:</strong> tecnologie necessarie
+          al funzionamento e alla sicurezza del sito;
+        </li>
+
+        <li>
+          <strong>Statistiche:</strong> tecnologie utilizzate
+          per misurare l&apos;utilizzo di LavoroSubito;
+        </li>
+
+        <li>
+          <strong>Pubblicità:</strong> tecnologie
+          pubblicitarie e di misurazione di Google.
+        </li>
+      </ul>
+
+      <p>
+        Le categorie Statistiche e Pubblicità sono
+        opzionali. In assenza di consenso, le relative
+        preferenze vengono mantenute disattivate.
+      </p>
+
+      <p>
+        La scelta può essere modificata successivamente
+        attraverso il pulsante <strong>“Privacy”</strong>
+        disponibile sul sito.
+      </p>
+
+      <h2>
+        11. Statistiche di utilizzo e identificatore nel browser
+      </h2>
+
+      <p>
+        Se l&apos;utente abilita la categoria
+        <strong> Statistiche</strong>, LavoroSubito genera un
+        identificatore tecnico casuale e lo memorizza
+        localmente nel browser tramite la tecnologia
         localStorage.
       </p>
 
@@ -312,17 +378,33 @@ export default function PrivacyPage() {
       </p>
 
       <p>
-        In occasione della navigazione possono essere
+        Quando le statistiche sono abilitate possono essere
         registrati l&apos;identificatore tecnico, il percorso
         della pagina visitata e la data e l&apos;ora della
         visita.
       </p>
 
       <p>
-        L&apos;identificatore può rimanere memorizzato nel
-        browser fino alla cancellazione dei dati locali del
-        sito da parte dell&apos;utente o fino alla sua
-        sostituzione o rimozione.
+        Se l&apos;utente non presta il consenso alle
+        Statistiche, LavoroSubito non crea tale
+        identificatore per questa finalità e non registra
+        tramite questo sistema le visualizzazioni delle
+        pagine.
+      </p>
+
+      <p>
+        Se l&apos;utente revoca successivamente il consenso
+        alle Statistiche tramite il pannello Privacy,
+        l&apos;identificatore locale utilizzato da questo
+        sistema viene rimosso dal browser.
+      </p>
+
+      <p>
+        Quando autorizzato, l&apos;identificatore può rimanere
+        memorizzato nel browser fino alla cancellazione dei
+        dati locali del sito da parte dell&apos;utente, alla
+        revoca del consenso o alla sua sostituzione o
+        rimozione.
       </p>
 
       <p>
@@ -335,7 +417,43 @@ export default function PrivacyPage() {
         hanno visitato LavoroSubito.
       </p>
 
-      <h2>11. Conservazione dei dati</h2>
+      <h2>
+        12. Tecnologie pubblicitarie Google
+      </h2>
+
+      <p>
+        LavoroSubito utilizza servizi pubblicitari e di
+        misurazione forniti da Google.
+      </p>
+
+      <p>
+        Le preferenze relative alle tecnologie
+        pubblicitarie opzionali possono essere gestite
+        attraverso la categoria
+        <strong> Pubblicità</strong> del pannello Privacy.
+      </p>
+
+      <p>
+        Quando l&apos;utente non presta il relativo consenso,
+        LavoroSubito comunica a Google segnali di consenso
+        negato per le categorie pubblicitarie configurate
+        sul sito.
+      </p>
+
+      <p>
+        Quando l&apos;utente presta il consenso alla
+        Pubblicità, LavoroSubito comunica a Google
+        l&apos;aggiornamento della scelta per le relative
+        tecnologie pubblicitarie e di misurazione.
+      </p>
+
+      <p>
+        Google può trattare dati tecnici e informazioni
+        relative all&apos;utilizzo del sito secondo le proprie
+        condizioni e informative applicabili.
+      </p>
+
+      <h2>13. Conservazione dei dati</h2>
 
       <p>
         I dati vengono conservati per il tempo necessario
@@ -351,7 +469,7 @@ export default function PrivacyPage() {
         dalla legge.
       </p>
 
-      <h2>12. Fornitori e responsabili esterni</h2>
+      <h2>14. Fornitori e responsabili esterni</h2>
 
       <p>
         Per fornire il servizio, LavoroSubito può utilizzare
@@ -362,16 +480,21 @@ export default function PrivacyPage() {
         <li>hosting dell&apos;applicazione;</li>
         <li>database e autenticazione;</li>
         <li>archiviazione delle immagini;</li>
-        <li>invio di notifiche;</li>
-        <li>servizi tecnici e di sicurezza.</li>
+        <li>invio di email e notifiche;</li>
+        <li>servizi tecnici e di sicurezza;</li>
+        <li>
+          servizi pubblicitari e di misurazione, quando
+          applicabili e autorizzati.
+        </li>
       </ul>
 
       <p>
-        Tali soggetti trattano i dati secondo gli accordi,
-        le istruzioni e le garanzie applicabili.
+        Tali soggetti possono trattare dati secondo il ruolo
+        loro attribuito, gli accordi applicabili e le
+        rispettive informative.
       </p>
 
-      <h2>13. Trasferimenti fuori dallo SEE</h2>
+      <h2>15. Trasferimenti fuori dallo SEE</h2>
 
       <p>
         Alcuni fornitori tecnologici potrebbero trattare
@@ -386,7 +509,7 @@ export default function PrivacyPage() {
         adeguatezza o clausole contrattuali standard.
       </p>
 
-      <h2>14. Sicurezza</h2>
+      <h2>16. Sicurezza</h2>
 
       <p>
         LavoroSubito adotta misure tecniche e organizzative
@@ -400,7 +523,7 @@ export default function PrivacyPage() {
         una sicurezza assoluta.
       </p>
 
-      <h2>15. Diritti dell&apos;interessato</h2>
+      <h2>17. Diritti dell&apos;interessato</h2>
 
       <p>
         Nei casi previsti dal Regolamento UE 2016/679
@@ -422,11 +545,24 @@ export default function PrivacyPage() {
       </ul>
 
       <p>
-        Le richieste possono essere inviate a:{' '}
+        La revoca del consenso non pregiudica la liceità del
+        trattamento effettuato prima della revoca.
+      </p>
+
+      <p>
+        Per le preferenze relative a Statistiche e
+        Pubblicità, l&apos;utente può inoltre modificare la
+        propria scelta direttamente attraverso il pulsante
+        <strong> “Privacy”</strong> presente sul sito.
+      </p>
+
+      <p>
+        Le richieste relative all&apos;esercizio dei diritti
+        possono essere inviate a:{' '}
         <strong>gaf90@hotmail.it</strong>.
       </p>
 
-      <h2>16. Reclamo al Garante</h2>
+      <h2>18. Reclamo al Garante</h2>
 
       <p>
         L&apos;utente ha inoltre il diritto di proporre reclamo
@@ -434,7 +570,7 @@ export default function PrivacyPage() {
         Garante per la protezione dei dati personali.
       </p>
 
-      <h2>17. Minori</h2>
+      <h2>19. Minori</h2>
 
       <p>
         La piattaforma è destinata a persone che possono
@@ -442,7 +578,7 @@ export default function PrivacyPage() {
         la legge applicabile.
       </p>
 
-      <h2>18. Modifiche alla presente informativa</h2>
+      <h2>20. Modifiche alla presente informativa</h2>
 
       <p>
         La presente Privacy Policy può essere aggiornata per
