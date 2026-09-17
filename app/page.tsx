@@ -142,7 +142,11 @@ function whatsappNumber(phone: string) {
 }
 
 function formatHourlyRate(
-  value: number | string | null | undefined
+  value:
+    | number
+    | string
+    | null
+    | undefined
 ) {
   if (
     value == null ||
@@ -779,8 +783,12 @@ export default function Home() {
       Array.isArray(idRes.data) &&
       idRes.data[0]
     ) {
-      currentIdentity = idRes.data[0];
-      setIdentity(currentIdentity);
+      currentIdentity =
+        idRes.data[0];
+
+      setIdentity(
+        currentIdentity
+      );
     }
 
     if (
@@ -1213,9 +1221,11 @@ export default function Home() {
 
     if (!category.data) {
       setBusy(false);
+
       setMessage(
         'Categoria non trovata.'
       );
+
       return;
     }
 
@@ -1251,6 +1261,7 @@ export default function Home() {
       setMessage(
         `Errore: ${insert.error?.message ?? 'creazione richiesta'}`
       );
+
       return;
     }
 
@@ -1342,6 +1353,7 @@ export default function Home() {
                 })
             }
           ),
+
           fetch(
             '/api/push/send',
             {
@@ -1602,6 +1614,7 @@ export default function Home() {
       setMessage(
         'Inserisci il tuo numero di telefono.'
       );
+
       return;
     }
 
@@ -1612,6 +1625,7 @@ export default function Home() {
       setMessage(
         'Per registrarti devi accettare la Privacy Policy e i Termini e condizioni.'
       );
+
       return;
     }
 
@@ -1646,6 +1660,7 @@ export default function Home() {
         setMessage(
           `Errore registrazione: ${error.message}`
         );
+
         setBusy(false);
         return;
       }
@@ -1689,6 +1704,7 @@ export default function Home() {
       setMessage(
         'Inserisci prima la tua email.'
       );
+
       return;
     }
 
@@ -1735,6 +1751,7 @@ export default function Home() {
       setMessage(
         'Eliminazione account annullata.'
       );
+
       return;
     }
 
@@ -1760,6 +1777,7 @@ export default function Home() {
         setMessage(
           'Sessione non valida. Accedi nuovamente.'
         );
+
         setBusy(false);
         return;
       }
@@ -1798,6 +1816,7 @@ export default function Home() {
           result.error ||
             'Errore durante l’eliminazione dell’account.'
         );
+
         setBusy(false);
         return;
       }
@@ -1812,6 +1831,7 @@ export default function Home() {
       setMessage(
         'Errore durante l’eliminazione dell’account.'
       );
+
       setBusy(false);
     }
   }
@@ -1838,7 +1858,9 @@ export default function Home() {
     if (
       hourlyRate != null &&
       (
-        !Number.isFinite(hourlyRate) ||
+        !Number.isFinite(
+          hourlyRate
+        ) ||
         hourlyRate < 0 ||
         hourlyRate > 1000
       )
@@ -1846,6 +1868,7 @@ export default function Home() {
       setMessage(
         'Inserisci una tariffa oraria valida tra 0 e 1000 €.'
       );
+
       return;
     }
 
@@ -1925,6 +1948,7 @@ export default function Home() {
       setMessage(
         'Seleziona almeno una categoria.'
       );
+
       return;
     }
 
@@ -1985,6 +2009,7 @@ export default function Home() {
       setMessage(
         'GPS non disponibile. Puoi inserire città e CAP qui sotto.'
       );
+
       setLocationBusy(false);
       return;
     }
@@ -2009,6 +2034,7 @@ export default function Home() {
       setMessage(
         'Inserisci la città o il CAP della tua zona operativa.'
       );
+
       return;
     }
 
@@ -2020,7 +2046,10 @@ export default function Home() {
         new URLSearchParams();
 
       if (city) {
-        params.set('city', city);
+        params.set(
+          'city',
+          city
+        );
       }
 
       if (postalCode) {
@@ -2043,6 +2072,7 @@ export default function Home() {
           result.error ||
             'Località non trovata.'
         );
+
         setLocationBusy(false);
         return;
       }
@@ -2064,6 +2094,7 @@ export default function Home() {
         setMessage(
           'Coordinate della località non valide.'
         );
+
         setLocationBusy(false);
         return;
       }
@@ -2141,7 +2172,8 @@ export default function Home() {
   const filteredClient =
     useMemo(() => {
       if (
-        clientFilter === 'tutti'
+        clientFilter ===
+        'tutti'
       ) {
         return clientJobs;
       }
@@ -2344,6 +2376,7 @@ export default function Home() {
                 <span className="muted">
                   Profilo
                 </span>
+
                 <strong>
                   {setupPercentage}%
                 </strong>
@@ -2353,6 +2386,7 @@ export default function Home() {
                 <span className="muted">
                   Stato
                 </span>
+
                 <strong>
                   {verified
                     ? '✅'
@@ -2364,6 +2398,7 @@ export default function Home() {
                 <span className="muted">
                   Nuovi
                 </span>
+
                 <strong>
                   {matchingJobs.length}
                 </strong>
@@ -2373,6 +2408,7 @@ export default function Home() {
                 <span className="muted">
                   Recensioni
                 </span>
+
                 <strong>
                   {reviews.length
                     ? averageRating.toFixed(
@@ -2385,7 +2421,9 @@ export default function Home() {
 
             <div
               className="card"
-              style={{ marginTop: 16 }}
+              style={{
+                marginTop: 16
+              }}
             >
               <span className="tag">
                 Dati e verifica
@@ -2475,11 +2513,12 @@ export default function Home() {
                   marginTop: 6
                 }}
               >
-                Tariffa indicativa per un&apos;ora
-                di lavoro. Eventuali materiali,
-                diritto di chiamata e altri costi
-                possono essere concordati
-                separatamente.
+                Tariffa indicativa per
+                un&apos;ora di lavoro.
+                Eventuali materiali,
+                diritto di chiamata e altri
+                costi possono essere
+                concordati separatamente.
               </p>
 
               <label>
@@ -2537,7 +2576,9 @@ export default function Home() {
 
             <div
               className="card"
-              style={{ marginTop: 16 }}
+              style={{
+                marginTop: 16
+              }}
             >
               <span className="tag">
                 Disponibilità
@@ -2578,7 +2619,9 @@ export default function Home() {
 
             <div
               className="card"
-              style={{ marginTop: 16 }}
+              style={{
+                marginTop: 16
+              }}
             >
               <span className="tag">
                 Categorie
@@ -2586,7 +2629,9 @@ export default function Home() {
 
               <div
                 className="grid"
-                style={{ marginTop: 12 }}
+                style={{
+                  marginTop: 12
+                }}
               >
                 {categories.map(
                   category => (
@@ -2622,6 +2667,7 @@ export default function Home() {
                       )
                         ? '✓ '
                         : ''}
+
                       {category.name}
                     </button>
                   )
@@ -2642,13 +2688,17 @@ export default function Home() {
 
             <div
               className="card"
-              style={{ marginTop: 16 }}
+              style={{
+                marginTop: 16
+              }}
             >
               <span className="tag">
                 Posizione e raggio
               </span>
 
-              <h3>Zona operativa</h3>
+              <h3>
+                Zona operativa
+              </h3>
 
               <p className="muted">
                 Puoi usare la posizione GPS
@@ -2667,9 +2717,13 @@ export default function Home() {
               </button>
 
               <div
-                style={{ marginTop: 20 }}
+                style={{
+                  marginTop: 20
+                }}
               >
-                <label>Città</label>
+                <label>
+                  Città
+                </label>
 
                 <input
                   value={proCity}
@@ -2681,7 +2735,9 @@ export default function Home() {
                   placeholder="Es. Bologna"
                 />
 
-                <label>CAP</label>
+                <label>
+                  CAP
+                </label>
 
                 <input
                   value={proPostalCode}
@@ -2724,25 +2780,32 @@ export default function Home() {
               </h3>
 
               <div className="actions">
-                {DISTANCES.map(value => (
-                  <button
-                    key={value}
-                    className={
-                      maxDistance === value
-                        ? 'full'
-                        : 'outline'
-                    }
-                    onClick={() =>
-                      setRadius(value)
-                    }
-                  >
-                    {value} km
-                  </button>
-                ))}
+                {DISTANCES.map(
+                  value => (
+                    <button
+                      key={value}
+                      className={
+                        maxDistance ===
+                        value
+                          ? 'full'
+                          : 'outline'
+                      }
+                      onClick={() =>
+                        setRadius(value)
+                      }
+                    >
+                      {value} km
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
-            <div style={{ marginTop: 30 }}>
+            <div
+              style={{
+                marginTop: 30
+              }}
+            >
               <span className="tag">
                 Lavori
               </span>
@@ -2769,17 +2832,22 @@ export default function Home() {
                   <button
                     key={filter}
                     className={
-                      proFilter === filter
+                      proFilter ===
+                      filter
                         ? 'selected'
                         : ''
                     }
                     onClick={() =>
-                      setProFilter(filter)
+                      setProFilter(
+                        filter
+                      )
                     }
                   >
-                    {filter === 'tutti'
+                    {filter ===
+                    'tutti'
                       ? 'Tutti'
-                      : filter === 'aperta'
+                      : filter ===
+                          'aperta'
                         ? 'Da accettare'
                         : filter ===
                             'accettata'
@@ -2817,12 +2885,14 @@ export default function Home() {
                         {job.description}
                       </p>
 
-                      <Photo id={job.id} />
+                      <Photo
+                        id={job.id}
+                      />
 
                       <p className="muted">
-                        🔒 Indirizzo e telefono
-                        disponibili dopo
-                        l’accettazione
+                        🔒 Indirizzo e
+                        telefono disponibili
+                        dopo l’accettazione
                       </p>
 
                       {job.distance_km !=
@@ -2847,7 +2917,9 @@ export default function Home() {
                             'offline'
                         }
                         onClick={() =>
-                          acceptJob(job.id)
+                          acceptJob(
+                            job.id
+                          )
                         }
                       >
                         {availability ===
@@ -2881,13 +2953,16 @@ export default function Home() {
                         {job.description}
                       </p>
 
-                      <Photo id={job.id} />
+                      <Photo
+                        id={job.id}
+                      />
 
                       {job.address && (
                         <div className="success">
                           📍{' '}
                           <b>
-                            Indirizzo intervento
+                            Indirizzo
+                            intervento
                           </b>
                           <br />
                           {job.address}
@@ -2934,7 +3009,11 @@ export default function Home() {
                 )}
             </div>
 
-            <div style={{ marginTop: 30 }}>
+            <div
+              style={{
+                marginTop: 30
+              }}
+            >
               <span className="tag">
                 Recensioni
               </span>
@@ -2943,38 +3022,44 @@ export default function Home() {
                 Le mie recensioni
               </h2>
 
-              {reviews.length === 0 ? (
+              {reviews.length ===
+              0 ? (
                 <div className="card">
                   <p className="muted">
-                    Non hai ancora recensioni.
+                    Non hai ancora
+                    recensioni.
                   </p>
                 </div>
               ) : (
-                reviews.map(review => (
-                  <div
-                    className="card"
-                    key={review.review_id}
-                  >
-                    <b>
-                      {review.client_name ||
-                        'Cliente'}
-                    </b>
+                reviews.map(
+                  review => (
+                    <div
+                      className="card"
+                      key={
+                        review.review_id
+                      }
+                    >
+                      <b>
+                        {review.client_name ||
+                          'Cliente'}
+                      </b>
 
-                    <p>
-                      {'⭐'.repeat(
-                        Number(
-                          review.rating ||
-                            0
-                        )
-                      )}
-                    </p>
+                      <p>
+                        {'⭐'.repeat(
+                          Number(
+                            review.rating ||
+                              0
+                          )
+                        )}
+                      </p>
 
-                    <p className="muted">
-                      {review.comment ||
-                        'Nessun commento.'}
-                    </p>
-                  </div>
-                ))
+                      <p className="muted">
+                        {review.comment ||
+                          'Nessun commento.'}
+                      </p>
+                    </div>
+                  )
+                )
               )}
             </div>
 
@@ -3004,9 +3089,10 @@ export default function Home() {
               </h3>
 
               <p className="muted">
-                La cancellazione è definitiva.
-                Il tuo account professionista
-                e i dati collegati verranno
+                La cancellazione è
+                definitiva. Il tuo account
+                professionista e i dati
+                collegati verranno
                 eliminati.
               </p>
 
@@ -3014,8 +3100,12 @@ export default function Home() {
                 type="button"
                 className="danger"
                 disabled={busy}
-                style={{ width: '100%' }}
-                onClick={deleteMyAccount}
+                style={{
+                  width: '100%'
+                }}
+                onClick={
+                  deleteMyAccount
+                }
               >
                 {busy
                   ? 'Attendi...'
@@ -3051,9 +3141,16 @@ export default function Home() {
           <button
             className="outline"
             onClick={() => {
-              setAuthMode('login');
-              setAcceptedLegal(false);
+              setAuthMode(
+                'login'
+              );
+
+              setAcceptedLegal(
+                false
+              );
+
               setAuthPhone('');
+
               setAuthOpen(true);
             }}
           >
@@ -3072,6 +3169,7 @@ export default function Home() {
             <h1>
               Un problema?
               <br />
+
               <span>
                 Risolviamolo subito.
               </span>
@@ -3110,6 +3208,7 @@ export default function Home() {
                     <strong>
                       {icon}
                     </strong>
+
                     {name}
                   </button>
                 )
@@ -3130,7 +3229,9 @@ export default function Home() {
                       : ''
                   }
                   onClick={() =>
-                    setUrgency(value)
+                    setUrgency(
+                      value
+                    )
                   }
                 >
                   {value}
@@ -3164,7 +3265,8 @@ export default function Home() {
             />
 
             <div className="small muted">
-              Facoltativa · massimo 10 MB
+              Facoltativa · massimo
+              10 MB
             </div>
 
             {photoPreview && (
@@ -3177,7 +3279,9 @@ export default function Home() {
 
                 <button
                   className="danger"
-                  onClick={clearPhoto}
+                  onClick={
+                    clearPhoto
+                  }
                 >
                   Rimuovi foto
                 </button>
@@ -3246,15 +3350,21 @@ export default function Home() {
                 }}
               >
                 <span className="tag">
-                  Professionista compatibile
+                  Professionista
+                  compatibile
                 </span>
 
                 <h3>
-                  {bestMatch.professional_name}
+                  {
+                    bestMatch.professional_name
+                  }
                 </h3>
 
                 <p>
-                  🎯 {bestMatch.match_score}
+                  🎯{' '}
+                  {
+                    bestMatch.match_score
+                  }
                   /100 · ⭐{' '}
                   {Number(
                     bestMatch.average_rating ||
@@ -3291,7 +3401,8 @@ export default function Home() {
                   >
                     💶{' '}
                     <b>
-                      Tariffa indicativa:{' '}
+                      Tariffa
+                      indicativa:{' '}
                       {formatHourlyRate(
                         bestMatch.hourly_rate
                       )}
@@ -3305,26 +3416,30 @@ export default function Home() {
                         marginBottom: 0
                       }}
                     >
-                      Materiali, diritto di
-                      chiamata e altri costi non
-                      sono necessariamente
-                      inclusi e possono essere
-                      concordati con il
+                      Materiali, diritto
+                      di chiamata e altri
+                      costi non sono
+                      necessariamente
+                      inclusi e possono
+                      essere concordati
+                      con il
                       professionista.
                     </p>
                   </div>
                 ) : (
                   <p className="muted">
-                    💶 Tariffa oraria non ancora
-                    indicata dal professionista.
+                    💶 Tariffa oraria non
+                    ancora indicata dal
+                    professionista.
                   </p>
                 )}
 
                 <p className="muted">
-                  🔒 Il numero di telefono sarà
-                  disponibile solo dopo che il
-                  professionista avrà accettato
-                  il lavoro.
+                  🔒 Il numero di telefono
+                  sarà disponibile solo
+                  dopo che il
+                  professionista avrà
+                  accettato il lavoro.
                 </p>
               </div>
             )}
@@ -3347,7 +3462,8 @@ export default function Home() {
                   Il numero viene mostrato
                   esclusivamente al
                   professionista che ha
-                  accettato il tuo intervento.
+                  accettato il tuo
+                  intervento.
                 </p>
 
                 <label>
@@ -3369,7 +3485,9 @@ export default function Home() {
 
                 <button
                   className="full"
-                  style={{ marginTop: 12 }}
+                  style={{
+                    marginTop: 12
+                  }}
                   disabled={busy}
                   onClick={
                     saveClientPhone
@@ -3390,7 +3508,8 @@ export default function Home() {
                 <span
                   className="tag"
                   style={{
-                    color: '#b42318'
+                    color:
+                      '#b42318'
                   }}
                 >
                   Zona pericolosa
@@ -3398,7 +3517,8 @@ export default function Home() {
 
                 <h3
                   style={{
-                    color: '#b42318'
+                    color:
+                      '#b42318'
                   }}
                 >
                   Elimina il mio account
@@ -3406,8 +3526,9 @@ export default function Home() {
 
                 <p className="muted">
                   La cancellazione è
-                  definitiva. Il tuo account e
-                  i dati collegati verranno
+                  definitiva. Il tuo
+                  account e i dati
+                  collegati verranno
                   eliminati.
                 </p>
 
@@ -3415,7 +3536,9 @@ export default function Home() {
                   type="button"
                   className="danger"
                   disabled={busy}
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%'
+                  }}
                   onClick={
                     deleteMyAccount
                   }
@@ -3430,7 +3553,8 @@ export default function Home() {
                 className="tag"
                 style={{
                   marginTop: 30,
-                  display: 'inline-block'
+                  display:
+                    'inline-block'
                 }}
               >
                 Storico cliente
@@ -3474,7 +3598,8 @@ export default function Home() {
                       )
                     }
                   >
-                    {filter === 'tutti'
+                    {filter ===
+                    'tutti'
                       ? 'Tutti'
                       : filter}
                   </button>
@@ -3502,28 +3627,82 @@ export default function Home() {
                       {job.description}
                     </p>
 
-                    <Photo id={job.id} />
+                    <Photo
+                      id={job.id}
+                    />
 
                     {job.address && (
                       <div className="notice">
                         📍{' '}
                         <b>
-                          Indirizzo intervento
+                          Indirizzo
+                          intervento
                         </b>
+
                         <br />
+
                         {job.address}
                       </div>
                     )}
 
                     <p>
-                      <b>Urgenza:</b>{' '}
+                      <b>
+                        Urgenza:
+                      </b>{' '}
                       {job.urgency?.toUpperCase()}
                     </p>
 
                     {job.professional_name && (
                       <div className="success">
-                        ✅{' '}
-                        {job.professional_name}
+                        <div>
+                          ✅{' '}
+                          {
+                            job.professional_name
+                          }
+                        </div>
+
+                        {formatHourlyRate(
+                          job.hourly_rate
+                        ) && (
+                          <div
+                            style={{
+                              marginTop:
+                                8
+                            }}
+                          >
+                            💶{' '}
+                            <b>
+                              Tariffa
+                              indicativa:{' '}
+                              {formatHourlyRate(
+                                job.hourly_rate
+                              )}
+                              /ora
+                            </b>
+                          </div>
+                        )}
+
+                        {formatHourlyRate(
+                          job.hourly_rate
+                        ) && (
+                          <div
+                            className="muted"
+                            style={{
+                              fontSize:
+                                12,
+                              marginTop:
+                                5
+                            }}
+                          >
+                            Materiali,
+                            diritto di
+                            chiamata e
+                            altri costi
+                            possono essere
+                            concordati
+                            separatamente.
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -3552,7 +3731,8 @@ export default function Home() {
                             )
                           }
                         >
-                          ❌ Annulla richiesta
+                          ❌ Annulla
+                          richiesta
                         </button>
                       )}
 
@@ -3601,6 +3781,7 @@ export default function Home() {
                               setReviewJobId(
                                 job.id
                               );
+
                               setRating(5);
                             }}
                           >
@@ -3628,9 +3809,11 @@ export default function Home() {
               className="x"
               onClick={() => {
                 setAuthOpen(false);
+
                 setAcceptedLegal(
                   false
                 );
+
                 setAuthPhone('');
               }}
             >
@@ -3647,15 +3830,20 @@ export default function Home() {
               <button
                 type="button"
                 className={
-                  authMode === 'login'
+                  authMode ===
+                  'login'
                     ? 'full'
                     : 'outline'
                 }
                 onClick={() => {
-                  setAuthMode('login');
+                  setAuthMode(
+                    'login'
+                  );
+
                   setAcceptedLegal(
                     false
                   );
+
                   setAuthPhone('');
                 }}
               >
@@ -3665,15 +3853,20 @@ export default function Home() {
               <button
                 type="button"
                 className={
-                  authMode === 'signup'
+                  authMode ===
+                  'signup'
                     ? 'full'
                     : 'outline'
                 }
                 onClick={() => {
-                  setAuthMode('signup');
+                  setAuthMode(
+                    'signup'
+                  );
+
                   setAcceptedLegal(
                     false
                   );
+
                   setAuthPhone('');
                 }}
               >
@@ -3681,7 +3874,8 @@ export default function Home() {
               </button>
             </div>
 
-            {authMode === 'signup' && (
+            {authMode ===
+              'signup' && (
               <>
                 <label>
                   Nome e cognome
@@ -3707,6 +3901,7 @@ export default function Home() {
                     setSignupRole(
                       e.target.value
                     );
+
                     setAuthPhone('');
                   }}
                 >
@@ -3723,7 +3918,8 @@ export default function Home() {
                   'cliente' && (
                   <>
                     <label>
-                      📱 Numero di telefono
+                      📱 Numero di
+                      telefono
                     </label>
 
                     <input
@@ -3747,17 +3943,21 @@ export default function Home() {
                         marginTop: 6
                       }}
                     >
-                      Il numero verrà mostrato
-                      al professionista solo
-                      dopo che avrà accettato
-                      il tuo intervento.
+                      Il numero verrà
+                      mostrato al
+                      professionista solo
+                      dopo che avrà
+                      accettato il tuo
+                      intervento.
                     </p>
                   </>
                 )}
               </>
             )}
 
-            <label>Email</label>
+            <label>
+              Email
+            </label>
 
             <input
               type="email"
@@ -3770,7 +3970,9 @@ export default function Home() {
               }
             />
 
-            <label>Password</label>
+            <label>
+              Password
+            </label>
 
             <input
               type="password"
@@ -3784,7 +3986,8 @@ export default function Home() {
               }
             />
 
-            {authMode === 'login' && (
+            {authMode ===
+              'login' && (
               <button
                 type="button"
                 className="outline"
@@ -3797,11 +4000,13 @@ export default function Home() {
                   forgotPassword
                 }
               >
-                🔑 Password dimenticata?
+                🔑 Password
+                dimenticata?
               </button>
             )}
 
-            {authMode === 'signup' && (
+            {authMode ===
+              'signup' && (
               <label
                 style={{
                   display: 'flex',
@@ -3837,8 +4042,8 @@ export default function Home() {
                 />
 
                 <span>
-                  Dichiaro di aver letto e
-                  accetto i{' '}
+                  Dichiaro di aver
+                  letto e accetto i{' '}
                   <a
                     href="/termini"
                     target="_blank"
@@ -3847,9 +4052,11 @@ export default function Home() {
                       e.stopPropagation()
                     }
                   >
-                    Termini e condizioni
+                    Termini e
+                    condizioni
                   </a>{' '}
-                  e dichiaro di aver letto la{' '}
+                  e dichiaro di aver
+                  letto la{' '}
                   <a
                     href="/privacy"
                     target="_blank"
@@ -3867,7 +4074,9 @@ export default function Home() {
 
             <button
               className="full"
-              style={{ marginTop: 14 }}
+              style={{
+                marginTop: 14
+              }}
               disabled={
                 busy ||
                 (authMode ===
@@ -3922,12 +4131,15 @@ export default function Home() {
                     type="button"
                     key={stars}
                     className={
-                      rating === stars
+                      rating ===
+                      stars
                         ? 'full'
                         : 'outline'
                     }
                     onClick={() =>
-                      setRating(stars)
+                      setRating(
+                        stars
+                      )
                     }
                   >
                     {stars} ⭐
@@ -3952,7 +4164,9 @@ export default function Home() {
 
             <button
               className="full"
-              style={{ marginTop: 12 }}
+              style={{
+                marginTop: 12
+              }}
             >
               Invia recensione
             </button>
