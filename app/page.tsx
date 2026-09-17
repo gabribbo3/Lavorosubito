@@ -141,6 +141,28 @@ function whatsappNumber(phone: string) {
   return value;
 }
 
+function formatHourlyRate(
+  value: number | string | null | undefined
+) {
+  if (
+    value == null ||
+    value === '' ||
+    Number.isNaN(Number(value))
+  ) {
+    return null;
+  }
+
+  return new Intl.NumberFormat(
+    'it-IT',
+    {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }
+  ).format(Number(value));
+}
+
 function LegalFooter() {
   return (
     <footer>
@@ -751,11 +773,14 @@ export default function Home() {
       )
     ]);
 
+    let currentIdentity: any = {};
+
     if (
       Array.isArray(idRes.data) &&
       idRes.data[0]
     ) {
-      setIdentity(idRes.data[0]);
+      currentIdentity = idRes.data[0];
+      setIdentity(currentIdentity);
     }
 
     if (
@@ -797,7 +822,7 @@ export default function Home() {
         await supabase
           .from('professionals')
           .select(
-            'max_distance_km'
+            'max_distance_km,hourly_rate'
           )
           .eq(
             'id',
@@ -816,6 +841,16 @@ export default function Home() {
           )
         );
       }
+
+      setIdentity(
+        (current: any) => ({
+          ...currentIdentity,
+          ...current,
+          hourly_rate:
+            pro.data?.hourly_rate ??
+            null
+        })
+      );
     }
   }
 
@@ -1240,13 +1275,41 @@ export default function Home() {
         }
       );
 
-    const first =
+    let first =
       Array.isArray(
         matching.data
       ) &&
       matching.data.length
         ? matching.data[0]
         : null;
+
+    if (first) {
+      const professionalId =
+        first.professional_id ??
+        first.id ??
+        null;
+
+      if (professionalId) {
+        const rateResponse =
+          await supabase
+            .from('professionals')
+            .select('hourly_rate')
+            .eq(
+              'id',
+              professionalId
+            )
+            .maybeSingle();
+
+        first = {
+          ...first,
+          hourly_rate:
+            rateResponse.data
+              ?.hourly_rate ??
+            first.hourly_rate ??
+            null
+        };
+      }
+    }
 
     setBestMatch(first);
 
@@ -1759,6 +1822,36 @@ export default function Home() {
   }
 
   async function saveIdentity() {
+    if (!user) {
+      return;
+    }
+
+    const hourlyRateRaw =
+      identity.hourly_rate;
+
+    const hourlyRate =
+      hourlyRateRaw === '' ||
+      hourlyRateRaw == null
+        ? null
+        : Number(hourlyRateRaw);
+
+    if (
+      hourlyRate != null &&
+      (
+        !Number.isFinite(hourlyRate) ||
+        hourlyRate < 0 ||
+        hourlyRate > 1000
+      )
+    ) {
+      setMessage(
+        'Inserisci una tariffa oraria valida tra 0 e 1000 €.'
+      );
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+
     const { data, error } =
       await supabase.rpc(
         'update_my_professional_identity',
@@ -1778,15 +1871,51 @@ export default function Home() {
         }
       );
 
+    if (error) {
+      setBusy(false);
+
+      setMessage(
+        `Errore: ${error.message}`
+      );
+
+      return;
+    }
+
+    if (!data) {
+      setBusy(false);
+
+      setMessage(
+        'Salvataggio non riuscito.'
+      );
+
+      return;
+    }
+
+    const rateUpdate =
+      await supabase
+        .from('professionals')
+        .update({
+          hourly_rate: hourlyRate
+        })
+        .eq('id', user.id);
+
+    if (rateUpdate.error) {
+      setBusy(false);
+
+      setMessage(
+        `Dati salvati, ma errore tariffa: ${rateUpdate.error.message}`
+      );
+
+      return;
+    }
+
     setMessage(
-      error
-        ? error.message
-        : data
-          ? '✅ Dati salvati. Il profilo torna in verifica.'
-          : 'Salvataggio non riuscito.'
+      '✅ Dati e tariffa oraria salvati. Il profilo torna in verifica.'
     );
 
     await loadProfessional();
+
+    setBusy(false);
   }
 
   async function saveCategories() {
@@ -2314,6 +2443,46 @@ export default function Home() {
               />
 
               <label>
+                Tariffa oraria (€)
+              </label>
+
+              <input
+                type="number"
+                min="0"
+                max="1000"
+                step="0.50"
+                inputMode="decimal"
+                value={
+                  identity.hourly_rate ??
+                  ''
+                }
+                onChange={e =>
+                  setIdentity(
+                    (current: any) => ({
+                      ...current,
+                      hourly_rate:
+                        e.target.value
+                    })
+                  )
+                }
+                placeholder="Es. 35"
+              />
+
+              <p
+                className="muted"
+                style={{
+                  fontSize: 12,
+                  marginTop: 6
+                }}
+              >
+                Tariffa indicativa per un&apos;ora
+                di lavoro. Eventuali materiali,
+                diritto di chiamata e altri costi
+                possono essere concordati
+                separatamente.
+              </p>
+
+              <label>
                 Partita IVA
               </label>
 
@@ -2356,9 +2525,12 @@ export default function Home() {
               <div className="actions">
                 <button
                   className="full"
+                  disabled={busy}
                   onClick={saveIdentity}
                 >
-                  Salva dati
+                  {busy
+                    ? 'Salvataggio...'
+                    : 'Salva dati'}
                 </button>
               </div>
             </div>
@@ -3107,6 +3279,46 @@ export default function Home() {
                     : '—'}{' '}
                   km
                 </p>
+
+                {formatHourlyRate(
+                  bestMatch.hourly_rate
+                ) ? (
+                  <div
+                    className="success"
+                    style={{
+                      marginTop: 12
+                    }}
+                  >
+                    💶{' '}
+                    <b>
+                      Tariffa indicativa:{' '}
+                      {formatHourlyRate(
+                        bestMatch.hourly_rate
+                      )}
+                      /ora
+                    </b>
+
+                    <p
+                      className="muted"
+                      style={{
+                        fontSize: 12,
+                        marginBottom: 0
+                      }}
+                    >
+                      Materiali, diritto di
+                      chiamata e altri costi non
+                      sono necessariamente
+                      inclusi e possono essere
+                      concordati con il
+                      professionista.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="muted">
+                    💶 Tariffa oraria non ancora
+                    indicata dal professionista.
+                  </p>
+                )}
 
                 <p className="muted">
                   🔒 Il numero di telefono sarà
